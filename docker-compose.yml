@@ -1,0 +1,95 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: para-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-paraoracle}
+      POSTGRES_USER: ${POSTGRES_USER:-paraoracle}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-paraoracle_dev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - para-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: para-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-paraoracle}:${POSTGRES_PASSWORD:-paraoracle_dev}@db:5432/${POSTGRES_DB:-paraoracle}
+      COPERNICUS_BASE_URL: ${COPERNICUS_BASE_URL:-https://catalogue.dataspace.copernicus.eu}
+      COPERNICUS_CLIENT_ID: ${COPERNICUS_CLIENT_ID:-}
+      COPERNICUS_CLIENT_SECRET: ${COPERNICUS_CLIENT_SECRET:-}
+      USE_MOCK_SENTINEL: ${USE_MOCK_SENTINEL:-true}
+      JWT_SECRET: ${JWT_SECRET:-para_oracle_dev_secret_change_me}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      DATA_DIR: /data
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./data:/data
+    networks:
+      - para-net
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: para-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+      VITE_QGIS_WMS_URL: http://localhost:8080/wms
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - para-net
+    command: npm run dev -- --host 0.0.0.0 --port 3000
+
+  qgis-server:
+    image: camptocamp/qgis-server:3.34
+    container_name: para-qgis
+    restart: unless-stopped
+    environment:
+      QGIS_PROJECT_FILE: /projects/para.qgs
+    ports:
+      - "8080:80"
+    volumes:
+      - ./data/qgis-projects:/projects:ro
+      - ./data/para:/data:ro
+    networks:
+      - para-net
+    profiles:
+      - qgis  # active uniquement si docker compose --profile qgis up
+
+volumes:
+  db_data:
+    name: para_db_data
+
+networks:
+  para-net:
+    name: para-net
+    driver: bridge
