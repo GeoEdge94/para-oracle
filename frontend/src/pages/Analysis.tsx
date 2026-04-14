@@ -49,7 +49,17 @@ export function Analysis() {
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: { version: 8, sources: {}, layers: [] },
+      style: {
+        version: 8,
+        sources: {
+          "__boot": {
+            type: "raster",
+            tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+            tileSize: 256,
+          },
+        },
+        layers: [{ id: "__boot", type: "raster", source: "__boot" }],
+      },
       center: [-52.5, -4.0],
       zoom: 5,
     });

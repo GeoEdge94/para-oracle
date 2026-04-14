@@ -21,6 +21,12 @@ export function syncLayers(map: maplibregl.Map, layers: CategorisedLayer[], sele
 
   const ordered = [...layers].sort((a, b) => a.display_order - b.display_order);
 
+  // Hide boot basemap once an app-managed basemap is visible
+  const hasVisibleBasemap = ordered.some((l) => l.category === "basemap" && l.visible);
+  if (map.getLayer("__boot")) {
+    map.setLayoutProperty("__boot", "visibility", hasVisibleBasemap ? "none" : "visible");
+  }
+
   for (const l of ordered) {
     const sourceId = `src-${l.slug}`;
     const layerId = l.slug;
@@ -41,21 +47,25 @@ export function syncLayers(map: maplibregl.Map, layers: CategorisedLayer[], sele
     }
 
     if (l.type === "xyz" && l.url) {
-      if (!map.getSource(sourceId)) {
-        map.addSource(sourceId, {
+      try {
+        if (!map.getSource(sourceId)) {
+          map.addSource(sourceId, {
+            type: "raster",
+            tiles: [resolveTileUrl(l.url, selectedDate)],
+            tileSize: 256,
+            attribution: attributionFor(l.slug),
+          });
+        }
+        map.addLayer({
+          id: layerId,
           type: "raster",
-          tiles: [resolveTileUrl(l.url, selectedDate)],
-          tileSize: 256,
-          attribution: attributionFor(l.slug),
+          source: sourceId,
+          layout: { visibility: l.visible ? "visible" : "none" },
+          paint: { "raster-opacity": l.opacity },
         });
+      } catch (e) {
+        console.warn(`[syncLayers] skipped ${l.slug}:`, e);
       }
-      map.addLayer({
-        id: layerId,
-        type: "raster",
-        source: sourceId,
-        layout: { visibility: l.visible ? "visible" : "none" },
-        paint: { "raster-opacity": l.opacity },
-      });
     } else if (l.type === "geojson" && l.url) {
       continue;
     }

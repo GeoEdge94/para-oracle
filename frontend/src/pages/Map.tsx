@@ -26,7 +26,18 @@ export function MapPage() {
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: { version: 8, sources: {}, layers: [] },
+      style: {
+        version: 8,
+        sources: {
+          "__boot": {
+            type: "raster",
+            tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+            tileSize: 256,
+            attribution: "© OpenStreetMap",
+          },
+        },
+        layers: [{ id: "__boot", type: "raster", source: "__boot" }],
+      },
       center: PARA_CENTER,
       zoom: 5,
     });
