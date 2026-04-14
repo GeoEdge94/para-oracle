@@ -27,6 +27,28 @@ INSERT INTO layers (slug, name, description, type, url, display_order, visible_d
   ('nasa-viirs-firms', 'VIIRS FIRMS (feux actifs 24h)', 'Detections de feux VIIRS derniere 24h', 'xyz',
    'https://firms.modaps.eosdis.nasa.gov/mapserver/wms/fires/?service=WMS&request=GetMap&layers=fires_viirs_snpp_24&styles=&format=image/png&transparent=true&version=1.1.1&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}', 7, FALSE),
 
+  -- Cadastres de deforestation verifies (sources officielles — activees par defaut)
+  ('prodes-accumulated', 'PRODES cumule (INPE)',
+   'Polygones de deforestation cumulee Amazonie legale depuis 2007 — source officielle INPE/PRODES',
+   'xyz',
+   'https://terrabrasilis.dpi.inpe.br/geoserver/ows?service=WMS&version=1.3.0&request=GetMap&layers=prodes-legal-amz:accumulated_deforestation_2007&styles=&format=image/png&transparent=true&crs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}',
+   30, TRUE),
+  ('prodes-yearly', 'PRODES annuel (INPE)',
+   'Deforestation annuelle officielle Amazonie legale — polygones valides par an',
+   'xyz',
+   'https://terrabrasilis.dpi.inpe.br/geoserver/ows?service=WMS&version=1.3.0&request=GetMap&layers=prodes-legal-amz:yearly_deforestation&styles=&format=image/png&transparent=true&crs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}',
+   31, FALSE),
+  ('deter-amz', 'DETER alertes (INPE)',
+   'Alertes deforestation/degradation/mines quasi-temps reel, 2016–present',
+   'xyz',
+   'https://terrabrasilis.dpi.inpe.br/geoserver/ows?service=WMS&version=1.3.0&request=GetMap&layers=deter-amz:deter_amz&styles=&format=image/png&transparent=true&crs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}',
+   32, TRUE),
+  ('hansen-tree-loss', 'Hansen perte couverture arboree',
+   'Perte de couvert forestier 2000–present, 30m (Hansen/UMD/Google/NASA via GFW)',
+   'xyz',
+   'https://tiles.globalforestwatch.org/umd_tree_cover_loss/latest/dynamic/{z}/{x}/{y}.png',
+   34, FALSE),
+
   -- Produits NDVI calcules par le pipeline (reserves, tiles generees cote backend)
   ('ndvi-t0', 'NDVI T0 (janvier 2025)', 'Composite NDVI debut periode', 'xyz',
    '/tiles/ndvi-t0/{z}/{x}/{y}.png', 10, FALSE),

@@ -1,6 +1,6 @@
 import type { Layer } from "@/lib/api";
 
-export type LayerCategory = "basemap" | "satellite" | "ndvi" | "vector" | "fire";
+export type LayerCategory = "basemap" | "satellite" | "verified" | "ndvi" | "vector" | "fire";
 
 export type CategorisedLayer = Layer & {
   category: LayerCategory;
@@ -10,6 +10,13 @@ export type CategorisedLayer = Layer & {
 
 function inferCategory(slug: string): LayerCategory {
   if (slug.startsWith("basemap-")) return "basemap";
+  if (
+    slug.startsWith("prodes") ||
+    slug.startsWith("deter") ||
+    slug.startsWith("gfw-") ||
+    slug.startsWith("hansen-") ||
+    slug.startsWith("mapbiomas-")
+  ) return "verified";
   if (slug.startsWith("nasa-") && slug.includes("firms")) return "fire";
   if (slug.startsWith("nasa-") || slug.includes("truecolor")) return "satellite";
   if (slug.includes("ndvi") || slug.startsWith("delta") || slug.startsWith("mask")) return "ndvi";
@@ -17,12 +24,16 @@ function inferCategory(slug: string): LayerCategory {
 }
 
 export const CATEGORY_META: Record<LayerCategory, { label: string; icon: string; order: number }> = {
-  basemap:   { label: "Fonds de carte", icon: "🗺️", order: 0 },
-  satellite: { label: "Imagerie satellite", icon: "🛰️", order: 1 },
-  ndvi:      { label: "NDVI / Déforestation", icon: "🌿", order: 2 },
-  fire:      { label: "Feux actifs", icon: "🔥", order: 3 },
-  vector:    { label: "Vecteurs", icon: "📐", order: 4 },
+  basemap:   { label: "Fonds de carte",            icon: "🗺️", order: 0 },
+  satellite: { label: "Imagerie satellite",        icon: "🛰️", order: 1 },
+  verified:  { label: "Cadastres déforestation",   icon: "📜", order: 2 },
+  ndvi:      { label: "NDVI / pipeline",           icon: "🌿", order: 3 },
+  fire:      { label: "Feux actifs",               icon: "🔥", order: 4 },
+  vector:    { label: "Vecteurs",                  icon: "📐", order: 5 },
 };
+
+/** Default opacity when a verified-deforestation overlay becomes visible. */
+export const VERIFIED_DEFAULT_OPACITY = 0.65;
 
 /**
  * Resolve `{date}` placeholder for NASA GIBS tiles.
@@ -44,11 +55,14 @@ export function isDateAware(url: string | null): boolean {
 
 export function categorise(layers: Layer[]): CategorisedLayer[] {
   return layers
-    .map((l) => ({
-      ...l,
-      category: inferCategory(l.slug),
-      opacity: 1,
-      visible: l.visible_default,
-    }))
+    .map((l) => {
+      const category = inferCategory(l.slug);
+      return {
+        ...l,
+        category,
+        opacity: category === "verified" ? VERIFIED_DEFAULT_OPACITY : 1,
+        visible: l.visible_default,
+      };
+    })
     .sort((a, b) => a.display_order - b.display_order);
 }
