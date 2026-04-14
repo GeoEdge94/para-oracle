@@ -271,7 +271,93 @@ button { cursor: pointer; font-family: inherit; }
 .status-badge[data-mode="live"]  { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.35); }
 .status-badge[data-mode="mock"]  { background: rgba(234,179,8,0.12); color: #fbbf24; border: 1px solid rgba(234,179,8,0.3); }
 
+/* ══════════════ Date selector ══════════════ */
+.date-selector {
+  position: fixed;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 24;
+  background: rgba(15, 23, 42, 0.96);
+  backdrop-filter: blur(10px);
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.date-selector-row {
+  display: flex;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.date-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 68px;
+  padding: 5px 9px;
+  background: transparent;
+  border: 1px solid #334155;
+  border-radius: 7px;
+  color: #94a3b8;
+  font-size: 10px;
+  line-height: 1.1;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.date-chip:hover { border-color: #475569; color: #cbd5e1; }
+.date-chip[data-active="true"] {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: #10b981;
+  color: #34d399;
+}
+.date-chip-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85; }
+.date-chip-date { font-size: 11px; font-weight: 600; margin-top: 1px; }
+
+.date-chip-cal {
+  min-width: 32px;
+  justify-content: center;
+  align-items: center;
+}
+
+.date-selector-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+  border-top: 1px solid #1e293b;
+  margin-top: 2px;
+}
+
+.date-input {
+  flex: 1;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: #f1f5f9;
+  font-size: 11px;
+  color-scheme: dark;
+}
+
+.date-hint {
+  font-size: 9px;
+  color: #64748b;
+  text-align: center;
+  padding: 1px 6px;
+  line-height: 1.2;
+}
+
 /* Mobile: panneau moins large, scroll OK */
 @media (max-width: 600px) {
   .layer-panel { width: calc(100vw - 20px); max-width: 280px; }
+  .date-selector { left: 10px; transform: none; right: 10px; }
+  .date-selector-row { justify-content: space-between; }
+  .date-chip { flex: 1; min-width: 0; }
+  .date-chip-cal { flex: 0 0 36px; }
 }

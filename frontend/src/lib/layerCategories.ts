@@ -25,14 +25,21 @@ export const CATEGORY_META: Record<LayerCategory, { label: string; icon: string;
 };
 
 /**
- * Resolve `{date}` placeholder for NASA GIBS tiles with yesterday's date
- * (today's tile often not yet published before ~18:00 UTC).
+ * Resolve `{date}` placeholder for NASA GIBS tiles.
+ * Defaults to J-1 (today's tile often not published before ~18:00 UTC).
+ * Accepts ISO date string (YYYY-MM-DD) to target a specific day.
  */
-export function resolveTileUrl(url: string): string {
+export function resolveTileUrl(url: string, dateIso?: string): string {
+  if (!url.includes("{date}")) return url;
+  if (dateIso) return url.replace("{date}", dateIso);
   const d = new Date();
   d.setUTCDate(d.getUTCDate() - 1);
-  const iso = d.toISOString().slice(0, 10);
-  return url.replace("{date}", iso);
+  return url.replace("{date}", d.toISOString().slice(0, 10));
+}
+
+/** True if the layer URL contains a `{date}` placeholder. */
+export function isDateAware(url: string | null): boolean {
+  return !!url && url.includes("{date}");
 }
 
 export function categorise(layers: Layer[]): CategorisedLayer[] {

@@ -1,6 +1,6 @@
 import type maplibregl from "maplibre-gl";
 import type { CategorisedLayer } from "./layerCategories";
-import { resolveTileUrl } from "./layerCategories";
+import { resolveTileUrl, isDateAware } from "./layerCategories";
 
 /**
  * Reconciliate MapLibre layers with application state.
@@ -10,35 +10,41 @@ import { resolveTileUrl } from "./layerCategories";
  *   - MapLibre source id = `src-${slug}`
  *   - MapLibre layer id  = slug
  *   - Basemap layers are mutually exclusive (radio): only one visible at a time
+ *
+ * @param selectedDate optional ISO date (YYYY-MM-DD) applied to `{date}`-aware tile URLs
  */
-export function syncLayers(map: maplibregl.Map, layers: CategorisedLayer[]) {
+export function syncLayers(map: maplibregl.Map, layers: CategorisedLayer[], selectedDate?: string) {
   if (!map.isStyleLoaded()) {
-    map.once("styledata", () => syncLayers(map, layers));
+    map.once("styledata", () => syncLayers(map, layers, selectedDate));
     return;
   }
 
-  // Order layers by display_order so addLayer produces correct z-stack
   const ordered = [...layers].sort((a, b) => a.display_order - b.display_order);
 
   for (const l of ordered) {
     const sourceId = `src-${l.slug}`;
     const layerId = l.slug;
 
-    // Remove legacy layer if type mismatch (rare)
     if (map.getLayer(layerId)) {
-      // Update visibility & opacity on existing layer
       map.setLayoutProperty(layerId, "visibility", l.visible ? "visible" : "none");
       const opacityProp = paintOpacityProp(map, layerId);
       if (opacityProp) map.setPaintProperty(layerId, opacityProp, l.opacity);
+
+      // Refresh tiles URL if a date-aware layer needs a new date
+      if (l.type === "xyz" && l.url && isDateAware(l.url)) {
+        const src = map.getSource(sourceId) as maplibregl.RasterTileSource | undefined;
+        if (src && typeof src.setTiles === "function") {
+          src.setTiles([resolveTileUrl(l.url, selectedDate)]);
+        }
+      }
       continue;
     }
 
-    // Add source + layer on first sync
     if (l.type === "xyz" && l.url) {
       if (!map.getSource(sourceId)) {
         map.addSource(sourceId, {
           type: "raster",
-          tiles: [resolveTileUrl(l.url)],
+          tiles: [resolveTileUrl(l.url, selectedDate)],
           tileSize: 256,
           attribution: attributionFor(l.slug),
         });
@@ -51,7 +57,6 @@ export function syncLayers(map: maplibregl.Map, layers: CategorisedLayer[]) {
         paint: { "raster-opacity": l.opacity },
       });
     } else if (l.type === "geojson" && l.url) {
-      // geojson layers are added externally via addRegionGeoJSON; skip here
       continue;
     }
   }

@@ -6,7 +6,8 @@ import { API, type Bet, type OracleResult } from "@/lib/api";
 import { LayerPanel } from "@/components/LayerPanel";
 import { Legend } from "@/components/Legend";
 import { StatusBadge } from "@/components/StatusBadge";
-import { categorise, type CategorisedLayer } from "@/lib/layerCategories";
+import { DateSelector, type DatePreset } from "@/components/DateSelector";
+import { categorise, isDateAware, type CategorisedLayer } from "@/lib/layerCategories";
 import { syncLayers, ensureBasemapRadio } from "@/lib/mapLayers";
 import { ChevronLeft, Play, Copy } from "lucide-react";
 
@@ -19,9 +20,14 @@ export function Analysis() {
   const [layers, setLayers] = useState<CategorisedLayer[]>([]);
   const [result, setResult] = useState<OracleResult | null>(null);
   const [resolving, setResolving] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [_preset, setPreset] = useState<DatePreset>("T1");
 
   useEffect(() => {
-    API.getBet(slug).then((r) => setBet(r.data));
+    API.getBet(slug).then((r) => {
+      setBet(r.data);
+      if (!selectedDate) setSelectedDate(r.data.period_end);
+    });
     API.listLayers().then((r) => {
       // On analysis page, turn NDVI layers on by default
       const cats = categorise(r.data).map((l) => {
@@ -61,8 +67,8 @@ export function Analysis() {
   }, [bet]);
 
   useEffect(() => {
-    if (mapRef.current && layers.length) syncLayers(mapRef.current, layers);
-  }, [layers]);
+    if (mapRef.current && layers.length) syncLayers(mapRef.current, layers, selectedDate || undefined);
+  }, [layers, selectedDate]);
 
   async function resolve() {
     setResolving(true);
@@ -109,6 +115,17 @@ export function Analysis() {
     return "ndvi";
   }, [layers]);
 
+  // How many visible layers react to the date selector
+  const dateAffectedCount = useMemo(
+    () => layers.filter((l) => l.visible && isDateAware(l.url)).length,
+    [layers]
+  );
+
+  const onDateChange = useCallback((iso: string, preset: DatePreset) => {
+    setSelectedDate(iso);
+    setPreset(preset);
+  }, []);
+
   if (!bet) return <div style={{ padding: 20 }}>Chargement...</div>;
 
   const resolved = bet.status.startsWith("RESOLVED");
@@ -133,6 +150,16 @@ export function Analysis() {
       </div>
 
       <div ref={mapContainer} style={{ position: "absolute", inset: 0 }} />
+
+      {bet && selectedDate && (
+        <DateSelector
+          periodStart={bet.period_start}
+          periodEnd={bet.period_end}
+          selectedDate={selectedDate}
+          onChange={onDateChange}
+          affectedLayers={dateAffectedCount}
+        />
+      )}
 
       {layers.length > 0 && (
         <LayerPanel
