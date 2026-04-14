@@ -1,18 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { API, type Bet, type Layer, type OracleResult } from "@/lib/api";
+import { API, type Bet, type OracleResult } from "@/lib/api";
+import { LayerPanel } from "@/components/LayerPanel";
+import { Legend } from "@/components/Legend";
+import { StatusBadge } from "@/components/StatusBadge";
+import { categorise, type CategorisedLayer } from "@/lib/layerCategories";
+import { syncLayers, ensureBasemapRadio } from "@/lib/mapLayers";
 import { ChevronLeft, Play, Copy } from "lucide-react";
-
-type NDVILayerKey = "ndvi_t0" | "ndvi_t1" | "delta" | "mask";
-
-const LAYER_SLUGS: Record<NDVILayerKey, string> = {
-  ndvi_t0: "ndvi-t0",
-  ndvi_t1: "ndvi-t1",
-  delta: "delta-ndvi",
-  mask: "mask-deforestation",
-};
 
 export function Analysis() {
   const { slug = "" } = useParams();
@@ -20,14 +16,26 @@ export function Analysis() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [bet, setBet] = useState<Bet | null>(null);
-  const [layers, setLayers] = useState<Layer[]>([]);
-  const [active, setActive] = useState<Set<NDVILayerKey>>(new Set(["delta"]));
+  const [layers, setLayers] = useState<CategorisedLayer[]>([]);
   const [result, setResult] = useState<OracleResult | null>(null);
   const [resolving, setResolving] = useState(false);
 
   useEffect(() => {
     API.getBet(slug).then((r) => setBet(r.data));
-    API.listLayers().then((r) => setLayers(r.data));
+    API.listLayers().then((r) => {
+      // On analysis page, turn NDVI layers on by default
+      const cats = categorise(r.data).map((l) => {
+        if (l.slug === "delta-ndvi") return { ...l, visible: true, opacity: 0.75 };
+        if (l.slug === "nasa-viirs-truecolor") return { ...l, visible: true };
+        return l;
+      });
+      // Ensure only one basemap visible
+      const withBase = cats.map((l) =>
+        l.slug === "basemap-satellite" ? { ...l, visible: true } :
+        l.slug === "basemap-osm" ? { ...l, visible: false } : l
+      );
+      setLayers(withBase);
+    });
   }, [slug]);
 
   useEffect(() => {
@@ -35,16 +43,11 @@ export function Analysis() {
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256 },
-        },
-        layers: [{ id: "osm", type: "raster", source: "osm" }],
-      },
+      style: { version: 8, sources: {}, layers: [] },
       center: [-52.5, -4.0],
       zoom: 5,
     });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
 
     map.on("load", () => {
       if (bet.region_geojson) {
@@ -57,12 +60,15 @@ export function Analysis() {
     return () => { map.remove(); mapRef.current = null; };
   }, [bet]);
 
+  useEffect(() => {
+    if (mapRef.current && layers.length) syncLayers(mapRef.current, layers);
+  }, [layers]);
+
   async function resolve() {
     setResolving(true);
     try {
       const { data } = await API.resolveBet(slug);
       setResult(data);
-      // refresh bet
       const r = await API.getBet(slug);
       setBet(r.data);
     } finally {
@@ -70,13 +76,38 @@ export function Analysis() {
     }
   }
 
-  function toggle(k: NDVILayerKey) {
-    setActive((prev) => {
-      const next = new Set(prev);
-      if (next.has(k)) next.delete(k); else next.add(k);
-      return next;
+  const onToggle = useCallback((slug: string) => {
+    setLayers((prev) => ensureBasemapRadio(prev.map((l) => (l.slug === slug ? { ...l, visible: !l.visible } : l)), slug));
+  }, []);
+  const onOpacity = useCallback((slug: string, opacity: number) => {
+    setLayers((prev) => prev.map((l) => (l.slug === slug ? { ...l, opacity } : l)));
+  }, []);
+  const onReorder = useCallback((slug: string, direction: "up" | "down") => {
+    setLayers((prev) => {
+      const sorted = [...prev].sort((a, b) => a.display_order - b.display_order);
+      const idx = sorted.findIndex((l) => l.slug === slug);
+      if (idx === -1) return prev;
+      const swap = direction === "up" ? idx - 1 : idx + 1;
+      if (swap < 0 || swap >= sorted.length) return prev;
+      const a = sorted[idx];
+      const b = sorted[swap];
+      return prev.map((l) => {
+        if (l.slug === a.slug) return { ...l, display_order: b.display_order };
+        if (l.slug === b.slug) return { ...l, display_order: a.display_order };
+        return l;
+      });
     });
-  }
+  }, []);
+
+  // Pick the legend to show based on which NDVI layer is active & top-most
+  const activeLegend = useMemo((): "ndvi" | "delta" | "mask" | null => {
+    const visible = layers.filter((l) => l.visible && l.category === "ndvi");
+    if (!visible.length) return null;
+    const top = visible.sort((a, b) => b.display_order - a.display_order)[0];
+    if (top.slug.startsWith("mask")) return "mask";
+    if (top.slug.startsWith("delta")) return "delta";
+    return "ndvi";
+  }, [layers]);
 
   if (!bet) return <div style={{ padding: 20 }}>Chargement...</div>;
 
@@ -86,38 +117,34 @@ export function Analysis() {
     <div style={{ position: "relative", height: "100dvh" }}>
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 30,
-        padding: "12px 16px", background: "rgba(15,23,42,0.9)", backdropFilter: "blur(8px)",
+        padding: "10px 14px", background: "rgba(15,23,42,0.9)", backdropFilter: "blur(10px)",
         display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid #1e293b",
       }}>
-        <button onClick={() => navigate("/")} style={{ background: "none", border: "none", color: "#cbd5e1" }}>
-          <ChevronLeft size={22} />
+        <button onClick={() => navigate("/")} style={{ background: "none", border: "none", color: "#cbd5e1", padding: 2 }}>
+          <ChevronLeft size={20} />
         </button>
-        <div>
-          <div style={{ fontSize: 12, color: "#94a3b8" }}>Analyse NDVI</div>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>{bet.region_name}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 11, color: "#94a3b8" }}>Analyse NDVI</div>
+          <div style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {bet.region_name}
+          </div>
         </div>
+        <StatusBadge />
       </div>
 
       <div ref={mapContainer} style={{ position: "absolute", inset: 0 }} />
 
-      {/* Layer toggles */}
-      <div style={{
-        position: "fixed", top: 72, right: 12, zIndex: 25,
-        background: "rgba(30,41,59,0.95)", border: "1px solid #334155",
-        borderRadius: 12, padding: 8, display: "flex", flexDirection: "column", gap: 4,
-      }}>
-        {(Object.keys(LAYER_SLUGS) as NDVILayerKey[]).map((k) => (
-          <button key={k} onClick={() => toggle(k)} style={{
-            padding: "6px 10px", fontSize: 11, borderRadius: 6,
-            background: active.has(k) ? "#10b981" : "transparent",
-            color: active.has(k) ? "#fff" : "#94a3b8", border: "none", textAlign: "left",
-          }}>
-            {k.toUpperCase()}
-          </button>
-        ))}
-      </div>
+      {layers.length > 0 && (
+        <LayerPanel
+          layers={layers}
+          onToggle={onToggle}
+          onOpacity={onOpacity}
+          onReorder={onReorder}
+        />
+      )}
 
-      {/* Bottom panel */}
+      {activeLegend && <Legend category={activeLegend} />}
+
       <div className="bottom-sheet" style={{ maxHeight: "55vh" }}>
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{bet.question}</div>

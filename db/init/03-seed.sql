@@ -9,12 +9,25 @@ ON CONFLICT (email) DO NOTHING;
 
 -- ─── Layers de base ───────────────────────────────────────────────────────
 INSERT INTO layers (slug, name, description, type, url, display_order, visible_default) VALUES
+  -- Basemaps (radio exclusif)
   ('basemap-osm', 'OSM Base', 'OpenStreetMap raster tiles', 'xyz',
    'https://tile.openstreetmap.org/{z}/{x}/{y}.png', 0, TRUE),
   ('basemap-satellite', 'Satellite (ESRI)', 'ESRI World Imagery', 'xyz',
    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', 1, FALSE),
-  ('para-border', 'Frontiere Para', 'Limite officielle etat Para', 'geojson',
-   '/data/para/para-border.geojson', 2, TRUE),
+  ('basemap-carto-dark', 'Carto Dark', 'Fond sombre minimal', 'xyz',
+   'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', 2, FALSE),
+
+  -- Imagerie satellite publique (NASA GIBS — {date} resolu cote client, fmt YYYY-MM-DD)
+  ('nasa-modis-truecolor', 'MODIS True Color (NASA, aujourd''hui)', 'Imagerie quotidienne MODIS 250m', 'xyz',
+   'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/{date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg', 4, FALSE),
+  ('nasa-viirs-truecolor', 'VIIRS True Color (NASA, aujourd''hui)', 'Imagerie quotidienne VIIRS 250m', 'xyz',
+   'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/{date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg', 5, FALSE),
+  ('nasa-modis-ndvi', 'MODIS NDVI 16-day (NASA)', 'NDVI global 500m, revisite 16 jours', 'xyz',
+   'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_NDVI_16Day/default/{date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png', 6, FALSE),
+  ('nasa-viirs-firms', 'VIIRS FIRMS (feux actifs 24h)', 'Detections de feux VIIRS derniere 24h', 'xyz',
+   'https://firms.modaps.eosdis.nasa.gov/mapserver/wms/fires/?service=WMS&request=GetMap&layers=fires_viirs_snpp_24&styles=&format=image/png&transparent=true&version=1.1.1&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}', 7, FALSE),
+
+  -- Produits NDVI calcules par le pipeline (reserves, tiles generees cote backend)
   ('ndvi-t0', 'NDVI T0 (janvier 2025)', 'Composite NDVI debut periode', 'xyz',
    '/tiles/ndvi-t0/{z}/{x}/{y}.png', 10, FALSE),
   ('ndvi-t1', 'NDVI T1 (juin 2025)', 'Composite NDVI fin periode', 'xyz',
@@ -22,7 +35,11 @@ INSERT INTO layers (slug, name, description, type, url, display_order, visible_d
   ('delta-ndvi', 'Delta NDVI', 'Heatmap de changement NDVI T0 → T1', 'xyz',
    '/tiles/delta/{z}/{x}/{y}.png', 12, FALSE),
   ('mask-deforestation', 'Masque deforestation', 'Pixels avec Δ NDVI < -0.3', 'xyz',
-   '/tiles/mask/{z}/{x}/{y}.png', 13, FALSE)
+   '/tiles/mask/{z}/{x}/{y}.png', 13, FALSE),
+
+  -- Couche vectorielle haut niveau
+  ('para-border', 'Frontiere Para', 'Limite officielle etat Para', 'geojson',
+   '/data/para/para-border.geojson', 20, TRUE)
 ON CONFLICT (slug) DO NOTHING;
 
 -- ─── Pari demo — Para 2025 S1 ─────────────────────────────────────────────

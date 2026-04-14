@@ -9,14 +9,38 @@ POST /oracle/resolve/{bet_slug}
 """
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.models import Bet, Analysis
+from app.services.copernicus_client import CopernicusClient
 from app.services.ndvi_pipeline import NDVIPipeline, PipelineConfig
 from app.schemas.analysis import OracleResult
 
 router = APIRouter()
+
+
+@router.get("/status")
+def oracle_status():
+    """
+    Exposes current mode + Copernicus auth status.
+    Used by frontend to show a banner/badge.
+    """
+    client = CopernicusClient(
+        client_id=settings.COPERNICUS_CLIENT_ID,
+        client_secret=settings.COPERNICUS_CLIENT_SECRET,
+        use_mock=settings.USE_MOCK_SENTINEL,
+    )
+    ok, message = client.is_authenticated()
+    return {
+        "mode": "mock" if client.use_mock else "live",
+        "copernicus_authenticated": ok,
+        "copernicus_message": message,
+        "stac_url": CopernicusClient.STAC_URL,
+        "data_dir": settings.DATA_DIR,
+    }
 
 
 @router.post("/resolve/{bet_slug}", response_model=OracleResult)
@@ -38,7 +62,8 @@ def resolve_bet(bet_slug: str, db: Session = Depends(get_db)):
         period_start=bet.period_start,
         period_end=bet.period_end,
         region_geom_wkt=db.scalar(
-            f"SELECT ST_AsText(region_geom) FROM bets WHERE id = '{bet.id}'"
+            text("SELECT ST_AsText(region_geom) FROM bets WHERE id = :bet_id"),
+            {"bet_id": bet.id},
         ),
         ndvi_drop_threshold=float(bet.ndvi_drop_threshold),
         threshold_km2=float(bet.threshold_value),

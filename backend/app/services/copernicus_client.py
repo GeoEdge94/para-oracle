@@ -42,8 +42,32 @@ class CopernicusClient:
     def __init__(self, client_id: str = "", client_secret: str = "", use_mock: bool = True):
         self.client_id = client_id
         self.client_secret = client_secret
-        self.use_mock = use_mock
+        # Auto-fallback to mock if credentials missing, regardless of use_mock flag
+        self.use_mock = use_mock or not (client_id and client_secret)
         self._token: Optional[str] = None
+
+    def is_authenticated(self) -> tuple[bool, str]:
+        """
+        Check whether real credentials are available AND a token can be obtained.
+        Returns (ok, message).
+        """
+        if not self.client_id or not self.client_secret:
+            return False, "missing COPERNICUS_CLIENT_ID / COPERNICUS_CLIENT_SECRET"
+        try:
+            resp = httpx.post(
+                self.TOKEN_URL,
+                data={
+                    "grant_type": "client_credentials",
+                    "client_id": self.client_id,
+                    "client_secret": self.client_secret,
+                },
+                timeout=10,
+            )
+            if resp.status_code == 200 and "access_token" in resp.json():
+                return True, "token acquired"
+            return False, f"token endpoint replied {resp.status_code}: {resp.text[:200]}"
+        except httpx.HTTPError as e:
+            return False, f"network error: {e}"
 
     def _get_token(self) -> str:
         """OAuth2 client_credentials flow pour obtenir un access token."""

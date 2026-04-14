@@ -84,3 +84,194 @@ button { cursor: pointer; font-family: inherit; }
   justify-content: center;
   z-index: 50;
 }
+
+/* ══════════════ Layer panel (QGIS-style) ══════════════ */
+.layer-panel {
+  position: fixed;
+  top: 56px;
+  right: 10px;
+  width: 280px;
+  max-height: calc(100dvh - 80px);
+  background: rgba(15, 23, 42, 0.96);
+  backdrop-filter: blur(10px);
+  border: 1px solid #334155;
+  border-radius: 10px;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  font-size: 12px;
+}
+
+.layer-panel-handle {
+  position: fixed;
+  top: 56px;
+  right: 10px;
+  width: 38px;
+  height: 38px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 25;
+  cursor: pointer;
+}
+
+.layer-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid #1e293b;
+  font-weight: 700;
+  font-size: 12px;
+  background: #1e293b;
+}
+
+.layer-panel-icon-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  padding: 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.layer-panel-icon-btn:hover { background: #334155; color: #f1f5f9; }
+.layer-panel-icon-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+.layer-panel-body {
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.layer-group { border-bottom: 1px solid #1e293b; }
+.layer-group:last-child { border-bottom: none; }
+
+.layer-group-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 600;
+}
+.layer-group-header:hover { background: rgba(51, 65, 85, 0.35); }
+
+.layer-group-items { padding: 2px 6px 6px 20px; }
+
+.layer-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 4px;
+  border-radius: 5px;
+  font-size: 11px;
+  transition: background 0.1s;
+}
+.layer-row:hover { background: rgba(51, 65, 85, 0.35); }
+.layer-row[data-visible="true"] .layer-row-name { color: #f1f5f9; font-weight: 500; }
+
+.layer-row-toggle {
+  background: none;
+  border: none;
+  padding: 2px;
+  display: inline-flex;
+  margin-top: 1px;
+}
+
+.layer-row-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.layer-row-name {
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer-row-opacity {
+  width: 100%;
+  height: 3px;
+  margin-top: 4px;
+  accent-color: #10b981;
+  cursor: pointer;
+}
+
+.layer-row-order {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ══════════════ Legend ══════════════ */
+.legend {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 8px 10px;
+  z-index: 20;
+  font-size: 10px;
+  max-width: 160px;
+}
+.legend-title {
+  font-weight: 700;
+  color: #cbd5e1;
+  margin-bottom: 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.legend-ramp {
+  height: 10px;
+  border-radius: 2px;
+  margin-bottom: 3px;
+}
+.legend-ramp-ndvi {
+  background: linear-gradient(to right, #7f1d1d 0%, #dc2626 25%, #facc15 50%, #84cc16 75%, #14532d 100%);
+}
+.legend-ramp-delta {
+  background: linear-gradient(to right, #dc2626 0%, #fb923c 35%, #fde68a 50%, #a3e635 65%, #16a34a 100%);
+}
+.legend-scale {
+  display: flex;
+  justify-content: space-between;
+  color: #94a3b8;
+  font-size: 9px;
+}
+.legend-swatch { display: flex; align-items: center; gap: 6px; }
+
+/* ══════════════ Status badge ══════════════ */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 9999px;
+  letter-spacing: 0.3px;
+}
+.status-badge[data-mode="live"]  { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.35); }
+.status-badge[data-mode="mock"]  { background: rgba(234,179,8,0.12); color: #fbbf24; border: 1px solid rgba(234,179,8,0.3); }
+
+/* Mobile: panneau moins large, scroll OK */
+@media (max-width: 600px) {
+  .layer-panel { width: calc(100vw - 20px); max-width: 280px; }
+}
