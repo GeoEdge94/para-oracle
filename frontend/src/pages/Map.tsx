@@ -34,6 +34,8 @@ export function MapPage() {
   const [showCarousel, setShowCarousel] = useState(false);
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const betsRef = useRef<Bet[]>([]);
+  const dashAnimRef = useRef<number | null>(null);
+  const pulseAnimRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -96,12 +98,68 @@ export function MapPage() {
         });
 
         map.addLayer({
+          id: `glow-${bet.slug}`,
+          type: "line",
+          source: srcId,
+          paint: { "line-color": color, "line-width": 8, "line-opacity": 0.2, "line-blur": 5 },
+        });
+
+        map.addLayer({
           id: `border-${bet.slug}`,
           type: "line",
           source: srcId,
-          paint: { "line-color": color, "line-width": 2, "line-dasharray": [4, 2] },
+          paint: { "line-color": color, "line-width": 2, "line-dasharray": [2, 2] },
+        });
+
+        const centroid = computeCentroid(bet.region_geojson!);
+        const centroidSrc = `center-${bet.slug}`;
+        map.addSource(centroidSrc, {
+          type: "geojson",
+          data: { type: "Feature", properties: { slug: bet.slug, color }, geometry: { type: "Point", coordinates: centroid } },
+        });
+
+        map.addLayer({
+          id: `pulse-${bet.slug}`,
+          type: "circle",
+          source: centroidSrc,
+          paint: {
+            "circle-radius": 4,
+            "circle-color": color,
+            "circle-stroke-width": 2,
+            "circle-stroke-color": "#0a0f1a",
+            "circle-stroke-opacity": 0.9,
+          },
         });
       }
+
+      // Ant march animation on borders (shifting dasharray)
+      let dashOffset = 0;
+      const animateDash = () => {
+        dashOffset = (dashOffset + 0.1) % 4;
+        for (const bet of visibleBets) {
+          const lid = `border-${bet.slug}`;
+          if (map.getLayer(lid)) {
+            map.setPaintProperty(lid, "line-dasharray", [2, 2, dashOffset]);
+          }
+        }
+        dashAnimRef.current = requestAnimationFrame(animateDash);
+      };
+      dashAnimRef.current = requestAnimationFrame(animateDash);
+
+      // Pulse animation on centroids
+      let pulseT = 0;
+      const animatePulse = () => {
+        pulseT += 0.05;
+        const r = 4 + Math.sin(pulseT) * 2;
+        for (const bet of visibleBets) {
+          const lid = `pulse-${bet.slug}`;
+          if (map.getLayer(lid)) {
+            map.setPaintProperty(lid, "circle-radius", r);
+          }
+        }
+        pulseAnimRef.current = requestAnimationFrame(animatePulse);
+      };
+      pulseAnimRef.current = requestAnimationFrame(animatePulse);
 
       map.on("click", (e) => {
         const features = map.queryRenderedFeatures(e.point, { layers: fillIds.filter((id) => map.getLayer(id)) });
@@ -128,7 +186,12 @@ export function MapPage() {
     });
 
     mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
+    return () => {
+      if (dashAnimRef.current) cancelAnimationFrame(dashAnimRef.current);
+      if (pulseAnimRef.current) cancelAnimationFrame(pulseAnimRef.current);
+      map.remove();
+      mapRef.current = null;
+    };
   }, []);
 
   useEffect(() => {
@@ -136,7 +199,7 @@ export function MapPage() {
     if (!map || !bets.length) return;
     for (const bet of bets) {
       const show = filterCat === null || bet.category === filterCat;
-      for (const layerId of [`fill-${bet.slug}`, `border-${bet.slug}`]) {
+      for (const layerId of [`fill-${bet.slug}`, `border-${bet.slug}`, `glow-${bet.slug}`, `pulse-${bet.slug}`]) {
         if (map.getLayer(layerId)) {
           map.setLayoutProperty(layerId, "visibility", show ? "visible" : "none");
         }
@@ -238,4 +301,11 @@ export function MapPage() {
       )}
     </div>
   );
+}
+
+function computeCentroid(geom: GeoJSON.Polygon | GeoJSON.MultiPolygon): [number, number] {
+  const ring = geom.type === "MultiPolygon" ? geom.coordinates[0][0] : geom.coordinates[0];
+  let sx = 0, sy = 0, n = 0;
+  for (const [x, y] of ring) { sx += x; sy += y; n++; }
+  return [sx / n, sy / n];
 }
