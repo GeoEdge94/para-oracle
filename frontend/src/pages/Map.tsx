@@ -43,14 +43,12 @@ export function MapPage() {
         sources: {
           "carto-dark": {
             type: "raster",
-            tiles: ["https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png"],
+            tiles: ["https://a.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png"],
             tileSize: 256,
             attribution: "CARTO",
           },
         },
-        layers: [
-          { id: "carto-dark", type: "raster", source: "carto-dark" },
-        ],
+        layers: [{ id: "carto-dark", type: "raster", source: "carto-dark" }],
       },
       center: WORLD_CENTER,
       zoom: 2,
@@ -75,6 +73,27 @@ export function MapPage() {
       ]);
 
       const visibleBets = allBets.filter((b) => b.region_geojson && !SUB_ZONES.has(b.slug));
+
+      // Satellite par zone : une source raster ESRI limitee au bbox de chaque polygone
+      for (const bet of visibleBets) {
+        const bbox = geojsonBounds(bet.region_geojson!);
+        const pad = 0.5;
+        const satSrc = `sat-${bet.slug}`;
+        map.addSource(satSrc, {
+          type: "raster",
+          tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+          tileSize: 256,
+          bounds: [bbox[0] - pad, bbox[1] - pad, bbox[2] + pad, bbox[3] + pad],
+          minzoom: 0,
+          maxzoom: 18,
+        });
+        map.addLayer({
+          id: `sat-${bet.slug}`,
+          type: "raster",
+          source: satSrc,
+          paint: { "raster-opacity": 1, "raster-fade-duration": 0 },
+        });
+      }
 
       const fillIds: string[] = [];
       for (const bet of visibleBets) {
