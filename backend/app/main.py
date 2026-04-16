@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.routers import auth, bets, layers, oracle, analyses
+from app.routers import auth, bets, layers, oracle, analyses, tiles
 
 app = FastAPI(
     title="ParaOracle API",
@@ -29,6 +29,7 @@ app.include_router(bets.router, prefix="/bets", tags=["bets"])
 app.include_router(layers.router, prefix="/layers", tags=["layers"])
 app.include_router(oracle.router, prefix="/oracle", tags=["oracle"])
 app.include_router(analyses.router, prefix="/analyses", tags=["analyses"])
+app.include_router(tiles.router, prefix="/tiles", tags=["tiles"])
 
 
 @app.get("/health")

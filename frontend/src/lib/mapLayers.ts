@@ -1,17 +1,16 @@
 import type maplibregl from "maplibre-gl";
 import type { CategorisedLayer } from "./layerCategories";
-import { resolveTileUrl, isDateAware } from "./layerCategories";
+import { buildTileUrl, isDateAware } from "./layerCategories";
 
 /**
  * Reconciliate MapLibre layers with application state.
  * Idempotent — safe to call every render.
  *
- * Conventions:
- *   - MapLibre source id = `src-${slug}`
- *   - MapLibre layer id  = slug
- *   - Basemap layers are mutually exclusive (radio): only one visible at a time
+ * Non-basemap tile layers route through the backend tile cache proxy
+ * (`/tiles/{slug}/{z}/{x}/{y}.ext`) so they're served from disk after
+ * the first fetch — no more dependency on external APIs.
  *
- * @param selectedDate optional ISO date (YYYY-MM-DD) applied to `{date}`-aware tile URLs
+ * @param selectedDate optional ISO date (YYYY-MM-DD) for date-aware layers
  */
 export function syncLayers(map: maplibregl.Map, layers: CategorisedLayer[], selectedDate?: string) {
   if (!map.isStyleLoaded()) {
@@ -21,7 +20,6 @@ export function syncLayers(map: maplibregl.Map, layers: CategorisedLayer[], sele
 
   const ordered = [...layers].sort((a, b) => a.display_order - b.display_order);
 
-  // Hide boot basemap once an app-managed basemap is visible
   const hasVisibleBasemap = ordered.some((l) => l.category === "basemap" && l.visible);
   if (map.getLayer("__boot")) {
     map.setLayoutProperty("__boot", "visibility", hasVisibleBasemap ? "none" : "visible");
@@ -30,17 +28,17 @@ export function syncLayers(map: maplibregl.Map, layers: CategorisedLayer[], sele
   for (const l of ordered) {
     const sourceId = `src-${l.slug}`;
     const layerId = l.slug;
+    const tileUrl = buildTileUrl(l, selectedDate);
 
     if (map.getLayer(layerId)) {
       map.setLayoutProperty(layerId, "visibility", l.visible ? "visible" : "none");
       const opacityProp = paintOpacityProp(map, layerId);
       if (opacityProp) map.setPaintProperty(layerId, opacityProp, l.opacity);
 
-      // Refresh tiles URL if a date-aware layer needs a new date
       if (l.type === "xyz" && l.url && isDateAware(l.url)) {
         const src = map.getSource(sourceId) as maplibregl.RasterTileSource | undefined;
         if (src && typeof src.setTiles === "function") {
-          src.setTiles([resolveTileUrl(l.url, selectedDate)]);
+          src.setTiles([tileUrl]);
         }
       }
       continue;
@@ -51,13 +49,11 @@ export function syncLayers(map: maplibregl.Map, layers: CategorisedLayer[], sele
         if (!map.getSource(sourceId)) {
           map.addSource(sourceId, {
             type: "raster",
-            tiles: [resolveTileUrl(l.url, selectedDate)],
+            tiles: [tileUrl],
             tileSize: 256,
             attribution: attributionFor(l.slug),
           });
         }
-        // Insert raster layers BELOW the Pará vector fill/border (if present),
-        // so the region polygon stays visually on top of every overlay.
         const beforeId = firstExistingLayer(map, ["para-fill", "para-border", "para-line"]);
         map.addLayer(
           {
@@ -97,13 +93,14 @@ function paintOpacityProp(map: maplibregl.Map, id: string): string | null {
 
 function attributionFor(slug: string): string {
   if (slug.startsWith("nasa-")) return "NASA EOSDIS GIBS";
+  if (slug.startsWith("prodes") || slug.startsWith("deter")) return "© INPE / TerraBrasilis";
+  if (slug.startsWith("hansen")) return "Hansen/UMD/GFW";
   if (slug === "basemap-osm") return "© OpenStreetMap";
   if (slug === "basemap-satellite") return "ESRI World Imagery";
   if (slug === "basemap-carto-dark") return "© CARTO";
   return "";
 }
 
-/** Enforce single-basemap invariant before state is pushed to syncLayers. */
 export function ensureBasemapRadio(layers: CategorisedLayer[], newlyToggledSlug: string | null): CategorisedLayer[] {
   if (!newlyToggledSlug) return layers;
   const toggled = layers.find((l) => l.slug === newlyToggledSlug);

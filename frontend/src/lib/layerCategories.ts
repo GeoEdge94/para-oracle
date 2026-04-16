@@ -35,20 +35,51 @@ export const CATEGORY_META: Record<LayerCategory, { label: string; icon: string;
 /** Default opacity when a verified-deforestation overlay becomes visible. */
 export const VERIFIED_DEFAULT_OPACITY = 0.65;
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
 /**
- * Resolve `{date}` placeholder for NASA GIBS tiles.
- * Defaults to J-1 (today's tile often not published before ~18:00 UTC).
- * Accepts ISO date string (YYYY-MM-DD) to target a specific day.
+ * Build the tile URL that MapLibre will request.
+ *
+ * - **Basemap layers** → use the external URL directly (CDN, no proxy)
+ * - **All other layers** → route through backend tile cache proxy at
+ *   `{API_BASE}/tiles/{slug}/{z}/{x}/{y}.ext`
+ *   The proxy fetches upstream once, caches to disk, and serves forever.
+ * - **Date-aware layers** → append `?date=YYYY-MM-DD` to the proxy URL
  */
-export function resolveTileUrl(url: string, dateIso?: string): string {
-  if (!url.includes("{date}")) return url;
-  if (dateIso) return url.replace("{date}", dateIso);
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - 1);
-  return url.replace("{date}", d.toISOString().slice(0, 10));
+export function buildTileUrl(layer: CategorisedLayer, dateIso?: string): string {
+  const url = layer.url ?? "";
+
+  // Basemaps → direct external load, no proxy
+  if (layer.category === "basemap") {
+    return url.includes("{date}") ? url.replace("{date}", dateIso || defaultDate()) : url;
+  }
+
+  // Determine file extension (.jpg for GIBS true-color, .png for everything else)
+  const ext = url.includes(".jpg") ? "jpg" : "png";
+  let proxyUrl = `${API_BASE}/tiles/${layer.slug}/{z}/{x}/{y}.${ext}`;
+
+  // Append date for NASA GIBS date-aware layers
+  if (url.includes("{date}")) {
+    const date = dateIso || defaultDate();
+    proxyUrl += `?date=${date}`;
+  }
+
+  return proxyUrl;
 }
 
-/** True if the layer URL contains a `{date}` placeholder. */
+/** @deprecated — use buildTileUrl() for new code */
+export function resolveTileUrl(url: string, dateIso?: string): string {
+  if (!url.includes("{date}")) return url;
+  return url.replace("{date}", dateIso || defaultDate());
+}
+
+function defaultDate(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+/** True if the layer's upstream URL is date-dependent. */
 export function isDateAware(url: string | null): boolean {
   return !!url && url.includes("{date}");
 }

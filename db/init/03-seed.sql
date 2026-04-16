@@ -23,7 +23,7 @@ INSERT INTO layers (slug, name, description, type, url, display_order, visible_d
   ('nasa-viirs-truecolor', 'VIIRS True Color (NASA, aujourd''hui)', 'Imagerie quotidienne VIIRS 250m', 'xyz',
    'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/{date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg', 5, FALSE),
   ('nasa-modis-ndvi', 'MODIS NDVI 16-day (NASA)', 'NDVI global 500m, revisite 16 jours', 'xyz',
-   'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_NDVI_16Day/default/{date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png', 6, FALSE),
+   'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_L3_NDVI_16Day/default/{date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png', 6, FALSE),
   ('nasa-viirs-firms', 'VIIRS FIRMS (feux actifs 24h)', 'Detections de feux VIIRS derniere 24h', 'xyz',
    'https://firms.modaps.eosdis.nasa.gov/mapserver/wms/fires/?service=WMS&request=GetMap&layers=fires_viirs_snpp_24&styles=&format=image/png&transparent=true&version=1.1.1&width=256&height=256&srs=EPSG:3857&bbox={bbox-epsg-3857}', 7, FALSE),
 
