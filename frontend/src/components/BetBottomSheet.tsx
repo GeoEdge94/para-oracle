@@ -27,7 +27,7 @@ function statusLabel(s: string) {
 }
 
 export function BetBottomSheet({ bets, onSelect, onClose }: Props) {
-  const { t, locale } = useI18n();
+  const { t, locale, betQ } = useI18n();
   const [idx, setIdx] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
   const touchStart = useRef<{ x: number; time: number } | null>(null);
@@ -101,7 +101,7 @@ export function BetBottomSheet({ bets, onSelect, onClose }: Props) {
 
                     <div className="bbs-region">{b.region_name}</div>
 
-                    <div className="bbs-question">{b.question}</div>
+                    <div className="bbs-question">{betQ(b)}</div>
 
                     <div className="bbs-metrics">
                       <div className="bbs-metric">

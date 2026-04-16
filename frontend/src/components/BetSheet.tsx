@@ -6,7 +6,7 @@ import { MarketStats } from "./MarketStats";
 import { useI18n } from "@/lib/i18n";
 
 export function BetSheet({ bet, onClose, onOpen }: { bet: Bet; onClose: () => void; onOpen: () => void }) {
-  const { t } = useI18n();
+  const { t, betQ } = useI18n();
   const [stats, setStats] = useState<BetMarketStats | null>(null);
   const [myBets, setMyBets] = useState<UserBetSummary | null>(null);
 
@@ -26,7 +26,7 @@ export function BetSheet({ bet, onClose, onOpen }: { bet: Bet; onClose: () => vo
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
         <div style={{ flex: 1, marginRight: 12 }}>
           {statusBadge(bet.status)}
-          <div style={{ fontSize: 14, fontWeight: 600, marginTop: 8, lineHeight: 1.4 }}>{bet.question}</div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginTop: 8, lineHeight: 1.4 }}>{betQ(bet)}</div>
         </div>
         <button onClick={onClose} style={{ background: "none", border: "none", color: "#94a3b8" }}>
           <X size={20} />

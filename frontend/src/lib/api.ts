@@ -16,6 +16,7 @@ export type BetSummary = {
   id: string;
   slug: string;
   question: string;
+  question_en: string | null;
   category: string;
   status: string;
   period_start: string;
@@ -28,6 +29,7 @@ export type BetSummary = {
 
 export type Bet = BetSummary & {
   description: string;
+  description_en: string | null;
   region_name: string;
   region_geojson: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
   ndvi_drop_threshold: number;

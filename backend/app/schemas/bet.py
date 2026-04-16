@@ -11,7 +11,9 @@ from pydantic import BaseModel, Field
 class BetBase(BaseModel):
     slug: str
     question: str
+    question_en: Optional[str] = None
     description: Optional[str] = None
+    description_en: Optional[str] = None
     category: str
     region_name: str
     period_start: date
@@ -45,6 +47,7 @@ class BetSummary(BaseModel):
     id: UUID
     slug: str
     question: str
+    question_en: Optional[str] = None
     category: str
     status: str
     period_start: date

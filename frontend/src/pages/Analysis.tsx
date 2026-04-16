@@ -21,7 +21,7 @@ import { MapPin } from "lucide-react";
 
 export function Analysis() {
   const { slug = "" } = useParams();
-  const { t } = useI18n();
+  const { t, betQ } = useI18n();
   const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -373,7 +373,7 @@ export function Analysis() {
           {!sheetCollapsed && (
             <>
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{bet.question}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{betQ(bet)}</div>
                 <div style={{ fontSize: 11, color: "#94a3b8" }}>
                   {t("analysis.threshold_label", { value: bet.threshold_value, unit: bet.threshold_unit, drop: bet.ndvi_drop_threshold })}
                 </div>

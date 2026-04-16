@@ -279,6 +279,8 @@ const LOCALES: Record<Locale, Translations> = { fr, en };
 
 const EUR_USD_RATE = 1.08;
 
+type Localizable = { question: string; question_en?: string | null; description?: string | null; description_en?: string | null };
+
 type I18nCtx = {
   locale: Locale;
   currency: Currency;
@@ -287,6 +289,8 @@ type I18nCtx = {
   t: (key: string, params?: Record<string, string | number>) => string;
   ta: (key: string) => string[];
   formatAmount: (eur: number) => string;
+  betQ: (bet: Localizable) => string;
+  betDesc: (bet: Localizable) => string;
 };
 
 const I18nContext = createContext<I18nCtx>(null!);
@@ -341,8 +345,20 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     [currency]
   );
 
+  const betQ = useCallback(
+    (bet: Localizable): string =>
+      (locale === "en" && bet.question_en) ? bet.question_en : bet.question,
+    [locale]
+  );
+
+  const betDesc = useCallback(
+    (bet: Localizable): string =>
+      (locale === "en" && bet.description_en) ? bet.description_en : (bet.description ?? ""),
+    [locale]
+  );
+
   return (
-    <I18nContext.Provider value={{ locale, currency, setLocale, setCurrency, t, ta, formatAmount }}>
+    <I18nContext.Provider value={{ locale, currency, setLocale, setCurrency, t, ta, formatAmount, betQ, betDesc }}>
       {children}
     </I18nContext.Provider>
   );

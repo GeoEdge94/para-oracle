@@ -33,7 +33,9 @@ CREATE TABLE IF NOT EXISTS bets (
     id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     slug             VARCHAR(150) UNIQUE NOT NULL,  -- ex: "para-deforestation-2025-s1"
     question         TEXT NOT NULL,
+    question_en      TEXT,
     description      TEXT,
+    description_en   TEXT,
     category         VARCHAR(50) NOT NULL,           -- deforestation, wildfire, flood, etc.
     region_name      VARCHAR(100) NOT NULL,          -- "Para, Brazil"
     region_geom      GEOMETRY(MultiPolygon, 4326) NOT NULL,
