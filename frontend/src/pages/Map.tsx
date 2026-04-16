@@ -85,7 +85,8 @@ export function MapPage() {
       const world: GeoJSON.Position[] = [[-180,-85],[180,-85],[180,85],[-180,85],[-180,-85]];
       const holes: GeoJSON.Position[][] = visibleBets.map((b) => {
         const g = b.region_geojson!;
-        return g.type === "MultiPolygon" ? g.coordinates[0][0] : g.coordinates[0];
+        const ring = g.type === "MultiPolygon" ? g.coordinates[0][0] : g.coordinates[0];
+        return [...ring].reverse();
       });
 
       map.addSource("sat-mask", {
@@ -100,7 +101,7 @@ export function MapPage() {
         id: "sat-mask-fill",
         type: "fill",
         source: "sat-mask",
-        paint: { "fill-color": "#0a0f1a", "fill-opacity": 1 },
+        paint: { "fill-color": "#0a0f1a", "fill-opacity": 1, "fill-antialias": false },
       });
 
       const fillIds: string[] = [];
