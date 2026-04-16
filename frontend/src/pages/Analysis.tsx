@@ -131,6 +131,40 @@ export function Analysis() {
       setResult(data);
       const r = await API.getBet(slug);
       setBet(r.data);
+
+      // Refetch zones detectees apres resolution
+      const z = await API.listZones(slug);
+      setZones(z.data);
+
+      // Activer automatiquement les proof_layers du bet sur la carte
+      const proofSlugs = r.data.proof_layers || [];
+      const map = mapRef.current;
+      setLayers((prev) => {
+        const next = prev.map((l) => {
+          if (proofSlugs.includes(l.slug)) {
+            const opacity = l.category === "verified" ? 0.65 : l.category === "ndvi" ? 0.75 : 1;
+            return { ...l, visible: true, opacity };
+          }
+          return l;
+        });
+        if (map) {
+          for (const l of next) {
+            if (proofSlugs.includes(l.slug) && map.getLayer(l.slug)) {
+              map.setLayoutProperty(l.slug, "visibility", "visible");
+              const type = map.getLayer(l.slug)?.type;
+              const prop = type === "raster" ? "raster-opacity" : type === "fill" ? "fill-opacity" : null;
+              if (prop) map.setPaintProperty(l.slug, prop, l.opacity);
+            }
+          }
+        }
+        return next;
+      });
+
+      // Afficher les zones detectees sur la carte
+      setShowDetail(true);
+
+      // Deplier le bottom sheet pour montrer le verdict
+      setSheetCollapsed(false);
     } finally {
       setResolving(false);
     }
