@@ -8,7 +8,7 @@ import { FAB } from "@/components/FAB";
 import { LayerPanel } from "@/components/LayerPanel";
 import { StatusBadge } from "@/components/StatusBadge";
 import { categorise, type CategorisedLayer } from "@/lib/layerCategories";
-import { syncLayers, ensureBasemapRadio } from "@/lib/mapLayers";
+import { syncLayers, ensureBasemapRadio, geojsonBounds } from "@/lib/mapLayers";
 import { Satellite, LogOut } from "lucide-react";
 
 const PARA_CENTER: [number, number] = [-52.5, -4.0];
@@ -80,7 +80,10 @@ export function MapPage() {
 
   // Reconciliate MapLibre state whenever `layers` change
   useEffect(() => {
-    if (mapRef.current && layers.length) syncLayers(mapRef.current, layers);
+    if (mapRef.current && layers.length) {
+      const bounds = bet?.region_geojson ? geojsonBounds(bet.region_geojson) : undefined;
+      syncLayers(mapRef.current, layers, undefined, bounds);
+    }
   }, [layers]);
 
   const onToggle = useCallback((slug: string) => {
@@ -145,7 +148,7 @@ export function MapPage() {
         />
       )}
 
-      <FAB icon={<Satellite size={20} />} onClick={() => setShowSheet(true)} />
+      {!showSheet && <FAB icon={<Satellite size={20} />} onClick={() => setShowSheet(true)} />}
 
       {showSheet && bet && (
         <BetSheet

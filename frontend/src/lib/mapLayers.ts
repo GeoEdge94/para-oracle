@@ -12,9 +12,14 @@ import { buildTileUrl, isDateAware } from "./layerCategories";
  *
  * @param selectedDate optional ISO date (YYYY-MM-DD) for date-aware layers
  */
-export function syncLayers(map: maplibregl.Map, layers: CategorisedLayer[], selectedDate?: string) {
+export function syncLayers(
+  map: maplibregl.Map,
+  layers: CategorisedLayer[],
+  selectedDate?: string,
+  regionBounds?: [number, number, number, number],
+) {
   if (!map.isStyleLoaded()) {
-    map.once("styledata", () => syncLayers(map, layers, selectedDate));
+    map.once("styledata", () => syncLayers(map, layers, selectedDate, regionBounds));
     return;
   }
 
@@ -47,12 +52,16 @@ export function syncLayers(map: maplibregl.Map, layers: CategorisedLayer[], sele
     if (l.type === "xyz" && l.url) {
       try {
         if (!map.getSource(sourceId)) {
-          map.addSource(sourceId, {
+          const sourceOpts: maplibregl.RasterSourceSpecification = {
             type: "raster",
             tiles: [tileUrl],
             tileSize: 256,
             attribution: attributionFor(l.slug),
-          });
+          };
+          if (regionBounds && l.category !== "basemap") {
+            sourceOpts.bounds = regionBounds;
+          }
+          map.addSource(sourceId, sourceOpts);
         }
         const beforeId = firstExistingLayer(map, ["para-fill", "para-border", "para-line"]);
         map.addLayer(
@@ -102,6 +111,24 @@ function attributionFor(slug: string): string {
   if (slug === "basemap-satellite") return "ESRI World Imagery";
   if (slug === "basemap-carto-dark") return "© CARTO";
   return "";
+}
+
+export function geojsonBounds(
+  geom: GeoJSON.Polygon | GeoJSON.MultiPolygon,
+): [number, number, number, number] {
+  let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+  const rings = geom.type === "MultiPolygon"
+    ? geom.coordinates.flatMap((p) => p)
+    : geom.coordinates;
+  for (const ring of rings) {
+    for (const [lng, lat] of ring) {
+      if (lng < minLng) minLng = lng;
+      if (lng > maxLng) maxLng = lng;
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+    }
+  }
+  return [minLng, minLat, maxLng, maxLat];
 }
 
 export function ensureBasemapRadio(layers: CategorisedLayer[], newlyToggledSlug: string | null): CategorisedLayer[] {

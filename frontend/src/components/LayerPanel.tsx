@@ -11,8 +11,8 @@ type Props = {
   onClose?: () => void;
 };
 
-export function LayerPanel({ layers, onToggle, onOpacity, onReorder, onClose }: Props) {
-  const [collapsed, setCollapsed] = useState(false);
+export function LayerPanel({ layers, onToggle, onOpacity, onReorder, onClose, defaultCollapsed = true }: Props & { defaultCollapsed?: boolean }) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [openCats, setOpenCats] = useState<Set<LayerCategory>>(new Set(["basemap", "ndvi"]));
 
   const grouped = useMemo(() => {

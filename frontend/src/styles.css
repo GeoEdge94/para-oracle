@@ -54,24 +54,72 @@ button { cursor: pointer; font-family: inherit; }
 .badge-yes { background: rgba(16,185,129,0.15); color: #34d399; }
 .badge-no { background: rgba(239,68,68,0.15); color: #f87171; }
 
+.bottom-dock {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.bottom-dock > * {
+  pointer-events: auto;
+}
+
 .bottom-sheet {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+  z-index: 100;
   background: #1e293b;
   border-top: 1px solid #334155;
   border-radius: 16px 16px 0 0;
-  padding: 16px;
-  z-index: 100;
+  padding: 0 16px 16px;
   max-height: 50vh;
   overflow-y: auto;
+  transition: max-height 0.25s ease, padding 0.25s ease;
+}
+
+.bottom-dock .bottom-sheet {
+  position: static;
+  z-index: auto;
+}
+
+.bottom-sheet--collapsed {
+  max-height: none;
+  padding: 0 16px;
+  overflow: hidden;
+}
+
+.bottom-sheet-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 0 6px;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.bottom-sheet-grabber {
+  width: 32px;
+  height: 4px;
+  border-radius: 2px;
+  background: #475569;
 }
 
 .fab {
   position: fixed;
   bottom: 80px;
-  right: 16px;
+  left: 16px;
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -82,7 +130,17 @@ button { cursor: pointer; font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 50;
+  z-index: 101;
+  pointer-events: auto;
+  touch-action: manipulation;
+  isolation: isolate;
+}
+
+.fab::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
 }
 
 /* ══════════════ Layer panel (QGIS-style) ══════════════ */
@@ -105,11 +163,9 @@ button { cursor: pointer; font-family: inherit; }
 }
 
 .layer-panel-handle {
-  position: fixed;
-  top: 56px;
-  right: 10px;
   width: 38px;
   height: 38px;
+  margin: 0 10px 8px 0;
   background: rgba(15, 23, 42, 0.96);
   border: 1px solid #334155;
   border-radius: 8px;
@@ -117,8 +173,8 @@ button { cursor: pointer; font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 25;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .layer-panel-header {
@@ -361,5 +417,115 @@ button { cursor: pointer; font-family: inherit; }
   .date-chip-cal { flex: 0 0 36px; }
 
   .layer-panel { top: 106px; width: calc(100vw - 20px); max-width: 280px; max-height: calc(100dvh - 120px); }
-  .layer-panel-handle { top: 106px; }
+  .layer-panel-handle { margin-right: 10px; }
+}
+
+/* ══════════════ Onboarding overlay ══════════════ */
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: auto;
+}
+
+.onboarding-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.onboarding-card {
+  position: absolute;
+  width: calc(100% - 40px);
+  max-width: 320px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: onboarding-in 0.3s ease;
+}
+
+@keyframes onboarding-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.onboarding-center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.onboarding-top-left { top: 56px; left: 20px; }
+.onboarding-top { top: 100px; left: 50%; transform: translateX(-50%); }
+.onboarding-bottom-right { bottom: 260px; right: 20px; }
+.onboarding-bottom { bottom: 60px; left: 50%; transform: translateX(-50%); }
+
+.onboarding-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.onboarding-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.onboarding-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 6px;
+}
+
+.onboarding-desc {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.onboarding-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.onboarding-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.onboarding-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #334155;
+  transition: background 0.2s;
+}
+
+.onboarding-dot.active {
+  background: #10b981;
+  width: 16px;
+  border-radius: 3px;
+}
+
+.onboarding-btn {
+  background: #10b981;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
 }

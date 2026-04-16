@@ -8,8 +8,9 @@ import { Legend } from "@/components/Legend";
 import { StatusBadge } from "@/components/StatusBadge";
 import { DateSelector, type DatePreset } from "@/components/DateSelector";
 import { categorise, isDateAware, type CategorisedLayer } from "@/lib/layerCategories";
-import { syncLayers, ensureBasemapRadio } from "@/lib/mapLayers";
-import { ChevronLeft, Play, Copy } from "lucide-react";
+import { syncLayers, ensureBasemapRadio, geojsonBounds } from "@/lib/mapLayers";
+import { ChevronLeft, ChevronDown, ChevronUp, Play, Copy } from "lucide-react";
+import { OnboardingOverlay } from "@/components/OnboardingOverlay";
 
 export function Analysis() {
   const { slug = "" } = useParams();
@@ -22,6 +23,10 @@ export function Analysis() {
   const [resolving, setResolving] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [_preset, setPreset] = useState<DatePreset>("T1");
+  const [sheetCollapsed, setSheetCollapsed] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => !localStorage.getItem("para_onboarding_done"),
+  );
 
   useEffect(() => {
     API.getBet(slug).then((r) => {
@@ -68,6 +73,25 @@ export function Analysis() {
 
     map.on("load", () => {
       if (bet.region_geojson) {
+        const bounds = geojsonBounds(bet.region_geojson);
+        const pad = 1.5;
+        map.setMinZoom(4);
+
+        map.flyTo({ center: [-52, -4], zoom: 3, duration: 0 });
+
+        setTimeout(() => {
+          map.fitBounds(
+            [[bounds[0], bounds[1]], [bounds[2], bounds[3]]],
+            { padding: { top: 60, bottom: 280, left: 20, right: 20 }, duration: 2000, curve: 1.2 },
+          );
+          setTimeout(() => {
+            map.setMaxBounds([
+              [bounds[0] - pad, bounds[1] - pad],
+              [bounds[2] + pad, bounds[3] + pad],
+            ]);
+          }, 2200);
+        }, 300);
+
         map.addSource("para", { type: "geojson", data: { type: "Feature", properties: {}, geometry: bet.region_geojson } });
         map.addLayer({ id: "para-line", type: "line", source: "para", paint: { "line-color": "#10b981", "line-width": 2 } });
       }
@@ -78,7 +102,10 @@ export function Analysis() {
   }, [bet]);
 
   useEffect(() => {
-    if (mapRef.current && layers.length) syncLayers(mapRef.current, layers, selectedDate || undefined);
+    if (mapRef.current && layers.length) {
+      const bounds = bet?.region_geojson ? geojsonBounds(bet.region_geojson) : undefined;
+      syncLayers(mapRef.current, layers, selectedDate || undefined, bounds);
+    }
   }, [layers, selectedDate]);
 
   async function resolve() {
@@ -172,44 +199,61 @@ export function Analysis() {
         />
       )}
 
-      {layers.length > 0 && (
-        <LayerPanel
-          layers={layers}
-          onToggle={onToggle}
-          onOpacity={onOpacity}
-          onReorder={onReorder}
-        />
-      )}
-
       {activeLegend && <Legend category={activeLegend} />}
 
-      <div className="bottom-sheet" style={{ maxHeight: "55vh" }}>
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{bet.question}</div>
-          <div style={{ fontSize: 11, color: "#94a3b8" }}>
-            Seuil : {bet.threshold_value} {bet.threshold_unit} · Seuil NDVI : Δ &lt; -{bet.ndvi_drop_threshold}
-          </div>
-        </div>
-
-        {resolved ? (
-          <div style={{ padding: 14, background: bet.result_bool ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)", borderRadius: 10, marginBottom: 12 }}>
-            <div style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase" }}>Resultat</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: bet.result_bool ? "#34d399" : "#f87171" }}>
-              {bet.result_bool ? "YES" : "NO"}
-            </div>
-            <div style={{ fontSize: 13, color: "#cbd5e1", marginTop: 4 }}>
-              Surface deforestee : <strong>{Number(bet.resolved_value).toFixed(2)} km²</strong>
-            </div>
-          </div>
-        ) : (
-          <button className="btn btn-primary" onClick={resolve} disabled={resolving}
-            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
-            <Play size={16} /> {resolving ? "Resolution en cours..." : "Declencher l'oracle"}
-          </button>
+      <div className="bottom-dock">
+        {layers.length > 0 && (
+          <LayerPanel
+            layers={layers}
+            onToggle={onToggle}
+            onOpacity={onOpacity}
+            onReorder={onReorder}
+          />
         )}
+        <div className={`bottom-sheet ${sheetCollapsed ? "bottom-sheet--collapsed" : ""}`}>
+          <button className="bottom-sheet-handle" onClick={() => setSheetCollapsed((c) => !c)}>
+            <span className="bottom-sheet-grabber" />
+            {sheetCollapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
 
-        {result && <EvidencePanel r={result} />}
+          {!sheetCollapsed && (
+            <>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{bet.question}</div>
+                <div style={{ fontSize: 11, color: "#94a3b8" }}>
+                  Seuil : {bet.threshold_value} {bet.threshold_unit} · Seuil NDVI : Δ &lt; -{bet.ndvi_drop_threshold}
+                </div>
+              </div>
+
+              {resolved ? (
+                <div style={{ padding: 14, background: bet.result_bool ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)", borderRadius: 10, marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase" }}>Resultat</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: bet.result_bool ? "#34d399" : "#f87171" }}>
+                    {bet.result_bool ? "YES" : "NO"}
+                  </div>
+                  <div style={{ fontSize: 13, color: "#cbd5e1", marginTop: 4 }}>
+                    Surface deforestee : <strong>{Number(bet.resolved_value).toFixed(2)} km²</strong>
+                  </div>
+                </div>
+              ) : (
+                <button className="btn btn-primary" onClick={resolve} disabled={resolving}
+                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
+                  <Play size={16} /> {resolving ? "Resolution en cours..." : "Declencher l'oracle"}
+                </button>
+              )}
+
+              {result && <EvidencePanel r={result} />}
+            </>
+          )}
+        </div>
       </div>
+
+      {showOnboarding && (
+        <OnboardingOverlay onDismiss={() => {
+          setShowOnboarding(false);
+          localStorage.setItem("para_onboarding_done", "1");
+        }} />
+      )}
     </div>
   );
 }
