@@ -549,6 +549,108 @@ button { cursor: pointer; font-family: inherit; }
 .maplibregl-ctrl-bottom-right,
 .maplibregl-ctrl-bottom-left { display: none !important; }
 
+/* ══════════════ Crisis stats bar ══════════════ */
+.crisis-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "SF Mono", "JetBrains Mono", Consolas, monospace;
+}
+
+.cs-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  min-width: 36px;
+}
+
+.cs-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.cs-label {
+  font-size: 8px;
+  color: #64748b;
+  letter-spacing: 0.8px;
+  margin-top: 3px;
+}
+
+.cs-live {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: cs-pulse 2s ease infinite;
+}
+
+@keyframes cs-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+  70% { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+}
+
+.cs-sep {
+  width: 1px;
+  height: 20px;
+  background: #1e293b;
+}
+
+/* ══════════════ Category filter chips ══════════════ */
+.cat-filter {
+  position: fixed;
+  top: 78px;
+  left: 0;
+  right: 0;
+  z-index: 28;
+  display: flex;
+  gap: 6px;
+  padding: 8px 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: linear-gradient(180deg, rgba(10,15,26,0.8) 0%, transparent 100%);
+  pointer-events: none;
+}
+.cat-filter::-webkit-scrollbar { display: none; }
+
+.cat-chip {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  background: rgba(10, 15, 26, 0.9);
+  backdrop-filter: blur(8px);
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #cbd5e1;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cat-chip:hover { border-color: #334155; }
+.cat-chip.active { color: #fff; }
+
+.cat-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cat-chip-count {
+  font-size: 9px;
+  color: #64748b;
+  background: #1e293b;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
 /* ══════════════ Bet ticker banner ══════════════ */
 .ticker-wrap {
   position: fixed;

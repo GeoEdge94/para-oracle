@@ -6,8 +6,9 @@ import { API, type Bet } from "@/lib/api";
 import { BetSheet } from "@/components/BetSheet";
 import { BetCarousel } from "@/components/BetCarousel";
 import { BetTicker } from "@/components/BetTicker";
-import { StatusBadge } from "@/components/StatusBadge";
-import { geojsonBounds, buildInvertedMask } from "@/lib/mapLayers";
+import { CrisisStats } from "@/components/CrisisStats";
+import { CategoryFilter } from "@/components/CategoryFilter";
+import { geojsonBounds } from "@/lib/mapLayers";
 import { LogOut, Plus, X } from "lucide-react";
 
 const WORLD_CENTER: [number, number] = [10, 15];
@@ -31,6 +32,7 @@ export function MapPage() {
   const [selectedBet, setSelectedBet] = useState<Bet | null>(null);
   const [overlapMenu, setOverlapMenu] = useState<{ x: number; y: number; bets: Bet[] } | null>(null);
   const [showCarousel, setShowCarousel] = useState(false);
+  const [filterCat, setFilterCat] = useState<string | null>(null);
   const betsRef = useRef<Bet[]>([]);
 
   useEffect(() => {
@@ -129,6 +131,19 @@ export function MapPage() {
     return () => { map.remove(); mapRef.current = null; };
   }, []);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !bets.length) return;
+    for (const bet of bets) {
+      const show = filterCat === null || bet.category === filterCat;
+      for (const layerId of [`fill-${bet.slug}`, `border-${bet.slug}`]) {
+        if (map.getLayer(layerId)) {
+          map.setLayoutProperty(layerId, "visibility", show ? "visible" : "none");
+        }
+      }
+    }
+  }, [filterCat, bets]);
+
   function selectBet(bet: Bet) {
     setSelectedBet(bet);
     if (mapRef.current && bet.region_geojson) {
@@ -149,22 +164,26 @@ export function MapPage() {
     <div style={{ position: "relative", height: "100dvh" }}>
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 30,
-        padding: "10px 14px", background: "rgba(15,23,42,0.9)", backdropFilter: "blur(10px)",
+        padding: "8px 14px", background: "#0a0f1a",
         display: "flex", justifyContent: "space-between", alignItems: "center",
-        borderBottom: "1px solid #1e293b",
+        borderBottom: "1px solid #1e293b", gap: 10,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ fontWeight: 800, fontSize: 15 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <div style={{ fontWeight: 800, fontSize: 14, letterSpacing: "-0.5px" }}>
             Para<span style={{ color: "#10b981" }}>Oracle</span>
           </div>
-          <StatusBadge />
+          <span style={{ fontSize: 8, color: "#64748b", letterSpacing: "1px", fontFamily: "monospace" }}>/ GLOBAL</span>
         </div>
-        <button className="btn btn-ghost" onClick={logout} style={{ padding: "5px 9px", fontSize: 12 }}>
-          <LogOut size={14} style={{ verticalAlign: "middle" }} />
+        <div style={{ flex: 1, display: "flex", justifyContent: "center", overflow: "hidden" }}>
+          <CrisisStats bets={bets} />
+        </div>
+        <button onClick={logout} style={{ padding: "4px 8px", fontSize: 10, background: "transparent", border: "1px solid #1e293b", color: "#94a3b8", borderRadius: 4, cursor: "pointer", flexShrink: 0 }}>
+          <LogOut size={12} style={{ verticalAlign: "middle" }} />
         </button>
       </div>
 
       <BetTicker bets={bets} />
+      <CategoryFilter bets={bets} active={filterCat} onSelect={setFilterCat} />
 
       <div ref={mapContainer} style={{ position: "absolute", inset: 0 }} onClick={() => { setOverlapMenu(null); setShowCarousel(false); }} />
 
