@@ -7,10 +7,14 @@ GET /tiles/{layer_slug}/{z}/{x}/{y}.png?date=YYYY-MM-DD
   3. Cache miss → fetch upstream, save, return
   4. Cache hit → return from disk instantly
 
+POST /tiles/warmup — pre-fills cache for Pará region at useful zoom levels.
+
 Basemaps (OSM, ESRI, Carto) are NOT proxied — frontend loads them direct.
 """
+from __future__ import annotations
 import math
 import os
+import logging
 from pathlib import Path
 
 import httpx
@@ -156,3 +160,71 @@ def get_tile_jpg(slug: str, z: int, x: int, y: int,
 
     return Response(content=resp.content, media_type="image/jpeg",
                     headers={"Cache-Control": "public, max-age=86400"})
+
+
+# ── Warmup ────────────────────────────────────────────────────────────────
+
+# Pará bounding box (approximate)
+PARA_BBOX = (-59.0, -9.8, -46.0, 2.6)
+WARMUP_SLUGS = ["prodes-accumulated", "deter-amz"]
+WARMUP_ZOOMS = range(4, 9)  # z4..z8
+
+log = logging.getLogger("tiles.warmup")
+
+
+def _tiles_in_bbox(bbox: tuple[float, float, float, float], zoom: int):
+    """Yield (z, x, y) for every tile intersecting the given lng/lat bbox."""
+    west, south, east, north = bbox
+    n = 2 ** zoom
+
+    def lng_to_x(lng: float) -> int:
+        return int((lng + 180.0) / 360.0 * n)
+
+    def lat_to_y(lat: float) -> int:
+        lat_rad = math.radians(lat)
+        return int((1 - math.log(math.tan(lat_rad) + 1 / math.cos(lat_rad)) / math.pi) / 2 * n)
+
+    x_min = max(0, lng_to_x(west))
+    x_max = min(n - 1, lng_to_x(east))
+    y_min = max(0, lat_to_y(north))
+    y_max = min(n - 1, lat_to_y(south))
+
+    for x in range(x_min, x_max + 1):
+        for y in range(y_min, y_max + 1):
+            yield zoom, x, y
+
+
+@router.post("/warmup")
+def warmup_cache(db: Session = Depends(get_db)):
+    """
+    Pre-fetch verified deforestation tiles for Pará at zoom 4-8.
+    Runs in foreground (takes 1-5 min depending on upstream speed).
+    """
+    fetched, skipped, errors = 0, 0, 0
+    client = httpx.Client(timeout=UPSTREAM_TIMEOUT, follow_redirects=True)
+
+    for slug in WARMUP_SLUGS:
+        layer = db.query(Layer).filter(Layer.slug == slug).first()
+        if not layer or not layer.url:
+            continue
+
+        for z in WARMUP_ZOOMS:
+            for _, x, y in _tiles_in_bbox(PARA_BBOX, z):
+                cp = cache_path(slug, z, x, y, None)
+                if cp.exists():
+                    skipped += 1
+                    continue
+
+                url = resolve_upstream_url(layer.url, z, x, y, None)
+                try:
+                    resp = client.get(url)
+                    if resp.status_code == 200 and len(resp.content) > 50:
+                        cp.parent.mkdir(parents=True, exist_ok=True)
+                        cp.write_bytes(resp.content)
+                        fetched += 1
+                except Exception as e:
+                    log.warning("warmup %s z%d/%d/%d: %s", slug, z, x, y, e)
+                    errors += 1
+
+    client.close()
+    return {"fetched": fetched, "skipped_cached": skipped, "errors": errors}

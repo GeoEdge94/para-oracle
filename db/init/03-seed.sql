@@ -11,9 +11,9 @@ ON CONFLICT (email) DO NOTHING;
 INSERT INTO layers (slug, name, description, type, url, display_order, visible_default) VALUES
   -- Basemaps (radio exclusif)
   ('basemap-osm', 'OSM Base', 'OpenStreetMap raster tiles', 'xyz',
-   'https://tile.openstreetmap.org/{z}/{x}/{y}.png', 0, TRUE),
+   'https://tile.openstreetmap.org/{z}/{x}/{y}.png', 0, FALSE),
   ('basemap-satellite', 'Satellite (ESRI)', 'ESRI World Imagery', 'xyz',
-   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', 1, FALSE),
+   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', 1, TRUE),
   ('basemap-carto-dark', 'Carto Dark', 'Fond sombre minimal', 'xyz',
    'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', 2, FALSE),
 

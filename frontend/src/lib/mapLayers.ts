@@ -61,7 +61,10 @@ export function syncLayers(map: maplibregl.Map, layers: CategorisedLayer[], sele
             type: "raster",
             source: sourceId,
             layout: { visibility: l.visible ? "visible" : "none" },
-            paint: { "raster-opacity": l.opacity },
+            paint: {
+              "raster-opacity": l.opacity,
+              "raster-fade-duration": 0,
+            },
           },
           beforeId
         );

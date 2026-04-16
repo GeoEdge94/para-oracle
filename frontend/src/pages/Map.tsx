@@ -31,15 +31,16 @@ export function MapPage() {
         sources: {
           "__boot": {
             type: "raster",
-            tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+            tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
             tileSize: 256,
-            attribution: "© OpenStreetMap",
+            attribution: "ESRI World Imagery",
           },
         },
         layers: [{ id: "__boot", type: "raster", source: "__boot" }],
       },
       center: PARA_CENTER,
-      zoom: 5,
+      zoom: 6,
+      maxZoom: 14,
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
