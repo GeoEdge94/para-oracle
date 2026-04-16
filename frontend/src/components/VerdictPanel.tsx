@@ -1,4 +1,5 @@
 import type { Bet, DeforestationZone, UserBet } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 type Props = {
   bet: Bet;
@@ -7,6 +8,7 @@ type Props = {
 };
 
 export function VerdictPanel({ bet, zones, placements }: Props) {
+  const { t, locale, formatAmount } = useI18n();
   if (!zones.length || !bet.status.startsWith("RESOLVED")) return null;
 
   const totalSurface = zones.reduce((s, z) => s + Number(z.surface_km2), 0);
@@ -34,26 +36,26 @@ export function VerdictPanel({ bet, zones, placements }: Props) {
   return (
     <div style={{ marginTop: 4 }}>
       <div style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase", marginBottom: 8 }}>
-        Verdict oracle
+        {t("verdict.title")}
       </div>
 
       <div style={{ padding: 14, background: "rgba(15,23,42,0.8)", border: "1px solid #334155", borderRadius: 10, marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: exceeded ? "#10b981" : "#f87171" }} />
           <span style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0" }}>
-            Deforestation {exceeded ? "superieure" : "inferieure"} au seuil
+            {exceeded ? t("verdict.above") : t("verdict.below")}
           </span>
         </div>
 
         <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
           <div style={{ flex: 1, padding: 8, background: "#0f172a", borderRadius: 8, textAlign: "center" }}>
-            <div style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase" }}>Detecte</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: "#e2e8f0" }}>{totalSurface.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} km²</div>
+            <div style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase" }}>{t("verdict.detected")}</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#e2e8f0" }}>{totalSurface.toLocaleString(locale === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 1 })} km²</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", color: "#64748b", fontSize: 14 }}>vs</div>
           <div style={{ flex: 1, padding: 8, background: "#0f172a", borderRadius: 8, textAlign: "center" }}>
-            <div style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase" }}>Seuil</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: "#94a3b8" }}>{threshold.toLocaleString("fr-FR")} km²</div>
+            <div style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase" }}>{t("betsheet.threshold")}</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#94a3b8" }}>{threshold.toLocaleString(locale === "fr" ? "fr-FR" : "en-US")} km²</div>
           </div>
         </div>
 
@@ -63,12 +65,12 @@ export function VerdictPanel({ bet, zones, placements }: Props) {
           color: exceeded ? "#34d399" : "#f87171",
           border: `1px solid ${exceeded ? "#10b98133" : "#f8717133"}`,
         }}>
-          {exceeded ? "+" : ""}{delta.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} km² {exceeded ? "au-dessus" : "en-dessous"} du seuil → {bet.result_bool ? "YES" : "NO"}
+          {exceeded ? "+" : ""}{delta.toLocaleString(locale === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 1 })} km² {t(exceeded ? "verdict.above_short" : "verdict.below_short")} {t("verdict.of_threshold")} → {bet.result_bool ? "YES" : "NO"}
         </div>
       </div>
 
       <div style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase", marginBottom: 6 }}>
-        Sources geospatiales
+        {t("verdict.geo_sources")}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 12 }}>
         {sourceOrder.filter((s) => bySource[s]).map((s) => {
@@ -82,7 +84,7 @@ export function VerdictPanel({ bet, zones, placements }: Props) {
                 <div style={{ width: `${pct}%`, height: "100%", background: sourceColors[s], borderRadius: 2 }} />
               </div>
               <span style={{ color: "#e2e8f0", fontWeight: 600, minWidth: 65, textAlign: "right" }}>
-                {d.surface.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} km²
+                {d.surface.toLocaleString(locale === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 1 })} km²
               </span>
               <span style={{ color: "#64748b", minWidth: 20, textAlign: "right" }}>{d.count}</span>
             </div>
@@ -91,22 +93,22 @@ export function VerdictPanel({ bet, zones, placements }: Props) {
       </div>
 
       <div style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase", marginBottom: 6 }}>
-        Repartition des gains
+        {t("verdict.payout_split")}
       </div>
       <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
         <div style={{ flex: 1, padding: 8, background: "rgba(16,185,129,0.08)", borderRadius: 8, border: "1px solid #10b98122" }}>
-          <div style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase" }}>Pool gagnants</div>
+          <div style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase" }}>{t("verdict.pool_winners")}</div>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#34d399" }}>
-            {totalPayouts.toLocaleString("fr-FR", { maximumFractionDigits: 0 })} EUR
+            {formatAmount(totalPayouts)}
           </div>
-          <div style={{ fontSize: 10, color: "#64748b" }}>{winners.length} gagnants</div>
+          <div style={{ fontSize: 10, color: "#64748b" }}>{t("verdict.winners", { n: winners.length })}</div>
         </div>
         <div style={{ flex: 1, padding: 8, background: "rgba(248,113,113,0.08)", borderRadius: 8, border: "1px solid #f8717122" }}>
-          <div style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase" }}>Pool perdants</div>
+          <div style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase" }}>{t("verdict.pool_losers")}</div>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#f87171" }}>
-            {lostPool.toLocaleString("fr-FR", { maximumFractionDigits: 0 })} EUR
+            {formatAmount(lostPool)}
           </div>
-          <div style={{ fontSize: 10, color: "#64748b" }}>{losers.length} perdants</div>
+          <div style={{ fontSize: 10, color: "#64748b" }}>{t("verdict.losers", { n: losers.length })}</div>
         </div>
       </div>
 
@@ -122,9 +124,9 @@ export function VerdictPanel({ bet, zones, placements }: Props) {
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: won ? "#10b981" : "#f87171", flexShrink: 0 }} />
               <span style={{ color: "#94a3b8", flex: 1 }}>{p.user_pseudo}</span>
               <span style={{ color: won ? "#34d399" : "#94a3b8", fontWeight: 600 }}>{p.position}</span>
-              <span style={{ color: "#64748b" }}>{Number(p.amount)} EUR</span>
+              <span style={{ color: "#64748b" }}>{formatAmount(Number(p.amount))}</span>
               <span style={{ color: won ? "#10b981" : "#f87171", fontWeight: 700 }}>
-                {won ? `+${(Number(p.potential_payout) - Number(p.amount)).toLocaleString("fr-FR", { maximumFractionDigits: 0 })}` : `-${Number(p.amount)}`} EUR
+                {won ? `+${formatAmount(Number(p.potential_payout) - Number(p.amount))}` : `-${formatAmount(Number(p.amount))}`}
               </span>
             </div>
           );

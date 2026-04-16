@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { Bet } from "@/lib/api";
 import { TrendingUp, Flame, Droplets, Mountain, Thermometer, Snowflake, Building, Fish, ChevronRight, X } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 type Props = {
   bets: Bet[];
@@ -26,6 +27,7 @@ function statusLabel(s: string) {
 }
 
 export function BetBottomSheet({ bets, onSelect, onClose }: Props) {
+  const { t, locale } = useI18n();
   const [idx, setIdx] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
   const touchStart = useRef<{ x: number; time: number } | null>(null);
@@ -103,32 +105,32 @@ export function BetBottomSheet({ bets, onSelect, onClose }: Props) {
 
                     <div className="bbs-metrics">
                       <div className="bbs-metric">
-                        <div className="bbs-metric-label">Seuil</div>
+                        <div className="bbs-metric-label">{t("betsheet.threshold")}</div>
                         <div className="bbs-metric-value">
                           {b.threshold_value} <span style={{ fontSize: 10, color: "#64748b" }}>{b.threshold_unit}</span>
                         </div>
                       </div>
                       <div className="bbs-metric">
-                        <div className="bbs-metric-label">Indice</div>
+                        <div className="bbs-metric-label">{t("betsheet.index")}</div>
                         <div className="bbs-metric-value" style={{ fontFamily: "monospace" }}>{b.index_type}</div>
                       </div>
                       <div className="bbs-metric">
-                        <div className="bbs-metric-label">Source</div>
+                        <div className="bbs-metric-label">{t("betsheet.source")}</div>
                         <div className="bbs-metric-value" style={{ fontSize: 11 }}>{b.ground_truth_source}</div>
                       </div>
                     </div>
 
                     {resolved && b.resolved_value !== null && (
                       <div className="bbs-result" style={{ background: st.bg }}>
-                        <span style={{ fontSize: 9, color: "#94a3b8", textTransform: "uppercase" }}>Surface mesuree</span>
+                        <span style={{ fontSize: 9, color: "#94a3b8", textTransform: "uppercase" }}>{t("betsheet.surface_measured")}</span>
                         <span style={{ fontSize: 16, fontWeight: 700, color: st.color }}>
-                          {Number(b.resolved_value).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} {b.threshold_unit}
+                          {Number(b.resolved_value).toLocaleString(locale === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 1 })} {b.threshold_unit}
                         </span>
                       </div>
                     )}
 
                     <button className="bbs-cta" style={{ borderColor: `${meta.color}55`, color: meta.color }}>
-                      Voir sur la carte <ChevronRight size={14} />
+                      {t("betsheet.view_on_map")} <ChevronRight size={14} />
                     </button>
                   </div>
                 </div>

@@ -11,6 +11,7 @@ import { CategoryFilter } from "@/components/CategoryFilter";
 import { geojsonBounds } from "@/lib/mapLayers";
 import { LogOut, Plus } from "lucide-react";
 import { LocaleToggle } from "@/components/LocaleToggle";
+import { useI18n } from "@/lib/i18n";
 
 const WORLD_CENTER: [number, number] = [10, 15];
 
@@ -26,6 +27,7 @@ const CAT_COLORS: Record<string, string> = {
 };
 
 export function MapPage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -257,7 +259,7 @@ export function MapPage() {
       {overlapMenu && (
         <div className="overlap-menu" style={{ left: overlapMenu.x, top: overlapMenu.y }}>
           <div style={{ fontSize: 10, color: "#64748b", padding: "6px 10px 4px", textTransform: "uppercase" }}>
-            {overlapMenu.bets.length} paris sur cette zone
+            {t("map.bets_on_zone", { n: overlapMenu.bets.length })}
           </div>
           {overlapMenu.bets.map((b) => {
             const color = CAT_COLORS[b.category] || "#8b5cf6";

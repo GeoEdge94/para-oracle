@@ -1,4 +1,5 @@
 import type { BetMarketStats, UserBetSummary } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 type Props = {
   stats: BetMarketStats | null;
@@ -6,6 +7,7 @@ type Props = {
 };
 
 export function MarketStats({ stats, myBets }: Props) {
+  const { t, locale, formatAmount } = useI18n();
   if (!stats) return null;
 
   const yesPct = stats.yes_pct;
@@ -14,13 +16,13 @@ export function MarketStats({ stats, myBets }: Props) {
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase", marginBottom: 6 }}>
-        Marche
+        {t("market.title")}
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
-        <span style={{ color: "#94a3b8" }}>{stats.total_bets} paris</span>
+        <span style={{ color: "#94a3b8" }}>{t("market.bets_count", { n: stats.total_bets })}</span>
         <span style={{ color: "#e2e8f0", fontWeight: 600 }}>
-          {Number(stats.total_volume).toLocaleString("fr-FR")} EUR
+          {formatAmount(Number(stats.total_volume))}
         </span>
       </div>
 
@@ -30,27 +32,27 @@ export function MarketStats({ stats, myBets }: Props) {
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#64748b" }}>
-        <span>YES {yesPct}% · {stats.avg_odds_yes ? `cote ${stats.avg_odds_yes}` : ""}</span>
-        <span>NO {noPct.toFixed(0)}% · {stats.avg_odds_no ? `cote ${stats.avg_odds_no}` : ""}</span>
+        <span>YES {yesPct}% · {stats.avg_odds_yes ? t("market.odds", { v: stats.avg_odds_yes }) : ""}</span>
+        <span>NO {noPct.toFixed(0)}% · {stats.avg_odds_no ? t("market.odds", { v: stats.avg_odds_no }) : ""}</span>
       </div>
 
       {myBets && myBets.positions.length > 0 && (
         <div style={{ marginTop: 8, padding: 8, background: "#0f172a", borderRadius: 8 }}>
           <div style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase", marginBottom: 4 }}>
-            Votre position
+            {t("market.your_position")}
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
             <span style={{ color: "#e2e8f0" }}>
-              {Number(myBets.total_staked).toLocaleString("fr-FR")} EUR mise
+              {t("market.staked", { amount: formatAmount(Number(myBets.total_staked)) })}
             </span>
             <span style={{ color: "#10b981", fontWeight: 600 }}>
-              → {Number(myBets.potential_payout).toLocaleString("fr-FR")} EUR
+              → {formatAmount(Number(myBets.potential_payout))}
             </span>
           </div>
           <div style={{ display: "flex", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
             {myBets.positions.map((p) => (
               <span key={p.id} className={`badge ${p.status === "WON" ? "badge-yes" : p.status === "LOST" ? "badge-no" : "badge-open"}`}>
-                {p.position} · {Number(p.amount)} EUR
+                {p.position} · {formatAmount(Number(p.amount))}
                 {p.status !== "PENDING" && ` · ${p.status}`}
               </span>
             ))}

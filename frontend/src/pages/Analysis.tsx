@@ -307,7 +307,7 @@ export function Analysis() {
     setPreset(preset);
   }, []);
 
-  if (!bet) return <div style={{ padding: 20 }}>Chargement...</div>;
+  if (!bet) return <div style={{ padding: 20 }}>{t("common.loading")}</div>;
 
   const resolved = bet.status.startsWith("RESOLVED");
 

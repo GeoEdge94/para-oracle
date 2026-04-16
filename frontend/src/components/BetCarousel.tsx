@@ -1,20 +1,21 @@
 import type { Bet } from "@/lib/api";
 import { TrendingUp, Flame, Droplets, Mountain, Thermometer, Snowflake, Building, Fish, ChevronRight } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 type Props = {
   bets: Bet[];
   onSelect: (bet: Bet) => void;
 };
 
-const CAT_CONFIG: Record<string, { color: string; icon: typeof TrendingUp; label: string }> = {
-  deforestation: { color: "#10b981", icon: TrendingUp, label: "Deforestation" },
-  wildfire: { color: "#f59e0b", icon: Flame, label: "Feux" },
-  flood: { color: "#3b82f6", icon: Droplets, label: "Inondation" },
-  mining: { color: "#a855f7", icon: Mountain, label: "Mines" },
-  drought: { color: "#ef4444", icon: Thermometer, label: "Secheresse" },
-  glacier: { color: "#06b6d4", icon: Snowflake, label: "Glacier" },
-  urbanization: { color: "#f97316", icon: Building, label: "Urbanisation" },
-  water_quality: { color: "#0ea5e9", icon: Fish, label: "Qualite eau" },
+const CAT_CONFIG: Record<string, { color: string; icon: typeof TrendingUp; i18nKey: string }> = {
+  deforestation: { color: "#10b981", icon: TrendingUp, i18nKey: "categories.deforestation" },
+  wildfire: { color: "#f59e0b", icon: Flame, i18nKey: "categories.wildfire" },
+  flood: { color: "#3b82f6", icon: Droplets, i18nKey: "categories.flood" },
+  mining: { color: "#a855f7", icon: Mountain, i18nKey: "categories.mining" },
+  drought: { color: "#ef4444", icon: Thermometer, i18nKey: "categories.drought" },
+  glacier: { color: "#06b6d4", icon: Snowflake, i18nKey: "categories.deforestation" },
+  urbanization: { color: "#f97316", icon: Building, i18nKey: "categories.urban" },
+  water_quality: { color: "#0ea5e9", icon: Fish, i18nKey: "categories.water_quality" },
 };
 
 function yesPct(bet: Bet): number | null {
@@ -24,6 +25,7 @@ function yesPct(bet: Bet): number | null {
 }
 
 export function BetCarousel({ bets, onSelect }: Props) {
+  const { t, locale } = useI18n();
   if (!bets.length) return null;
 
   return (
@@ -55,13 +57,13 @@ export function BetCarousel({ bets, onSelect }: Props) {
                   {b.result_bool ? "YES" : "NO"}
                 </span>
                 <span className="bcc-surface">
-                  {Number(b.resolved_value).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} km²
+                  {Number(b.resolved_value).toLocaleString(locale === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 0 })} km²
                 </span>
               </div>
             ) : (
               <div className="bcc-open">
                 <span className="bcc-live-dot" />
-                <span>En cours</span>
+                <span>{t("categories.in_progress")}</span>
               </div>
             )}
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { UserBet } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 type Props = {
   placements: UserBet[];
@@ -8,6 +9,7 @@ type Props = {
 };
 
 export function BetTimeline({ placements, periodStart, periodEnd }: Props) {
+  const { t, locale, formatAmount } = useI18n();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   if (!placements.length) return null;
@@ -19,7 +21,7 @@ export function BetTimeline({ placements, periodStart, periodEnd }: Props) {
   const months: string[] = [];
   const d = new Date(periodStart);
   while (d.getTime() <= end) {
-    months.push(d.toLocaleDateString("fr-FR", { month: "short" }));
+    months.push(d.toLocaleDateString(locale === "fr" ? "fr-FR" : "en-US", { month: "short" }));
     d.setMonth(d.getMonth() + 1);
   }
 
@@ -32,15 +34,15 @@ export function BetTimeline({ placements, periodStart, periodEnd }: Props) {
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase", marginBottom: 8 }}>
-        Activite du marche
+        {t("market.activity")}
       </div>
 
       <div style={{ position: "relative", padding: "14px 0 4px" }}>
         <div style={{ height: 2, background: "#334155", borderRadius: 1 }} />
 
         {placements.map((p) => {
-          const t = new Date(p.placed_at).getTime();
-          const pct = Math.max(0, Math.min(100, ((t - start) / range) * 100));
+          const ts = new Date(p.placed_at).getTime();
+          const pct = Math.max(0, Math.min(100, ((ts - start) / range) * 100));
           const size = dotSize(Number(p.amount));
           const isYes = p.position === "YES";
           const color = p.status === "WON" ? "#10b981" : p.status === "LOST" ? "#f87171" : isYes ? "#34d399" : "#fb923c";
@@ -82,10 +84,10 @@ export function BetTimeline({ placements, periodStart, periodEnd }: Props) {
                   zIndex: 20,
                   color: "#e2e8f0",
                 }}>
-                  <strong>{p.user_pseudo}</strong> · {p.position} · {Number(p.amount)} EUR
+                  <strong>{p.user_pseudo}</strong> · {p.position} · {formatAmount(Number(p.amount))}
                   <br />
                   <span style={{ color: "#94a3b8" }}>
-                    cote {Number(p.odds)} · {new Date(p.placed_at).toLocaleDateString("fr-FR")}
+                    {t("market.odds", { v: Number(p.odds) })} · {new Date(p.placed_at).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-US")}
                     {p.status !== "PENDING" && (
                       <span style={{ color: p.status === "WON" ? "#10b981" : "#f87171", fontWeight: 600 }}>
                         {" "}· {p.status}

@@ -1,4 +1,5 @@
 import type { DeforestationZone } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 type Props = {
   zones: DeforestationZone[];
@@ -11,6 +12,7 @@ const SOURCE_COLORS: Record<string, { bg: string; border: string; text: string; 
 };
 
 export function EvidenceDetail({ zones }: Props) {
+  const { t, locale } = useI18n();
   if (!zones.length) return null;
 
   const totalSurface = zones.reduce((s, z) => s + Number(z.surface_km2), 0);
@@ -20,9 +22,9 @@ export function EvidenceDetail({ zones }: Props) {
     <div style={{ marginTop: 4 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <div>
-          <div style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase" }}>Zones detectees</div>
+          <div style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase" }}>{t("zones.detected")}</div>
           <div style={{ fontSize: 15, fontWeight: 700, color: "#e2e8f0" }}>
-            {zones.length} zones · {totalSurface.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} km²
+            {zones.length} zones · {totalSurface.toLocaleString(locale === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 1 })} km²
           </div>
         </div>
       </div>
@@ -57,14 +59,14 @@ export function EvidenceDetail({ zones }: Props) {
                 </div>
 
                 <div style={{ display: "flex", gap: 12, fontSize: 11, color: "#94a3b8", marginBottom: 6 }}>
-                  <span>{new Date(z.detected_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}</span>
+                  <span>{new Date(z.detected_at).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short", year: "numeric" })}</span>
                   <span style={{ color: "#e2e8f0", fontWeight: 600 }}>
-                    {Number(z.surface_km2).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} km²
+                    {Number(z.surface_km2).toLocaleString(locale === "fr" ? "fr-FR" : "en-US", { maximumFractionDigits: 1 })} km²
                   </span>
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10 }}>
-                  <span style={{ color: "#64748b" }}>Confiance</span>
+                  <span style={{ color: "#64748b" }}>{t("zones.confidence")}</span>
                   <div style={{ flex: 1, height: 4, background: "#334155", borderRadius: 2, overflow: "hidden" }}>
                     <div style={{
                       width: `${conf}%`, height: "100%", borderRadius: 2,
