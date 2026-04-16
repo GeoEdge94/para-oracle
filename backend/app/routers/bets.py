@@ -40,13 +40,13 @@ def _bet_to_read(bet: Bet) -> dict:
     return data
 
 
-@router.get("", response_model=List[BetSummary])
+@router.get("")
 def list_bets(db: Session = Depends(get_db), status: str | None = None):
-    """Liste les paris, filtrables par status."""
+    """Liste les paris avec geometrie, filtrables par status."""
     q = db.query(Bet).order_by(Bet.created_at.desc())
     if status:
         q = q.filter(Bet.status == status)
-    return q.all()
+    return [_bet_to_read(b) for b in q.all()]
 
 
 @router.get("/{slug}")

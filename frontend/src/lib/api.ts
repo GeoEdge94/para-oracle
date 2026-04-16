@@ -68,12 +68,63 @@ export type OracleResult = {
   };
 };
 
+export type UserBet = {
+  id: string;
+  user_id: string;
+  bet_id: string;
+  position: "YES" | "NO";
+  amount: number;
+  odds: number;
+  potential_payout: number;
+  status: "PENDING" | "WON" | "LOST";
+  placed_at: string;
+  settled_at: string | null;
+  user_pseudo: string | null;
+};
+
+export type BetMarketStats = {
+  total_volume: number;
+  total_bets: number;
+  yes_volume: number;
+  no_volume: number;
+  yes_count: number;
+  no_count: number;
+  yes_pct: number;
+  avg_odds_yes: number | null;
+  avg_odds_no: number | null;
+};
+
+export type UserBetSummary = {
+  total_staked: number;
+  potential_payout: number;
+  positions: UserBet[];
+};
+
+export type DeforestationZone = {
+  id: string;
+  analysis_id: string | null;
+  bet_id: string;
+  zone_name: string;
+  source: "PRODES" | "DETER" | "NDVI";
+  surface_km2: number;
+  confidence: number;
+  detected_at: string;
+  geojson: GeoJSON.Polygon;
+};
+
 export const API = {
   login: (email: string, password: string) =>
     api.post<{ token: string; email: string; pseudo: string }>("/auth/login", { email, password }),
-  listBets: () => api.get<BetSummary[]>("/bets"),
+  listBets: () => api.get<Bet[]>("/bets"),
   getBet: (slug: string) => api.get<Bet>(`/bets/${slug}`),
   listLayers: () => api.get<Layer[]>("/layers"),
   resolveBet: (slug: string) => api.post<OracleResult>(`/oracle/resolve/${slug}`),
   listAnalyses: (slug: string) => api.get(`/analyses?bet_slug=${slug}`),
+  listUserBets: (slug: string) => api.get<UserBet[]>(`/user-bets/by-bet/${slug}`),
+  marketStats: (slug: string) => api.get<BetMarketStats>(`/user-bets/by-bet/${slug}/stats`),
+  myBets: (slug: string) => {
+    const token = localStorage.getItem("para_token") || "";
+    return api.get<UserBetSummary>(`/user-bets/my/${slug}?token=${token}`);
+  },
+  listZones: (slug: string) => api.get<DeforestationZone[]>(`/zones/by-bet/${slug}`),
 };

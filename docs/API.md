@@ -301,3 +301,30 @@ Pipeline deterministe : memes entrees → memes sorties, rejouable.
 | `backend` | build `./backend` | `8000:8000` | `/health` |
 | `frontend` | build `./frontend` | `3000:3000` | HTTP 200 |
 | `qgis-server` | `camptocamp/qgis-server:3.34` | `8080:80` | profile `qgis` |
+
+---
+
+## Nouveaux endpoints (v0.2)
+
+### User Bets (`/user-bets`)
+| Methode | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/user-bets/by-bet/{slug}` | Tous les placements sur un bet (avec pseudo) |
+| GET | `/user-bets/by-bet/{slug}/stats` | Stats marche : volume, ratio YES/NO, cotes moyennes |
+| GET | `/user-bets/my/{slug}?token=` | Mes placements (total mise, payout, positions) |
+
+### Zones (`/zones`)
+| Methode | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/zones/by-bet/{slug}` | Zones deforestation detectees (polygones GeoJSON, source, confiance) |
+
+### Tables ajoutees
+- `user_bets` : placements mock avec position YES/NO, montant, cote, payout genere, status WON/LOST
+- `deforestation_zones` : zones detectees avec polygone GeoJSON, source PRODES/DETER/NDVI, confiance
+
+### Bets disponibles (3)
+| Slug | Region | Categorie | Status | Seuil |
+|------|--------|-----------|--------|-------|
+| `para-deforestation-2025-s1` | Para | deforestation | OPEN | 4200 km2 |
+| `rondonia-deforestation-2025-s1` | Rondonia | deforestation | OPEN | 3000 km2 |
+| `mato-grosso-fires-2025-s1` | Mato Grosso | wildfire | RESOLVED_NO | 1500 km2 |

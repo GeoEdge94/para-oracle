@@ -1,5 +1,8 @@
+import { useEffect, useState } from "react";
 import { X, ExternalLink } from "lucide-react";
-import type { Bet } from "@/lib/api";
+import type { Bet, BetMarketStats, UserBetSummary } from "@/lib/api";
+import { API } from "@/lib/api";
+import { MarketStats } from "./MarketStats";
 
 function statusBadge(status: string) {
   if (status === "RESOLVED_YES") return <span className="badge badge-yes">Resolu · YES</span>;
@@ -8,6 +11,14 @@ function statusBadge(status: string) {
 }
 
 export function BetSheet({ bet, onClose, onOpen }: { bet: Bet; onClose: () => void; onOpen: () => void }) {
+  const [stats, setStats] = useState<BetMarketStats | null>(null);
+  const [myBets, setMyBets] = useState<UserBetSummary | null>(null);
+
+  useEffect(() => {
+    API.marketStats(bet.slug).then((r) => setStats(r.data)).catch(() => {});
+    API.myBets(bet.slug).then((r) => setMyBets(r.data)).catch(() => {});
+  }, [bet.slug]);
+
   return (
     <div className="bottom-sheet">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
@@ -34,6 +45,8 @@ export function BetSheet({ bet, onClose, onOpen }: { bet: Bet; onClose: () => vo
           </div>
         </div>
       </div>
+
+      <MarketStats stats={stats} myBets={myBets} />
 
       {bet.resolved_value !== null && (
         <div style={{ padding: 10, background: "rgba(16,185,129,0.08)", borderRadius: 10, marginBottom: 12 }}>

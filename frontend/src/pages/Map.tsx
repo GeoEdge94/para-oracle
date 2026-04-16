@@ -1,25 +1,28 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useNavigate } from "react-router-dom";
 import { API, type Bet } from "@/lib/api";
 import { BetSheet } from "@/components/BetSheet";
-import { FAB } from "@/components/FAB";
-import { LayerPanel } from "@/components/LayerPanel";
+import { BetCarousel } from "@/components/BetCarousel";
 import { StatusBadge } from "@/components/StatusBadge";
-import { categorise, type CategorisedLayer } from "@/lib/layerCategories";
-import { syncLayers, ensureBasemapRadio, geojsonBounds } from "@/lib/mapLayers";
-import { Satellite, LogOut } from "lucide-react";
+import { geojsonBounds } from "@/lib/mapLayers";
+import { LogOut } from "lucide-react";
 
-const PARA_CENTER: [number, number] = [-52.5, -4.0];
+const BRAZIL_CENTER: [number, number] = [-55, -10];
+
+const CAT_COLORS: Record<string, string> = {
+  deforestation: "#10b981",
+  wildfire: "#f59e0b",
+  flood: "#3b82f6",
+};
 
 export function MapPage() {
   const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const [bet, setBet] = useState<Bet | null>(null);
-  const [layers, setLayers] = useState<CategorisedLayer[]>([]);
-  const [showSheet, setShowSheet] = useState(true);
+  const [bets, setBets] = useState<Bet[]>([]);
+  const [selectedBet, setSelectedBet] = useState<Bet | null>(null);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -38,39 +41,48 @@ export function MapPage() {
         },
         layers: [{ id: "__boot", type: "raster", source: "__boot" }],
       },
-      center: PARA_CENTER,
-      zoom: 6,
+      center: BRAZIL_CENTER,
+      zoom: 4,
       maxZoom: 14,
     });
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false, showZoom: false }), "top-right");
 
     map.on("load", async () => {
-      const [betRes, layersRes] = await Promise.all([
-        API.getBet("para-deforestation-2025-s1"),
-        API.listLayers(),
-      ]);
-      setBet(betRes.data);
-      setLayers(categorise(layersRes.data));
+      const res = await API.listBets();
+      const allBets = res.data;
+      setBets(allBets);
 
-      if (betRes.data.region_geojson) {
-        map.addSource("para-region", {
+      for (const bet of allBets) {
+        if (!bet.region_geojson) continue;
+        const color = CAT_COLORS[bet.category] || "#8b5cf6";
+        const srcId = `region-${bet.slug}`;
+
+        map.addSource(srcId, {
           type: "geojson",
-          data: { type: "Feature", properties: {}, geometry: betRes.data.region_geojson },
+          data: { type: "Feature", properties: { slug: bet.slug }, geometry: bet.region_geojson },
         });
+
         map.addLayer({
-          id: "para-fill",
+          id: `fill-${bet.slug}`,
           type: "fill",
-          source: "para-region",
-          paint: { "fill-color": "#10b981", "fill-opacity": 0.1 },
+          source: srcId,
+          paint: { "fill-color": color, "fill-opacity": 0.12 },
         });
+
         map.addLayer({
-          id: "para-border",
+          id: `border-${bet.slug}`,
           type: "line",
-          source: "para-region",
-          paint: { "line-color": "#10b981", "line-width": 2, "line-dasharray": [3, 2] },
+          source: srcId,
+          paint: { "line-color": color, "line-width": 2, "line-dasharray": [4, 2] },
         });
-        map.on("click", "para-fill", () => setShowSheet(true));
+
+        map.on("click", `fill-${bet.slug}`, () => {
+          setSelectedBet(bet);
+        });
+
+        map.on("mouseenter", `fill-${bet.slug}`, () => { map.getCanvas().style.cursor = "pointer"; });
+        map.on("mouseleave", `fill-${bet.slug}`, () => { map.getCanvas().style.cursor = ""; });
       }
     });
 
@@ -78,40 +90,16 @@ export function MapPage() {
     return () => { map.remove(); mapRef.current = null; };
   }, []);
 
-  // Reconciliate MapLibre state whenever `layers` change
-  useEffect(() => {
-    if (mapRef.current && layers.length) {
-      const bounds = bet?.region_geojson ? geojsonBounds(bet.region_geojson) : undefined;
-      syncLayers(mapRef.current, layers, undefined, bounds);
-    }
-  }, [layers]);
-
-  const onToggle = useCallback((slug: string) => {
-    setLayers((prev) => {
-      const flipped = prev.map((l) => (l.slug === slug ? { ...l, visible: !l.visible } : l));
-      return ensureBasemapRadio(flipped, slug);
-    });
-  }, []);
-  const onOpacity = useCallback((slug: string, opacity: number) => {
-    setLayers((prev) => prev.map((l) => (l.slug === slug ? { ...l, opacity } : l)));
-  }, []);
-  const onReorder = useCallback((slug: string, direction: "up" | "down") => {
-    setLayers((prev) => {
-      const sorted = [...prev].sort((a, b) => a.display_order - b.display_order);
-      const idx = sorted.findIndex((l) => l.slug === slug);
-      if (idx === -1) return prev;
-      const swap = direction === "up" ? idx - 1 : idx + 1;
-      if (swap < 0 || swap >= sorted.length) return prev;
-      // swap display_order values
-      const a = sorted[idx];
-      const b = sorted[swap];
-      return prev.map((l) => {
-        if (l.slug === a.slug) return { ...l, display_order: b.display_order };
-        if (l.slug === b.slug) return { ...l, display_order: a.display_order };
-        return l;
+  function selectBet(bet: Bet) {
+    setSelectedBet(bet);
+    if (mapRef.current && bet.region_geojson) {
+      const b = geojsonBounds(bet.region_geojson);
+      mapRef.current.fitBounds([[b[0], b[1]], [b[2], b[3]]], {
+        padding: { top: 60, bottom: 300, left: 20, right: 20 },
+        duration: 1200,
       });
-    });
-  }, []);
+    }
+  }
 
   function logout() {
     localStorage.removeItem("para_token");
@@ -139,22 +127,13 @@ export function MapPage() {
 
       <div ref={mapContainer} style={{ position: "absolute", inset: 0 }} />
 
-      {layers.length > 0 && (
-        <LayerPanel
-          layers={layers}
-          onToggle={onToggle}
-          onOpacity={onOpacity}
-          onReorder={onReorder}
-        />
-      )}
+      {!selectedBet && <BetCarousel bets={bets} onSelect={selectBet} />}
 
-      {!showSheet && <FAB icon={<Satellite size={20} />} onClick={() => setShowSheet(true)} />}
-
-      {showSheet && bet && (
+      {selectedBet && (
         <BetSheet
-          bet={bet}
-          onClose={() => setShowSheet(false)}
-          onOpen={() => navigate(`/analysis/${bet.slug}`)}
+          bet={selectedBet}
+          onClose={() => setSelectedBet(null)}
+          onOpen={() => navigate(`/analysis/${selectedBet.slug}`)}
         />
       )}
     </div>

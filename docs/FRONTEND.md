@@ -258,3 +258,32 @@ Changement = restart container frontend (pas de HMR sur les env vars).
 | zustand | 5.0.1 | State management (installe, non utilise) |
 | typescript | 5.6.3 | Type checking |
 | vite | 5.4.10 | Build + dev server + HMR |
+
+---
+
+## Nouveaux composants (v0.2)
+
+### Page Map (/) — Multi-bet
+- **BetCarousel** : carousel horizontal style Polymarket avec icone categorie, region, seuil, resultat/statut
+- Chaque bet affiche sa zone coloree sur la carte (vert deforestation, ambre wildfire, bleu flood)
+- Click -> fly-to anime + BetSheet
+
+### Page Analysis — Preuves et verdict
+- **MarketStats** : volume total, barre YES/NO, cotes moyennes, position utilisateur
+- **BetTimeline** : dots chronologiques sur barre horizontale (taille par montant, couleur par position)
+- **EvidenceDetail** : timeline verticale des zones detectees (PRODES jaune, DETER orange, NDVI vert)
+- **VerdictPanel** : surface detectee vs seuil, sources geospatiales, repartition gains (gagnants/perdants)
+- **OnboardingOverlay** : tutorial 5 etapes au premier lancement (localStorage)
+
+### Couches cartographiques
+- Masque region (polygone inverse, opacity 88% hors zone)
+- Zones deforestation (glow + fill + contour, couleur par source)
+- Camera verrouillee dans la zone (maxBounds + minZoom)
+- Animation fly-to au chargement (depart zoom 3, arrivee fitBounds 2s)
+- Bounds sur sources raster (limite les requetes de tiles au bbox region)
+- Toggle direct MapLibre (setLayoutProperty sans passer par React)
+
+### Bottom sheet collapsible
+- Handle avec label "Reduire" / "Afficher details"
+- Collapsed : pastille centree compacte
+- Expanded : scroll complet avec toutes les sections

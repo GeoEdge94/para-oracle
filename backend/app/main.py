@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.routers import auth, bets, layers, oracle, analyses, tiles
+from app.routers import auth, bets, layers, oracle, analyses, tiles, user_bets, zones
 
 TAGS_METADATA = [
     {"name": "auth", "description": "Authentification mock (MVP). Accepte tout email/password, retourne un token."},
@@ -14,6 +14,8 @@ TAGS_METADATA = [
     {"name": "oracle", "description": "Resolution deterministe des paris via pipeline Sentinel-2 NDVI. POST resolve + GET status."},
     {"name": "analyses", "description": "Historique des resolutions avec preuves SHA-256, surfaces et CID IPFS."},
     {"name": "tiles", "description": "Proxy de tuiles avec cache disque. Pre-warm PRODES/DETER sur Para z4-8."},
+    {"name": "user_bets", "description": "Placements utilisateurs sur les paris (mock data)."},
+    {"name": "zones", "description": "Zones de deforestation detectees (preuves spatialisees)."},
 ]
 
 app = FastAPI(
@@ -50,6 +52,8 @@ app.include_router(layers.router, prefix="/layers", tags=["layers"])
 app.include_router(oracle.router, prefix="/oracle", tags=["oracle"])
 app.include_router(analyses.router, prefix="/analyses", tags=["analyses"])
 app.include_router(tiles.router, prefix="/tiles", tags=["tiles"])
+app.include_router(user_bets.router, prefix="/user-bets", tags=["user_bets"])
+app.include_router(zones.router, prefix="/zones", tags=["zones"])
 
 
 @app.get("/health")

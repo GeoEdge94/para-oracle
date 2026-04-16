@@ -2,15 +2,20 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { API, type Bet, type OracleResult } from "@/lib/api";
+import { API, type Bet, type OracleResult, type UserBet, type BetMarketStats, type UserBetSummary, type DeforestationZone } from "@/lib/api";
 import { LayerPanel } from "@/components/LayerPanel";
 import { Legend } from "@/components/Legend";
 import { StatusBadge } from "@/components/StatusBadge";
 import { DateSelector, type DatePreset } from "@/components/DateSelector";
 import { categorise, isDateAware, type CategorisedLayer } from "@/lib/layerCategories";
-import { syncLayers, ensureBasemapRadio, geojsonBounds } from "@/lib/mapLayers";
+import { syncLayers, ensureBasemapRadio, geojsonBounds, installRegionMask } from "@/lib/mapLayers";
 import { ChevronLeft, ChevronDown, ChevronUp, Play, Copy } from "lucide-react";
 import { OnboardingOverlay } from "@/components/OnboardingOverlay";
+import { MarketStats } from "@/components/MarketStats";
+import { BetTimeline } from "@/components/BetTimeline";
+import { EvidenceDetail } from "@/components/EvidenceDetail";
+import { VerdictPanel } from "@/components/VerdictPanel";
+import { MapPin } from "lucide-react";
 
 export function Analysis() {
   const { slug = "" } = useParams();
@@ -27,6 +32,11 @@ export function Analysis() {
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem("para_onboarding_done"),
   );
+  const [placements, setPlacements] = useState<UserBet[]>([]);
+  const [marketStats, setMarketStats] = useState<BetMarketStats | null>(null);
+  const [myBets, setMyBets] = useState<UserBetSummary | null>(null);
+  const [zones, setZones] = useState<DeforestationZone[]>([]);
+  const [showDetail, setShowDetail] = useState(false);
 
   useEffect(() => {
     API.getBet(slug).then((r) => {
@@ -47,6 +57,10 @@ export function Analysis() {
       );
       setLayers(withBase);
     });
+    API.listUserBets(slug).then((r) => setPlacements(r.data)).catch(() => {});
+    API.marketStats(slug).then((r) => setMarketStats(r.data)).catch(() => {});
+    API.myBets(slug).then((r) => setMyBets(r.data)).catch(() => {});
+    API.listZones(slug).then((r) => setZones(r.data)).catch(() => {});
   }, [slug]);
 
   useEffect(() => {
@@ -92,6 +106,8 @@ export function Analysis() {
           }, 2200);
         }, 300);
 
+        installRegionMask(map, bet.region_geojson);
+
         map.addSource("para", { type: "geojson", data: { type: "Feature", properties: {}, geometry: bet.region_geojson } });
         map.addLayer({ id: "para-line", type: "line", source: "para", paint: { "line-color": "#10b981", "line-width": 2 } });
       }
@@ -121,9 +137,27 @@ export function Analysis() {
   }
 
   const onToggle = useCallback((slug: string) => {
-    setLayers((prev) => ensureBasemapRadio(prev.map((l) => (l.slug === slug ? { ...l, visible: !l.visible } : l)), slug));
+    const map = mapRef.current;
+    setLayers((prev) => {
+      const flipped = prev.map((l) => (l.slug === slug ? { ...l, visible: !l.visible } : l));
+      const next = ensureBasemapRadio(flipped, slug);
+      if (map) {
+        for (const l of next) {
+          if (map.getLayer(l.slug)) {
+            map.setLayoutProperty(l.slug, "visibility", l.visible ? "visible" : "none");
+          }
+        }
+      }
+      return next;
+    });
   }, []);
   const onOpacity = useCallback((slug: string, opacity: number) => {
+    const map = mapRef.current;
+    if (map?.getLayer(slug)) {
+      const type = map.getLayer(slug)?.type;
+      const prop = type === "raster" ? "raster-opacity" : type === "fill" ? "fill-opacity" : null;
+      if (prop) map.setPaintProperty(slug, prop, opacity);
+    }
     setLayers((prev) => prev.map((l) => (l.slug === slug ? { ...l, opacity } : l)));
   }, []);
   const onReorder = useCallback((slug: string, direction: "up" | "down") => {
@@ -142,6 +176,78 @@ export function Analysis() {
       });
     });
   }, []);
+
+  const SOURCE_COLORS: Record<string, string> = { PRODES: "#fbbf24", DETER: "#fb923c", NDVI: "#10b981" };
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !zones.length) return;
+
+    const ZONE_LAYERS = [
+      "deforestation-zones-glow",
+      "deforestation-zones-fill",
+      "deforestation-zones-line",
+      "deforestation-zones-labels",
+    ];
+    const colorExpr: maplibregl.ExpressionSpecification = [
+      "match", ["get", "source"],
+      "PRODES", "#fbbf24",
+      "DETER", "#fb923c",
+      "#10b981",
+    ];
+
+    if (showDetail) {
+      const fc: GeoJSON.FeatureCollection = {
+        type: "FeatureCollection",
+        features: zones.map((z) => ({
+          type: "Feature" as const,
+          properties: { source: z.source, name: z.zone_name, surface: Number(z.surface_km2), confidence: Number(z.confidence) },
+          geometry: z.geojson,
+        })),
+      };
+
+      if (!map.getSource("deforestation-zones")) {
+        map.addSource("deforestation-zones", { type: "geojson", data: fc });
+
+        map.addLayer({
+          id: "deforestation-zones-glow", type: "line", source: "deforestation-zones",
+          paint: { "line-color": colorExpr, "line-width": 8, "line-opacity": 0.15, "line-blur": 6 },
+        }, "para-line");
+
+        map.addLayer({
+          id: "deforestation-zones-fill", type: "fill", source: "deforestation-zones",
+          paint: {
+            "fill-color": colorExpr,
+            "fill-opacity": ["interpolate", ["linear"], ["get", "confidence"], 0.7, 0.08, 1, 0.25],
+          },
+        }, "para-line");
+
+        map.addLayer({
+          id: "deforestation-zones-line", type: "line", source: "deforestation-zones",
+          paint: { "line-color": colorExpr, "line-width": 2.5, "line-opacity": 0.9 },
+        }, "para-line");
+
+        map.addLayer({
+          id: "deforestation-zones-labels", type: "circle", source: "deforestation-zones",
+          paint: {
+            "circle-radius": 4,
+            "circle-color": colorExpr,
+            "circle-stroke-width": 2,
+            "circle-stroke-color": "#0f172a",
+          },
+        });
+      } else {
+        (map.getSource("deforestation-zones") as maplibregl.GeoJSONSource).setData(fc);
+        for (const id of ZONE_LAYERS) {
+          if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", "visible");
+        }
+      }
+    } else {
+      for (const id of ZONE_LAYERS) {
+        if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", "none");
+      }
+    }
+  }, [showDetail, zones]);
 
   // Pick the legend to show based on which NDVI layer is active & top-most
   const activeLegend = useMemo((): "ndvi" | "delta" | "mask" | null => {
@@ -199,20 +305,28 @@ export function Analysis() {
         />
       )}
 
-      {activeLegend && <Legend category={activeLegend} />}
+      {activeLegend && (
+        <div style={{ position: "fixed", left: 12, bottom: sheetCollapsed ? 60 : "52%", zIndex: 20, transition: "bottom 0.25s ease" }}>
+          <Legend category={activeLegend} />
+        </div>
+      )}
+
+      {layers.length > 0 && (
+        <LayerPanel
+          layers={layers}
+          onToggle={onToggle}
+          onOpacity={onOpacity}
+          onReorder={onReorder}
+        />
+      )}
 
       <div className="bottom-dock">
-        {layers.length > 0 && (
-          <LayerPanel
-            layers={layers}
-            onToggle={onToggle}
-            onOpacity={onOpacity}
-            onReorder={onReorder}
-          />
-        )}
         <div className={`bottom-sheet ${sheetCollapsed ? "bottom-sheet--collapsed" : ""}`}>
           <button className="bottom-sheet-handle" onClick={() => setSheetCollapsed((c) => !c)}>
             <span className="bottom-sheet-grabber" />
+            <span style={{ fontSize: 10, color: "#64748b" }}>
+              {sheetCollapsed ? "Afficher details" : "Reduire"}
+            </span>
             {sheetCollapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
 
@@ -242,7 +356,48 @@ export function Analysis() {
                 </button>
               )}
 
+              <MarketStats stats={marketStats} myBets={myBets} />
+              <BetTimeline placements={placements} periodStart={bet.period_start} periodEnd={bet.period_end} />
               {result && <EvidencePanel r={result} />}
+
+              {zones.length > 0 && (
+                <button
+                  onClick={() => {
+                    const next = !showDetail;
+                    setShowDetail(next);
+                    const map = mapRef.current;
+                    if (!map) return;
+                    const evidenceSlugs = ["prodes-accumulated", "deter-amz", "delta-ndvi", "mask-deforestation"];
+                    setLayers((prev) => {
+                      const updated = prev.map((l) =>
+                        evidenceSlugs.includes(l.slug)
+                          ? { ...l, visible: next, opacity: next ? (l.category === "verified" ? 0.65 : 0.75) : l.opacity }
+                          : l,
+                      );
+                      for (const l of updated) {
+                        if (evidenceSlugs.includes(l.slug) && map.getLayer(l.slug)) {
+                          map.setLayoutProperty(l.slug, "visibility", l.visible ? "visible" : "none");
+                          const prop = map.getLayer(l.slug)?.type === "raster" ? "raster-opacity" : null;
+                          if (prop) map.setPaintProperty(l.slug, prop, l.opacity);
+                        }
+                      }
+                      return updated;
+                    });
+                  }}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    padding: "10px 0", marginBottom: 8, background: showDetail ? "rgba(251,191,36,0.12)" : "#0f172a",
+                    border: `1px solid ${showDetail ? "#fbbf2444" : "#334155"}`, borderRadius: 10,
+                    color: showDetail ? "#fbbf24" : "#94a3b8", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                  }}
+                >
+                  <MapPin size={14} />
+                  {showDetail ? "Masquer les preuves" : `Voir les ${zones.length} zones detectees`}
+                </button>
+              )}
+
+              {showDetail && <EvidenceDetail zones={zones} />}
+              {showDetail && <VerdictPanel bet={bet} zones={zones} placements={placements} />}
             </>
           )}
         </div>

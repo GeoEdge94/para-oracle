@@ -95,12 +95,24 @@ def resolve_bet(bet_slug: str, db: Session = Depends(get_db)):
     db.add(analysis)
 
     # Update bet
+    now = datetime.now(timezone.utc)
     if result["success"]:
         outcome_yes = result["surface_deforestee_km2"] > float(bet.threshold_value)
         bet.status = "RESOLVED_YES" if outcome_yes else "RESOLVED_NO"
         bet.result_bool = outcome_yes
         bet.resolved_value = result["surface_deforestee_km2"]
-        bet.resolved_at = datetime.now(timezone.utc)
+        bet.resolved_at = now
+
+        # Settle user bets
+        db.execute(
+            text("""
+                UPDATE user_bets
+                SET status = CASE WHEN position = :winning THEN 'WON' ELSE 'LOST' END,
+                    settled_at = :now
+                WHERE bet_id = :bet_id AND status = 'PENDING'
+            """),
+            {"winning": "YES" if outcome_yes else "NO", "now": now, "bet_id": bet.id},
+        )
     else:
         bet.status = "ERROR"
 

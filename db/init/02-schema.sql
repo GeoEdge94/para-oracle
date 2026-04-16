@@ -102,3 +102,39 @@ CREATE TABLE IF NOT EXISTS raster_snapshots (
 );
 
 CREATE INDEX idx_raster_snapshots_analysis ON raster_snapshots(analysis_id);
+
+-- ─── User Bets (placements mock) ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS user_bets (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id          UUID NOT NULL REFERENCES users_mock(id) ON DELETE CASCADE,
+    bet_id           UUID NOT NULL REFERENCES bets(id) ON DELETE CASCADE,
+    position         VARCHAR(3) NOT NULL CHECK (position IN ('YES', 'NO')),
+    amount           NUMERIC(10,2) NOT NULL CHECK (amount > 0),
+    odds             NUMERIC(5,3) NOT NULL CHECK (odds > 1),
+    potential_payout NUMERIC(10,2) GENERATED ALWAYS AS (amount * odds) STORED,
+    status           VARCHAR(10) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'WON', 'LOST')),
+    placed_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    settled_at       TIMESTAMPTZ,
+    created_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_user_bets_bet_id ON user_bets(bet_id);
+CREATE INDEX idx_user_bets_user_id ON user_bets(user_id);
+CREATE INDEX idx_user_bets_placed_at ON user_bets(placed_at);
+
+-- ─── Deforestation zones (preuves spatialisees) ────────────────────────────
+CREATE TABLE IF NOT EXISTS deforestation_zones (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    analysis_id  UUID REFERENCES analyses(id) ON DELETE CASCADE,
+    bet_id       UUID NOT NULL REFERENCES bets(id) ON DELETE CASCADE,
+    zone_name    VARCHAR(100) NOT NULL,
+    source       VARCHAR(20) NOT NULL CHECK (source IN ('PRODES', 'DETER', 'NDVI')),
+    surface_km2  NUMERIC NOT NULL,
+    confidence   NUMERIC NOT NULL CHECK (confidence BETWEEN 0 AND 1),
+    detected_at  DATE NOT NULL,
+    geojson      JSONB NOT NULL,
+    created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_deforestation_zones_bet ON deforestation_zones(bet_id);
+CREATE INDEX idx_deforestation_zones_detected ON deforestation_zones(detected_at);

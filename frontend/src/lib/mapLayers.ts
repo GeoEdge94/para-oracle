@@ -63,7 +63,7 @@ export function syncLayers(
           }
           map.addSource(sourceId, sourceOpts);
         }
-        const beforeId = firstExistingLayer(map, ["para-fill", "para-border", "para-line"]);
+        const beforeId = firstExistingLayer(map, ["para-outside-fill", "para-fill", "para-border", "para-line"]);
         map.addLayer(
           {
             id: layerId,
@@ -129,6 +129,59 @@ export function geojsonBounds(
     }
   }
   return [minLng, minLat, maxLng, maxLat];
+}
+
+/**
+ * Build an inverted polygon (world bounds with region as a hole).
+ * Analysis layers show inside the hole; the mask hides them outside.
+ */
+export function buildInvertedMask(
+  geom: GeoJSON.Polygon | GeoJSON.MultiPolygon,
+): GeoJSON.Feature<GeoJSON.Polygon> {
+  const world: GeoJSON.Position[] = [
+    [-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90],
+  ];
+  const hole: GeoJSON.Position[] =
+    geom.type === "MultiPolygon"
+      ? geom.coordinates[0][0]
+      : geom.coordinates[0];
+
+  return {
+    type: "Feature",
+    properties: {},
+    geometry: { type: "Polygon", coordinates: [world, hole] },
+  };
+}
+
+/**
+ * Add the outside-mask + region border layers to a map instance.
+ * Call once after map "load". The mask dims everything outside the polygon
+ * so only the basemap shows, while analysis layers stay visible inside.
+ */
+export function installRegionMask(
+  map: maplibregl.Map,
+  geom: GeoJSON.Polygon | GeoJSON.MultiPolygon,
+) {
+  const mask = buildInvertedMask(geom);
+
+  if (!map.getSource("para-outside-mask")) {
+    map.addSource("para-outside-mask", {
+      type: "geojson",
+      data: mask,
+    });
+  }
+
+  if (!map.getLayer("para-outside-fill")) {
+    map.addLayer({
+      id: "para-outside-fill",
+      type: "fill",
+      source: "para-outside-mask",
+      paint: {
+        "fill-color": "#0a1628",
+        "fill-opacity": 0.88,
+      },
+    });
+  }
 }
 
 export function ensureBasemapRadio(layers: CategorisedLayer[], newlyToggledSlug: string | null): CategorisedLayer[] {
