@@ -549,6 +549,53 @@ button { cursor: pointer; font-family: inherit; }
 .maplibregl-ctrl-bottom-right,
 .maplibregl-ctrl-bottom-left { display: none !important; }
 
+/* ══════════════ Bet ticker banner ══════════════ */
+.ticker-wrap {
+  position: fixed;
+  top: 44px;
+  left: 0;
+  right: 0;
+  z-index: 29;
+  height: 28px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid #1e293b;
+  overflow: hidden;
+}
+
+.ticker-track {
+  display: flex;
+  gap: 24px;
+  white-space: nowrap;
+  animation: ticker-scroll 25s linear infinite;
+  padding-top: 6px;
+}
+
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.ticker-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ticker-name { color: #cbd5e1; font-weight: 600; }
+.ticker-sep { color: #334155; }
+.ticker-val { color: #64748b; }
+
 /* ══════════════ Overlap selection menu ══════════════ */
 .overlap-menu {
   position: absolute;

@@ -5,9 +5,10 @@ import { useNavigate } from "react-router-dom";
 import { API, type Bet } from "@/lib/api";
 import { BetSheet } from "@/components/BetSheet";
 import { BetCarousel } from "@/components/BetCarousel";
+import { BetTicker } from "@/components/BetTicker";
 import { StatusBadge } from "@/components/StatusBadge";
 import { geojsonBounds } from "@/lib/mapLayers";
-import { LogOut } from "lucide-react";
+import { LogOut, Plus, X } from "lucide-react";
 
 const WORLD_CENTER: [number, number] = [10, 15];
 
@@ -29,6 +30,7 @@ export function MapPage() {
   const [bets, setBets] = useState<Bet[]>([]);
   const [selectedBet, setSelectedBet] = useState<Bet | null>(null);
   const [overlapMenu, setOverlapMenu] = useState<{ x: number; y: number; bets: Bet[] } | null>(null);
+  const [showCarousel, setShowCarousel] = useState(false);
   const betsRef = useRef<Bet[]>([]);
 
   useEffect(() => {
@@ -162,7 +164,9 @@ export function MapPage() {
         </button>
       </div>
 
-      <div ref={mapContainer} style={{ position: "absolute", inset: 0 }} onClick={() => setOverlapMenu(null)} />
+      <BetTicker bets={bets} />
+
+      <div ref={mapContainer} style={{ position: "absolute", inset: 0 }} onClick={() => { setOverlapMenu(null); setShowCarousel(false); }} />
 
       {overlapMenu && (
         <div className="overlap-menu" style={{ left: overlapMenu.x, top: overlapMenu.y }}>
@@ -188,7 +192,28 @@ export function MapPage() {
         </div>
       )}
 
-      {!selectedBet && !overlapMenu && <BetCarousel bets={bets} onSelect={selectBet} />}
+      {!selectedBet && !showCarousel && (
+        <button
+          className="fab"
+          style={{ bottom: 24, left: 16 }}
+          onClick={() => setShowCarousel(true)}
+        >
+          <Plus size={22} />
+        </button>
+      )}
+
+      {showCarousel && !selectedBet && (
+        <>
+          <button
+            className="fab"
+            style={{ bottom: 100, left: 16, width: 38, height: 38, background: "#334155" }}
+            onClick={() => setShowCarousel(false)}
+          >
+            <X size={16} />
+          </button>
+          <BetCarousel bets={bets} onSelect={(b) => { setShowCarousel(false); selectBet(b); }} />
+        </>
+      )}
 
       {selectedBet && (
         <BetSheet

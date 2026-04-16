@@ -12,7 +12,7 @@ INSERT INTO bets (slug, question, description, category, region_name, region_geo
  'La deforestation dans le Gran Chaco paraguayen depassera-t-elle 15 000 ha en 2026 ?',
  'Conversion foret seche en paturages bovins. Deuxieme plus grande foret d''Amerique du Sud.',
  'deforestation', 'Gran Chaco, Paraguay',
- ST_Multi(ST_GeomFromText('POLYGON((-60.5 -23.5,-59.5 -23.5,-59.0 -22.5,-59.0 -21.5,-59.5 -20.5,-60.5 -20.5,-61.0 -21.5,-61.0 -22.5,-60.5 -23.5))',4326)),
+ ST_Multi(ST_GeomFromText('POLYGON((-58.0 -20.49,-58.0 -25.0,-60.029 -24.033,-60.847 -23.881,-62.0 -22.857,-62.0 -20.026,-61.786 -19.634,-59.115 -19.357,-58.183 -19.868,-58.0 -20.49))',4326)),
  '2026-01-01','2026-12-31',15000,'ha','deforestation_chaco_ndvi',0.3,'OPEN',
  'NDVI','decrease',0.3,'HANSEN',ARRAY['hansen-tree-loss']
 ),
@@ -28,7 +28,7 @@ INSERT INTO bets (slug, question, description, category, region_name, region_geo
  'La deforestation dans le Caqueta colombien depassera-t-elle 8 000 ha en 2026 ?',
  'Arc de deforestation post-accords FARC. Elevage bovin et accaparement de terres.',
  'deforestation', 'Caqueta, Colombia',
- ST_Multi(ST_GeomFromText('POLYGON((-76.2 1.0,-75.5 1.0,-74.8 1.5,-74.8 2.2,-75.5 2.5,-76.2 2.2,-76.5 1.5,-76.2 1.0))',4326)),
+ ST_Multi(ST_GeomFromText('POLYGON((-76.5 0.5,-76.5 2.5,-74.5 2.5,-74.5 0.5,-76.5 0.5))',4326)),
  '2026-01-01','2026-12-31',8000,'ha','deforestation_caqueta_ndvi',0.3,'OPEN',
  'NDVI','decrease',0.3,'HANSEN',ARRAY['hansen-tree-loss']
 )
@@ -84,7 +84,7 @@ INSERT INTO bets (slug, question, description, category, region_name, region_geo
  'La deforestation dans le Mai-Ndombe (RDC) fera-t-elle chuter le NDVI moyen sous 0.60 au S2 2026 ?',
  'Front de deforestation agriculture sur brulis + charbon de bois. Projet REDD+ defaillant.',
  'deforestation', 'Mai-Ndombe, DRC',
- ST_Multi(ST_GeomFromText('POLYGON((17.5 -3.5,18.5 -3.5,19.5 -2.5,19.5 -1.5,18.5 -1.0,17.5 -1.5,17.0 -2.5,17.5 -3.5))',4326)),
+ ST_Multi(ST_GeomFromText('POLYGON((17.524 -0.744,17.612 -0.5,20.0 -0.5,20.0 -4.0,17.0 -4.0,17.0 -1.127,17.524 -0.744))',4326)),
  '2026-07-01','2026-12-31',60,'percent','deforestation_congo_ndvi',0.3,'OPEN',
  'NDVI','decrease',0.3,'HANSEN',ARRAY['hansen-tree-loss']
 ),
@@ -92,7 +92,7 @@ INSERT INTO bets (slug, question, description, category, region_name, region_geo
  'La deforestation dans le corridor Masoala-Makira depassera-t-elle 5 000 ha au S1 2026 ?',
  'Tavy (agriculture sur brulis) + exploitation illegale bois de rose.',
  'deforestation', 'Masoala-Makira, Madagascar',
- ST_Multi(ST_GeomFromText('POLYGON((49.4 -16.0,50.0 -16.0,50.4 -15.5,50.4 -14.8,50.0 -14.5,49.4 -14.8,49.2 -15.5,49.4 -16.0))',4326)),
+ ST_Multi(ST_GeomFromText('POLYGON((50.217 -14.759,50.477 -15.227,50.377 -15.706,50.2 -16.0,49.861 -15.414,49.673 -15.71,49.863 -16.451,49.775 -16.875,49.625 -17.0,49.0 -17.0,49.0 -14.0,50.116 -14.0,50.217 -14.759))',4326)),
  '2026-01-01','2026-06-30',5000,'ha','deforestation_masoala_ndvi',0.3,'OPEN',
  'NDVI','decrease',0.3,'HANSEN',ARRAY['hansen-tree-loss']
 ),
@@ -124,7 +124,7 @@ INSERT INTO bets (slug, question, description, category, region_name, region_geo
  'Les incendies en Grece (Evros/Attique) depasseront-ils 10 000 ha entre juin et septembre 2026 ?',
  'Megafire Evros 2023 = plus grand incendie histoire UE (96 000 ha).',
  'wildfire', 'Evros/Attica, Greece',
- ST_Multi(ST_GeomFromText('POLYGON((25.5 40.5,26.5 40.5,27.0 41.0,27.0 41.8,26.5 42.0,25.5 41.8,25.0 41.0,25.5 40.5))',4326)),
+ ST_Multi(ST_GeomFromText('POLYGON((25.197 41.234,26.106 41.329,26.117 41.827,26.604 41.562,26.295 40.936,26.057 40.824,25.0 40.934,25.0 41.332,25.197 41.234))',4326)),
  '2026-06-01','2026-09-30',10000,'ha','wildfire_greece_nbr',0.27,'OPEN',
  'NBR','decrease',0.27,'FIRMS',ARRAY['nasa-viirs-firms']
 ),
@@ -148,7 +148,7 @@ INSERT INTO bets (slug, question, description, category, region_name, region_geo
  'L''expansion urbaine d''Istanbul augmentera-t-elle de 5 km² de surface batie en 2026 ?',
  '16M habitants. Projet Kanal Istanbul. Conversion agricole/foret en bati.',
  'urbanization', 'Istanbul, Turkey',
- ST_Multi(ST_GeomFromText('POLYGON((28.5 40.7,29.2 40.7,29.6 41.0,29.6 41.4,29.2 41.5,28.5 41.4,28.2 41.0,28.5 40.7))',4326)),
+ ST_Multi(ST_GeomFromText('POLYGON((29.24 41.22,30.0 41.167,30.0 40.5,28.842 40.5,29.24 41.22))',4326)),
  '2026-01-01','2026-12-31',5,'km2','urban_sprawl_ndbi',0.1,'OPEN',
  'NDBI','increase',0.1,'GHSL',ARRAY[]::TEXT[]
 )
@@ -164,7 +164,7 @@ INSERT INTO bets (slug, question, description, category, region_name, region_geo
  'Le NDVI moyen autour de Tanjung Puting (Kalimantan) tombera-t-il sous 0.65 au S2 2026 ?',
  'Conversion foret tourbeuse en palmeraies. 420 000 ha/an perdus en Indonesie.',
  'deforestation', 'Central Kalimantan, Indonesia',
- ST_Multi(ST_GeomFromText('POLYGON((111.0 -3.2,112.0 -3.2,112.5 -2.8,112.5 -2.2,112.0 -1.8,111.0 -2.2,110.7 -2.8,111.0 -3.2))',4326)),
+ ST_Multi(ST_GeomFromText('POLYGON((112.068 -3.478,111.703 -2.994,110.5 -2.973,110.5 -1.5,113.0 -1.5,113.0 -3.197,112.068 -3.478))',4326)),
  '2026-07-01','2026-12-31',65,'percent','deforestation_borneo_ndvi',0.3,'OPEN',
  'NDVI','decrease',0.3,'HANSEN',ARRAY['hansen-tree-loss']
 ),
@@ -188,7 +188,7 @@ INSERT INTO bets (slug, question, description, category, region_name, region_geo
  'Le deboisement illegal dans les Chin Hills augmentera-t-il de 5% les pixels NDVI<0.50 en 2026 ?',
  'Acceleration post-coup 2021. Teck pour export Chine. Effondrement enforcement.',
  'deforestation', 'Chin Hills, Myanmar',
- ST_Multi(ST_GeomFromText('POLYGON((93.2 21.2,94.5 21.2,95.0 21.8,95.0 22.8,94.5 23.2,93.2 22.8,92.8 21.8,93.2 21.2))',4326)),
+ ST_Multi(ST_GeomFromText('POLYGON((92.652 21.324,92.673 22.041,93.166 22.278,93.06 22.703,93.286 23.044,93.303 23.5,95.5 23.5,95.5 21.0,92.5 21.0,92.5 21.39,92.652 21.324))',4326)),
  '2026-01-01','2026-12-31',5,'percent','deforestation_myanmar_ndvi',0.3,'OPEN',
  'NDVI','decrease',0.3,'HANSEN',ARRAY['hansen-tree-loss']
 )
@@ -204,7 +204,7 @@ INSERT INTO bets (slug, question, description, category, region_name, region_geo
  'Un feu creera-t-il une zone de severite haute (>10 000 ha) pres de Kosciuszko au S2 2026 ?',
  'Black Summer 2019-2020: 12M ha. Cycles La Nina/El Nino.',
  'wildfire', 'Kosciuszko NP, Australia',
- ST_Multi(ST_GeomFromText('POLYGON((147.5 -37.0,148.5 -37.0,149.2 -36.5,149.2 -35.8,148.5 -35.5,147.5 -35.8,147.0 -36.5,147.5 -37.0))',4326)),
+ ST_Multi(ST_GeomFromText('POLYGON((149.946 -37.109,149.997 -37.425,149.874 -37.5,147.0 -37.5,147.0 -35.0,150.0 -35.0,149.946 -37.109))',4326)),
  '2026-10-01','2027-03-31',10000,'ha','bushfire_nbr',0.44,'OPEN',
  'NBR','decrease',0.44,'FIRMS',ARRAY['nasa-viirs-firms']
 ),
@@ -212,7 +212,7 @@ INSERT INTO bets (slug, question, description, category, region_name, region_geo
  'Le panache sedimentaire du Burdekin atteindra-t-il 50 km dans le lagon GBR au S1 2027 ?',
  'Plus grande source de sediments dans la GBR. Stress corallien, blanchissement.',
  'water_quality', 'Burdekin/GBR, Queensland, Australia',
- ST_Multi(ST_GeomFromText('POLYGON((146.5 -20.2,147.5 -20.2,148.0 -19.8,148.0 -19.0,147.5 -18.5,146.5 -19.0,146.2 -19.8,146.5 -20.2))',4326)),
+ ST_Multi(ST_GeomFromText('POLYGON((146.064 -18.28,146.387 -18.958,147.471 -19.481,148.848 -20.391,148.79 -20.5,146.0 -20.5,146.0 -18.0,146.116 -18.0,146.064 -18.28))',4326)),
  '2027-01-01','2027-04-30',50,'km','sediment_plume_red',0.05,'OPEN',
  'NDWI','decrease',0.0,'JRC_GSW',ARRAY[]::TEXT[]
 ),
