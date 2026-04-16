@@ -40,10 +40,15 @@ export function MapPage() {
       container: mapContainer.current,
       style: {
         version: 8,
-        sources: {},
-        layers: [
-          { id: "bg", type: "background", paint: { "background-color": "#0a0f1a" } },
-        ],
+        sources: {
+          "__boot": {
+            type: "raster",
+            tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+            tileSize: 256,
+            attribution: "ESRI World Imagery",
+          },
+        },
+        layers: [{ id: "__boot", type: "raster", source: "__boot" }],
       },
       center: WORLD_CENTER,
       zoom: 2,
@@ -69,27 +74,6 @@ export function MapPage() {
 
       const visibleBets = allBets.filter((b) => b.region_geojson && !SUB_ZONES.has(b.slug));
 
-      // Satellite par zone : une source raster ESRI limitee au bbox de chaque polygone
-      for (const bet of visibleBets) {
-        const bbox = geojsonBounds(bet.region_geojson!);
-        const pad = 0.5;
-        const satSrc = `sat-${bet.slug}`;
-        map.addSource(satSrc, {
-          type: "raster",
-          tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-          tileSize: 256,
-          bounds: [bbox[0] - pad, bbox[1] - pad, bbox[2] + pad, bbox[3] + pad],
-          minzoom: 0,
-          maxzoom: 18,
-        });
-        map.addLayer({
-          id: `sat-${bet.slug}`,
-          type: "raster",
-          source: satSrc,
-          paint: { "raster-opacity": 1, "raster-fade-duration": 0 },
-        });
-      }
-
       const fillIds: string[] = [];
       for (const bet of visibleBets) {
         const color = CAT_COLORS[bet.category] || "#8b5cf6";
@@ -106,21 +90,14 @@ export function MapPage() {
           id: fillId,
           type: "fill",
           source: srcId,
-          paint: { "fill-color": color, "fill-opacity": 0.25 },
-        });
-
-        map.addLayer({
-          id: `glow-${bet.slug}`,
-          type: "line",
-          source: srcId,
-          paint: { "line-color": color, "line-width": 10, "line-opacity": 0.25, "line-blur": 6 },
+          paint: { "fill-color": color, "fill-opacity": 0.12 },
         });
 
         map.addLayer({
           id: `border-${bet.slug}`,
           type: "line",
           source: srcId,
-          paint: { "line-color": color, "line-width": 2, "line-opacity": 1 },
+          paint: { "line-color": color, "line-width": 2, "line-dasharray": [4, 2] },
         });
       }
 
@@ -172,7 +149,7 @@ export function MapPage() {
     <div style={{ position: "relative", height: "100dvh" }}>
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 30,
-        padding: "8px 14px", background: "#0a0f1a",
+        padding: "10px 14px", background: "rgba(15,23,42,0.9)", backdropFilter: "blur(10px)",
         display: "flex", justifyContent: "space-between", alignItems: "center",
         borderBottom: "1px solid #1e293b",
       }}>
