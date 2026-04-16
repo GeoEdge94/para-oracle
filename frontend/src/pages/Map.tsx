@@ -76,24 +76,6 @@ export function MapPage() {
 
       const visibleBets = allBets.filter((b) => b.region_geojson && !SUB_ZONES.has(b.slug));
 
-      // Ajouter une source satellite par zone avec bounds limite
-      for (const bet of visibleBets) {
-        const b = geojsonBounds(bet.region_geojson!);
-        const satSrcId = `sat-${bet.slug}`;
-        map.addSource(satSrcId, {
-          type: "raster",
-          tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-          tileSize: 256,
-          bounds: [b[0], b[1], b[2], b[3]],
-        });
-        map.addLayer({
-          id: `sat-${bet.slug}`,
-          type: "raster",
-          source: satSrcId,
-          paint: { "raster-opacity": 1, "raster-fade-duration": 0 },
-        });
-      }
-
       const fillIds: string[] = [];
       for (const bet of visibleBets) {
         const color = CAT_COLORS[bet.category] || "#8b5cf6";
@@ -110,21 +92,21 @@ export function MapPage() {
           id: fillId,
           type: "fill",
           source: srcId,
-          paint: { "fill-color": color, "fill-opacity": 0.15 },
+          paint: { "fill-color": color, "fill-opacity": 0.25 },
         });
 
         map.addLayer({
           id: `glow-${bet.slug}`,
           type: "line",
           source: srcId,
-          paint: { "line-color": color, "line-width": 6, "line-opacity": 0.2, "line-blur": 4 },
+          paint: { "line-color": color, "line-width": 10, "line-opacity": 0.25, "line-blur": 6 },
         });
 
         map.addLayer({
           id: `border-${bet.slug}`,
           type: "line",
           source: srcId,
-          paint: { "line-color": color, "line-width": 1.5, "line-opacity": 0.8 },
+          paint: { "line-color": color, "line-width": 2, "line-opacity": 1 },
         });
       }
 
