@@ -43,6 +43,11 @@ CREATE TABLE IF NOT EXISTS bets (
     threshold_unit   VARCHAR(20) NOT NULL,          -- "km2"
     metric           VARCHAR(50) NOT NULL,          -- "deforestation_area_ndvi"
     ndvi_drop_threshold NUMERIC NOT NULL DEFAULT 0.3,
+    index_type       VARCHAR(50) NOT NULL DEFAULT 'NDVI',
+    change_direction VARCHAR(20) NOT NULL DEFAULT 'decrease',
+    change_threshold NUMERIC NOT NULL DEFAULT 0.3,
+    ground_truth_source VARCHAR(50) NOT NULL DEFAULT 'PRODES',
+    proof_layers     TEXT[] DEFAULT '{}',
     status           VARCHAR(20) NOT NULL DEFAULT 'OPEN',
     result_bool      BOOLEAN,                       -- true=YES, false=NO, null=unresolved
     resolved_value   NUMERIC,                       -- surface calculee (km2)

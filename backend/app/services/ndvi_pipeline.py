@@ -18,7 +18,7 @@ Mode demo : utilise des rasters pre-calcules ou des valeurs synthetiques.
 Mode reel : download assets B04/B08 + processing avec rasterio/rioxarray.
 """
 from __future__ import annotations
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, field, asdict
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 import hashlib
@@ -40,11 +40,16 @@ class PipelineConfig:
     period_start: date
     period_end: date
     region_geom_wkt: str
-    ndvi_drop_threshold: float = 0.3     # chute NDVI pour marquer comme deforeste
-    threshold_km2: float = 4200.0         # surface totale declenchant YES
+    ndvi_drop_threshold: float = 0.3
+    threshold_km2: float = 4200.0
+    index_type: str = "NDVI"
+    change_direction: str = "decrease"
+    change_threshold: float = 0.3
+    ground_truth_source: str = "PRODES"
+    proof_layers: list = field(default_factory=list)
     max_cloud_cover: float = 20.0
-    composite_window_days: int = 15        # fenetre pour composite T0 et T1
-    revisit_delay_days: int = 2            # T+48h apres fin de periode
+    composite_window_days: int = 15
+    revisit_delay_days: int = 2
 
 
 # ═══════════════════════════════════════════════════════════════════════════

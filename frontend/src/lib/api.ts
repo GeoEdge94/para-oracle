@@ -32,6 +32,11 @@ export type Bet = BetSummary & {
   region_geojson: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
   ndvi_drop_threshold: number;
   resolved_at: string | null;
+  index_type: string;
+  change_direction: string;
+  change_threshold: number;
+  ground_truth_source: string;
+  proof_layers: string[];
 };
 
 export type Layer = {

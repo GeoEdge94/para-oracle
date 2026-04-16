@@ -1,5 +1,5 @@
 import type { Bet } from "@/lib/api";
-import { TrendingUp, Flame, Droplets, ChevronRight } from "lucide-react";
+import { TrendingUp, Flame, Droplets, Mountain, Thermometer, ChevronRight } from "lucide-react";
 
 type Props = {
   bets: Bet[];
@@ -10,6 +10,8 @@ const CAT_CONFIG: Record<string, { color: string; icon: typeof TrendingUp; label
   deforestation: { color: "#10b981", icon: TrendingUp, label: "Deforestation" },
   wildfire: { color: "#f59e0b", icon: Flame, label: "Feux" },
   flood: { color: "#3b82f6", icon: Droplets, label: "Inondation" },
+  mining: { color: "#a855f7", icon: Mountain, label: "Mines" },
+  drought: { color: "#ef4444", icon: Thermometer, label: "Secheresse" },
 };
 
 function yesPct(bet: Bet): number | null {

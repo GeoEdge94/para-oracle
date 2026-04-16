@@ -20,6 +20,11 @@ class BetBase(BaseModel):
     threshold_unit: str
     metric: str
     ndvi_drop_threshold: Decimal = Field(default=Decimal("0.3"))
+    index_type: str = Field(default="NDVI")
+    change_direction: str = Field(default="decrease")
+    change_threshold: Decimal = Field(default=Decimal("0.3"))
+    ground_truth_source: str = Field(default="PRODES")
+    proof_layers: list[str] = Field(default_factory=list)
 
 
 class BetRead(BetBase):

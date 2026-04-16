@@ -36,6 +36,11 @@ def _bet_to_read(bet: Bet) -> dict:
         "resolved_at": bet.resolved_at,
         "created_at": bet.created_at,
         "region_geojson": json.loads(json.dumps(shp.__geo_interface__)) if shp else None,
+        "index_type": bet.index_type,
+        "change_direction": bet.change_direction,
+        "change_threshold": float(bet.change_threshold) if bet.change_threshold else 0.3,
+        "ground_truth_source": bet.ground_truth_source,
+        "proof_layers": bet.proof_layers or [],
     }
     return data
 

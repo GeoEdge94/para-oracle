@@ -44,6 +44,12 @@ export function BetSheet({ bet, onClose, onOpen }: { bet: Bet; onClose: () => vo
             {bet.threshold_value} {bet.threshold_unit}
           </div>
         </div>
+        <div style={{ padding: 10, background: "#0f172a", borderRadius: 10 }}>
+          <div style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase" }}>Indice</div>
+          <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4 }}>
+            {bet.index_type || "NDVI"} · {bet.ground_truth_source || "PRODES"}
+          </div>
+        </div>
       </div>
 
       <MarketStats stats={stats} myBets={myBets} />

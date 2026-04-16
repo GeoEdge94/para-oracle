@@ -15,6 +15,8 @@ const CAT_COLORS: Record<string, string> = {
   deforestation: "#10b981",
   wildfire: "#f59e0b",
   flood: "#3b82f6",
+  mining: "#a855f7",
+  drought: "#ef4444",
 };
 
 export function MapPage() {

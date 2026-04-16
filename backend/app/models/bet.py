@@ -2,7 +2,7 @@
 Bet — Question de marche (ex: Para deforestation 2025 S1).
 """
 import uuid
-from sqlalchemy import Column, String, Text, Date, Numeric, Boolean, DateTime, func
+from sqlalchemy import Column, String, Text, Date, Numeric, Boolean, DateTime, ARRAY, func
 from sqlalchemy.dialects.postgresql import UUID
 from geoalchemy2 import Geometry
 
@@ -25,6 +25,11 @@ class Bet(Base):
     threshold_unit = Column(String(20), nullable=False)
     metric = Column(String(50), nullable=False)
     ndvi_drop_threshold = Column(Numeric, nullable=False, default=0.3)
+    index_type = Column(String(50), nullable=False, default="NDVI")
+    change_direction = Column(String(20), nullable=False, default="decrease")
+    change_threshold = Column(Numeric, nullable=False, default=0.3)
+    ground_truth_source = Column(String(50), nullable=False, default="PRODES")
+    proof_layers = Column(ARRAY(String), nullable=False, default=[])
     status = Column(String(20), nullable=False, default="OPEN")
     result_bool = Column(Boolean)
     resolved_value = Column(Numeric)

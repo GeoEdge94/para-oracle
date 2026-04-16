@@ -69,7 +69,8 @@ ON CONFLICT (slug) DO NOTHING;
 INSERT INTO bets (
     slug, question, description, category, region_name, region_geom,
     period_start, period_end, threshold_value, threshold_unit, metric,
-    ndvi_drop_threshold, status
+    ndvi_drop_threshold, status,
+    index_type, change_direction, change_threshold, ground_truth_source, proof_layers
 ) VALUES (
     'para-deforestation-2025-s1',
     'La deforestation dans l''etat du Para depassera-t-elle 4 200 km² entre janvier et juin 2025 ?',
@@ -86,7 +87,8 @@ INSERT INTO bets (
     'km2',
     'deforestation_area_ndvi',
     0.3,
-    'OPEN'
+    'OPEN',
+    'NDVI', 'decrease', 0.3, 'PRODES', ARRAY['prodes-accumulated', 'deter-amz', 'delta-ndvi', 'mask-deforestation']
 ) ON CONFLICT (slug) DO NOTHING;
 
 -- ─── Users mock supplementaires ────────────────────────────────────────────
@@ -162,7 +164,8 @@ INSERT INTO deforestation_zones (bet_id, zone_name, source, surface_km2, confide
 INSERT INTO bets (
     slug, question, description, category, region_name, region_geom,
     period_start, period_end, threshold_value, threshold_unit, metric,
-    ndvi_drop_threshold, status
+    ndvi_drop_threshold, status,
+    index_type, change_direction, change_threshold, ground_truth_source, proof_layers
 ) VALUES (
     'rondonia-deforestation-2025-s1',
     'La deforestation dans l''etat du Rondonia depassera-t-elle 3 000 km² entre janvier et juin 2025 ?',
@@ -173,7 +176,8 @@ INSERT INTO bets (
       'POLYGON((-62.4177 -13.1189, -62.1152 -13.1637, -61.8171 -13.5274, -61.009 -13.5064, -60.7093 -13.693, -60.3879 -13.4547, -59.7794 -12.3415, -60.0989 -11.8456, -59.9768 -11.1224, -61.5503 -10.9861, -61.477 -9.6299, -61.6283 -9.2571, -61.4692 -8.9201, -61.7133 -8.6879, -61.9902 -8.8727, -62.8666 -7.9759, -63.6212 -7.9765, -63.7912 -8.3332, -63.9441 -8.3312, -64.1418 -8.9451, -64.8078 -8.9856, -65.1429 -9.4468, -65.2704 -9.2636, -65.73 -9.5631, -66.4089 -9.4069, -66.8103 -9.818, -65.3569 -9.7202, -65.2888 -10.2199, -65.4297 -10.4809, -65.2509 -10.9845, -65.3635 -11.1473, -65.0289 -11.9976, -64.5128 -12.2229, -64.4062 -12.447, -63.0906 -12.636, -62.7944 -12.9952, -62.4177 -13.1189))',
       4326
     )),
-    '2025-01-01', '2025-06-30', 3000, 'km2', 'deforestation_area_ndvi', 0.3, 'OPEN'
+    '2025-01-01', '2025-06-30', 3000, 'km2', 'deforestation_area_ndvi', 0.3, 'OPEN',
+    'NDVI', 'decrease', 0.3, 'PRODES', ARRAY['prodes-accumulated', 'deter-amz']
 ) ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO user_bets (user_id, bet_id, position, amount, odds, status, placed_at) VALUES
@@ -207,7 +211,8 @@ INSERT INTO deforestation_zones (bet_id, zone_name, source, surface_km2, confide
 INSERT INTO bets (
     slug, question, description, category, region_name, region_geom,
     period_start, period_end, threshold_value, threshold_unit, metric,
-    ndvi_drop_threshold, status, result_bool, resolved_value, resolved_at
+    ndvi_drop_threshold, status, result_bool, resolved_value, resolved_at,
+    index_type, change_direction, change_threshold, ground_truth_source, proof_layers
 ) VALUES (
     'mato-grosso-fires-2025-s1',
     'Les feux au Mato Grosso detruiront-ils plus de 1 500 km² de foret entre janvier et juin 2025 ?',
@@ -219,7 +224,8 @@ INSERT INTO bets (
       4326
     )),
     '2025-01-01', '2025-06-30', 1500, 'km2', 'fire_area_ndvi', 0.3,
-    'RESOLVED_NO', false, 980.4, '2025-07-01 12:00:00+00'
+    'RESOLVED_NO', false, 980.4, '2025-07-01 12:00:00+00',
+    'NBR', 'decrease', 0.27, 'FIRMS', ARRAY['nasa-viirs-firms', 'deter-amz']
 ) ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO user_bets (user_id, bet_id, position, amount, odds, status, placed_at, settled_at) VALUES
@@ -246,3 +252,218 @@ INSERT INTO deforestation_zones (bet_id, zone_name, source, surface_km2, confide
   ((SELECT id FROM bets WHERE slug='mato-grosso-fires-2025-s1'),
    'Colniza Ouest', 'PRODES', 379.6, 0.93, '2025-05-28',
    '{"type":"Polygon","coordinates":[[[-59.5,-9.8],[-59.25,-9.85],[-59.1,-9.7],[-59.05,-9.5],[-59.18,-9.35],[-59.4,-9.38],[-59.52,-9.55],[-59.5,-9.8]]]}');
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- BET 4 — BR-163 deforestation + fires corridor (OPEN)
+-- ═══════════════════════════════════════════════════════════════════════════
+INSERT INTO bets (
+    slug, question, description, category, region_name, region_geom,
+    period_start, period_end, threshold_value, threshold_unit, metric,
+    ndvi_drop_threshold, status,
+    index_type, change_direction, change_threshold, ground_truth_source, proof_layers
+) VALUES (
+    'br163-deforestation-fires-2025',
+    'La perte de foret primaire le long de la BR-163 depassera-t-elle 1 200 km² en 2025 (incluant zones brulees) ?',
+    'Corridor BR-163 Santarem-Sinop. Indices NDVI + NBR pour deforestation et brulage. Sources PRODES, DETER, FIRMS.',
+    'deforestation',
+    'BR-163 Corridor, Brazil',
+    ST_Multi(ST_GeomFromText(
+      'POLYGON((-55.8 -12.0, -55.0 -12.0, -54.5 -9.0, -54.0 -6.0, -54.3 -4.0, -54.8 -2.3, -55.3 -2.3, -55.0 -4.0, -55.2 -6.0, -55.7 -9.0, -56.2 -12.0, -55.8 -12.0))',
+      4326
+    )),
+    '2025-01-01', '2025-12-31', 1200, 'km2', 'deforestation_fire_br163', 0.3, 'OPEN',
+    'NDVI', 'decrease', 0.3, 'PRODES', ARRAY['prodes-accumulated', 'deter-amz', 'nasa-viirs-firms']
+) ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO user_bets (user_id, bet_id, position, amount, odds, status, placed_at) VALUES
+  ((SELECT id FROM users_mock WHERE email='demo@para-oracle.app'),
+   (SELECT id FROM bets WHERE slug='br163-deforestation-fires-2025'),
+   'YES', 180.00, 1.90, 'PENDING', '2025-03-01 10:00:00+00'),
+  ((SELECT id FROM users_mock WHERE email='bob@para-oracle.app'),
+   (SELECT id FROM bets WHERE slug='br163-deforestation-fires-2025'),
+   'NO', 250.00, 2.15, 'PENDING', '2025-04-15 14:00:00+00'),
+  ((SELECT id FROM users_mock WHERE email='carla@para-oracle.app'),
+   (SELECT id FROM bets WHERE slug='br163-deforestation-fires-2025'),
+   'YES', 320.00, 1.75, 'PENDING', '2025-06-01 11:00:00+00');
+
+INSERT INTO deforestation_zones (bet_id, zone_name, source, surface_km2, confidence, detected_at, geojson) VALUES
+  ((SELECT id FROM bets WHERE slug='br163-deforestation-fires-2025'),
+   'Novo Progresso BR163', 'PRODES', 450.0, 0.94, '2025-04-15',
+   '{"type":"Polygon","coordinates":[[[-55.4,-7.8],[-55.1,-7.85],[-54.9,-7.7],[-54.85,-7.5],[-55.0,-7.35],[-55.25,-7.38],[-55.42,-7.55],[-55.4,-7.8]]]}'),
+  ((SELECT id FROM bets WHERE slug='br163-deforestation-fires-2025'),
+   'Trairão Brûlis', 'DETER', 380.5, 0.87, '2025-08-20',
+   '{"type":"Polygon","coordinates":[[[-55.0,-5.5],[-54.7,-5.55],[-54.5,-5.4],[-54.48,-5.2],[-54.6,-5.05],[-54.85,-5.08],[-55.0,-5.25],[-55.0,-5.5]]]}');
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- BET 5 — Feux en forêt primaire du Para (OPEN)
+-- ═══════════════════════════════════════════════════════════════════════════
+INSERT INTO bets (
+    slug, question, description, category, region_name, region_geom,
+    period_start, period_end, threshold_value, threshold_unit, metric,
+    ndvi_drop_threshold, status,
+    index_type, change_direction, change_threshold, ground_truth_source, proof_layers
+) VALUES (
+    'para-fires-primary-2025',
+    'Plus de 50% des feux detectes dans le Para pendant la saison seche 2025 toucheront-ils de la vegetation primaire ?',
+    'Croisement detections FIRMS avec carte foret primaire Hansen/GFW. Indice NBR pour severite.',
+    'wildfire',
+    'Para Primary Forest, Brazil',
+    ST_Multi(ST_GeomFromText(
+      'POLYGON((-54.0 -6.0, -52.5 -6.0, -51.5 -5.0, -51.0 -3.5, -51.5 -2.5, -52.5 -2.0, -54.0 -2.5, -55.0 -3.5, -55.0 -5.0, -54.0 -6.0))',
+      4326
+    )),
+    '2025-07-01', '2025-10-31', 50, 'percent', 'fire_primary_ratio_nbr', 0.35, 'OPEN',
+    'NBR', 'decrease', 0.35, 'FIRMS', ARRAY['nasa-viirs-firms', 'hansen-tree-loss']
+) ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO user_bets (user_id, bet_id, position, amount, odds, status, placed_at) VALUES
+  ((SELECT id FROM users_mock WHERE email='alice@para-oracle.app'),
+   (SELECT id FROM bets WHERE slug='para-fires-primary-2025'),
+   'YES', 200.00, 1.85, 'PENDING', '2025-07-10 09:00:00+00'),
+  ((SELECT id FROM users_mock WHERE email='demo@para-oracle.app'),
+   (SELECT id FROM bets WHERE slug='para-fires-primary-2025'),
+   'NO', 150.00, 2.20, 'PENDING', '2025-08-01 15:00:00+00');
+
+INSERT INTO deforestation_zones (bet_id, zone_name, source, surface_km2, confidence, detected_at, geojson) VALUES
+  ((SELECT id FROM bets WHERE slug='para-fires-primary-2025'),
+   'Terra Indigena Kayapo', 'NDVI', 280.0, 0.88, '2025-08-15',
+   '{"type":"Polygon","coordinates":[[[-52.8,-4.5],[-52.5,-4.55],[-52.3,-4.4],[-52.28,-4.2],[-52.4,-4.05],[-52.65,-4.08],[-52.8,-4.25],[-52.8,-4.5]]]}');
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- BET 6 — Inondation Tapajos (OPEN)
+-- ═══════════════════════════════════════════════════════════════════════════
+INSERT INTO bets (
+    slug, question, description, category, region_name, region_geom,
+    period_start, period_end, threshold_value, threshold_unit, metric,
+    ndvi_drop_threshold, status,
+    index_type, change_direction, change_threshold, ground_truth_source, proof_layers
+) VALUES (
+    'tapajos-flood-2026',
+    'La surface inondee dans la plaine du Tapajos depassera-t-elle de 30% la moyenne historique au S1 2026 ?',
+    'Comparaison NDWI 2026 vs climatologie JRC Global Surface Water. Seuil +30% anomalie.',
+    'flood',
+    'Tapajos Floodplain, Brazil',
+    ST_Multi(ST_GeomFromText(
+      'POLYGON((-55.5 -4.5, -54.8 -4.5, -54.5 -3.8, -54.2 -3.0, -54.5 -2.3, -55.0 -2.0, -55.5 -2.3, -55.8 -3.0, -55.7 -3.8, -55.5 -4.5))',
+      4326
+    )),
+    '2026-01-01', '2026-06-30', 30, 'percent', 'flood_anomaly_ndwi', 0.3, 'OPEN',
+    'NDWI', 'increase', 0.3, 'JRC_GSW', ARRAY[]::TEXT[]
+) ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO user_bets (user_id, bet_id, position, amount, odds, status, placed_at) VALUES
+  ((SELECT id FROM users_mock WHERE email='bob@para-oracle.app'),
+   (SELECT id FROM bets WHERE slug='tapajos-flood-2026'),
+   'NO', 300.00, 1.70, 'PENDING', '2026-01-15 10:00:00+00'),
+  ((SELECT id FROM users_mock WHERE email='carla@para-oracle.app'),
+   (SELECT id FROM bets WHERE slug='tapajos-flood-2026'),
+   'YES', 200.00, 2.30, 'PENDING', '2026-02-20 14:00:00+00');
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- BET 7 — Expansion miniere EPA Tapajos (OPEN)
+-- ═══════════════════════════════════════════════════════════════════════════
+INSERT INTO bets (
+    slug, question, description, category, region_name, region_geom,
+    period_start, period_end, threshold_value, threshold_unit, metric,
+    ndvi_drop_threshold, status,
+    index_type, change_direction, change_threshold, ground_truth_source, proof_layers
+) VALUES (
+    'tapajos-mining-2025',
+    'Les activites minieres defrichant la foret dans l''EPA du Tapajos depasseront-elles 15 km² en 2025 ?',
+    'Detection sols nus (BSI) + perte vegetation (NDVI) dans aire protegee Tapajos. Sources DETER alertes minieres.',
+    'mining',
+    'EPA Tapajos, Brazil',
+    ST_Multi(ST_GeomFromText(
+      'POLYGON((-56.2 -5.5, -55.5 -5.5, -55.2 -5.0, -55.0 -4.3, -55.3 -3.8, -55.8 -3.8, -56.2 -4.3, -56.3 -5.0, -56.2 -5.5))',
+      4326
+    )),
+    '2025-01-01', '2025-12-31', 15, 'km2', 'mining_expansion_bsi', 0.25, 'OPEN',
+    'BSI', 'increase', 0.25, 'DETER', ARRAY['deter-amz', 'hansen-tree-loss']
+) ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO user_bets (user_id, bet_id, position, amount, odds, status, placed_at) VALUES
+  ((SELECT id FROM users_mock WHERE email='alice@para-oracle.app'),
+   (SELECT id FROM bets WHERE slug='tapajos-mining-2025'),
+   'YES', 350.00, 1.65, 'PENDING', '2025-03-10 11:00:00+00'),
+  ((SELECT id FROM users_mock WHERE email='demo@para-oracle.app'),
+   (SELECT id FROM bets WHERE slug='tapajos-mining-2025'),
+   'NO', 200.00, 2.40, 'PENDING', '2025-05-01 16:00:00+00');
+
+INSERT INTO deforestation_zones (bet_id, zone_name, source, surface_km2, confidence, detected_at, geojson) VALUES
+  ((SELECT id FROM bets WHERE slug='tapajos-mining-2025'),
+   'Garimpo Crepori', 'DETER', 8.5, 0.91, '2025-04-20',
+   '{"type":"Polygon","coordinates":[[[-55.8,-4.8],[-55.65,-4.82],[-55.55,-4.72],[-55.52,-4.58],[-55.6,-4.48],[-55.75,-4.5],[-55.82,-4.62],[-55.8,-4.8]]]}'),
+  ((SELECT id FROM bets WHERE slug='tapajos-mining-2025'),
+   'Garimpo Tropas', 'NDVI', 5.2, 0.84, '2025-07-10',
+   '{"type":"Polygon","coordinates":[[[-55.5,-5.1],[-55.35,-5.12],[-55.25,-5.02],[-55.22,-4.88],[-55.3,-4.78],[-55.45,-4.8],[-55.52,-4.92],[-55.5,-5.1]]]}');
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- BET 8 — Secheresse agricole frontier soja MT (OPEN)
+-- ═══════════════════════════════════════════════════════════════════════════
+INSERT INTO bets (
+    slug, question, description, category, region_name, region_geom,
+    period_start, period_end, threshold_value, threshold_unit, metric,
+    ndvi_drop_threshold, status,
+    index_type, change_direction, change_threshold, ground_truth_source, proof_layers
+) VALUES (
+    'mt-soja-drought-2026',
+    'Au moins 40% des surfaces cultivees de la frontier soja du Mato Grosso connaitront-elles une anomalie NDVI < -2σ en 2026 ?',
+    'Z-score NDVI multi-annuel sur pixels agricoles WorldCover/MapBiomas. Seuil anomalie severe.',
+    'drought',
+    'Frontier Soja MT, Brazil',
+    ST_Multi(ST_GeomFromText(
+      'POLYGON((-55.0 -12.0, -53.5 -12.0, -52.0 -11.0, -51.5 -10.0, -52.0 -9.5, -53.0 -9.5, -54.5 -10.0, -55.5 -11.0, -55.0 -12.0))',
+      4326
+    )),
+    '2026-01-01', '2026-12-31', 40, 'percent', 'drought_ndvi_zscore', 0.25, 'OPEN',
+    'NDVI', 'decrease', 0.25, 'PRODES', ARRAY['nasa-modis-ndvi', 'prodes-yearly']
+) ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO user_bets (user_id, bet_id, position, amount, odds, status, placed_at) VALUES
+  ((SELECT id FROM users_mock WHERE email='carla@para-oracle.app'),
+   (SELECT id FROM bets WHERE slug='mt-soja-drought-2026'),
+   'NO', 400.00, 1.60, 'PENDING', '2026-02-01 09:00:00+00'),
+  ((SELECT id FROM users_mock WHERE email='bob@para-oracle.app'),
+   (SELECT id FROM bets WHERE slug='mt-soja-drought-2026'),
+   'YES', 280.00, 2.50, 'PENDING', '2026-03-15 13:00:00+00');
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- BET 9 — Combo feux → deforestation SE Para (OPEN)
+-- ═══════════════════════════════════════════════════════════════════════════
+INSERT INTO bets (
+    slug, question, description, category, region_name, region_geom,
+    period_start, period_end, threshold_value, threshold_unit, metric,
+    ndvi_drop_threshold, status,
+    index_type, change_direction, change_threshold, ground_truth_source, proof_layers
+) VALUES (
+    'se-para-fires-deforestation-2025',
+    'Dans le SE du Para, un episode de feux majeurs en 2025 sera-t-il suivi dans les 6 mois d''une perte de foret > 300 km² ?',
+    'Pari meta : comptage FIRMS (episode feux) puis NDVI/dNBR 6 mois apres pour mesurer la perte forestiere.',
+    'deforestation',
+    'Southeast Para, Brazil',
+    ST_Multi(ST_GeomFromText(
+      'POLYGON((-52.5 -7.5, -51.5 -7.5, -50.5 -6.5, -49.5 -5.5, -49.5 -4.5, -50.5 -4.5, -51.5 -5.0, -52.5 -6.0, -53.0 -7.0, -52.5 -7.5))',
+      4326
+    )),
+    '2025-01-01', '2025-12-31', 300, 'km2', 'fire_then_deforestation_ndvi', 0.3, 'OPEN',
+    'NDVI', 'decrease', 0.3, 'DETER', ARRAY['deter-amz', 'nasa-viirs-firms', 'prodes-yearly']
+) ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO user_bets (user_id, bet_id, position, amount, odds, status, placed_at) VALUES
+  ((SELECT id FROM users_mock WHERE email='demo@para-oracle.app'),
+   (SELECT id FROM bets WHERE slug='se-para-fires-deforestation-2025'),
+   'YES', 250.00, 1.80, 'PENDING', '2025-05-01 10:00:00+00'),
+  ((SELECT id FROM users_mock WHERE email='alice@para-oracle.app'),
+   (SELECT id FROM bets WHERE slug='se-para-fires-deforestation-2025'),
+   'NO', 180.00, 2.25, 'PENDING', '2025-06-15 14:00:00+00'),
+  ((SELECT id FROM users_mock WHERE email='bob@para-oracle.app'),
+   (SELECT id FROM bets WHERE slug='se-para-fires-deforestation-2025'),
+   'YES', 400.00, 1.70, 'PENDING', '2025-08-01 11:00:00+00');
+
+INSERT INTO deforestation_zones (bet_id, zone_name, source, surface_km2, confidence, detected_at, geojson) VALUES
+  ((SELECT id FROM bets WHERE slug='se-para-fires-deforestation-2025'),
+   'Xingu Front', 'DETER', 180.0, 0.90, '2025-09-15',
+   '{"type":"Polygon","coordinates":[[[-51.8,-6.2],[-51.5,-6.25],[-51.3,-6.1],[-51.28,-5.9],[-51.4,-5.75],[-51.65,-5.78],[-51.8,-5.95],[-51.8,-6.2]]]}'),
+  ((SELECT id FROM bets WHERE slug='se-para-fires-deforestation-2025'),
+   'Iriri Valley Brûlis', 'NDVI', 140.5, 0.85, '2025-11-01',
+   '{"type":"Polygon","coordinates":[[[-52.2,-5.8],[-51.95,-5.85],[-51.8,-5.7],[-51.78,-5.5],[-51.9,-5.35],[-52.15,-5.38],[-52.22,-5.55],[-52.2,-5.8]]]}');

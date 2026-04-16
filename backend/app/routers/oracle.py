@@ -67,6 +67,11 @@ def resolve_bet(bet_slug: str, db: Session = Depends(get_db)):
         ),
         ndvi_drop_threshold=float(bet.ndvi_drop_threshold),
         threshold_km2=float(bet.threshold_value),
+        index_type=bet.index_type or "NDVI",
+        change_direction=bet.change_direction or "decrease",
+        change_threshold=float(bet.change_threshold) if bet.change_threshold else 0.3,
+        ground_truth_source=bet.ground_truth_source or "PRODES",
+        proof_layers=bet.proof_layers or [],
     )
 
     pipeline = NDVIPipeline(config)
