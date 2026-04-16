@@ -549,6 +549,233 @@ button { cursor: pointer; font-family: inherit; }
 .maplibregl-ctrl-bottom-right,
 .maplibregl-ctrl-bottom-left { display: none !important; }
 
+/* ══════════════ Bet bottom sheet ══════════════ */
+.bbs-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  pointer-events: none;
+}
+
+.bbs-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  pointer-events: auto;
+  animation: bbs-fade 0.2s ease;
+}
+
+@keyframes bbs-fade {
+  from { opacity: 0; } to { opacity: 1; }
+}
+
+.bbs-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #0a0f1a;
+  border-top: 1px solid #1e293b;
+  border-radius: 18px 18px 0 0;
+  pointer-events: auto;
+  animation: bbs-up 0.25s ease;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@keyframes bbs-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.bbs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px 6px;
+}
+
+.bbs-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bbs-count {
+  font-family: monospace;
+  font-size: 11px;
+  color: #94a3b8;
+  background: #1e293b;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.bbs-close {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.bbs-viewport {
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.bbs-track {
+  display: flex;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bbs-slide {
+  flex: 0 0 100%;
+  padding: 8px 16px 4px;
+}
+
+.bbs-card {
+  background: #111826;
+  border: 1px solid #1e293b;
+  border-radius: 14px;
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.bbs-card:hover { border-color: #334155; }
+
+.bbs-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.bbs-cat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.bbs-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.bbs-live-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: bbs-pulse 1.5s ease infinite;
+}
+
+@keyframes bbs-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.bbs-region {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 6px;
+}
+
+.bbs-question {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin-bottom: 14px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bbs-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.bbs-metric {
+  padding: 8px;
+  background: #0a0f1a;
+  border-radius: 8px;
+  border: 1px solid #1e293b;
+}
+
+.bbs-metric-label {
+  font-size: 8px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 3px;
+}
+
+.bbs-metric-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.bbs-result {
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.bbs-cta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bbs-dots {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 0 14px;
+}
+
+.bbs-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #334155;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.bbs-dot.active {
+  background: #10b981;
+  width: 16px;
+  border-radius: 3px;
+}
+
 /* ══════════════ Crisis stats bar ══════════════ */
 .crisis-stats {
   display: flex;

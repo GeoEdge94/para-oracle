@@ -4,12 +4,12 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useNavigate } from "react-router-dom";
 import { API, type Bet } from "@/lib/api";
 import { BetSheet } from "@/components/BetSheet";
-import { BetCarousel } from "@/components/BetCarousel";
+import { BetBottomSheet } from "@/components/BetBottomSheet";
 import { BetTicker } from "@/components/BetTicker";
 import { CrisisStats } from "@/components/CrisisStats";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { geojsonBounds } from "@/lib/mapLayers";
-import { LogOut, Plus, X } from "lucide-react";
+import { LogOut, Plus } from "lucide-react";
 
 const WORLD_CENTER: [number, number] = [10, 15];
 
@@ -222,16 +222,11 @@ export function MapPage() {
       )}
 
       {showCarousel && !selectedBet && (
-        <>
-          <button
-            className="fab"
-            style={{ bottom: 100, left: 16, width: 38, height: 38, background: "#334155" }}
-            onClick={() => setShowCarousel(false)}
-          >
-            <X size={16} />
-          </button>
-          <BetCarousel bets={bets} onSelect={(b) => { setShowCarousel(false); selectBet(b); }} />
-        </>
+        <BetBottomSheet
+          bets={filterCat ? bets.filter((b) => b.category === filterCat) : bets}
+          onSelect={(b) => { setShowCarousel(false); selectBet(b); }}
+          onClose={() => setShowCarousel(false)}
+        />
       )}
 
       {selectedBet && (
