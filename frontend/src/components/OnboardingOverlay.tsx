@@ -1,45 +1,22 @@
 import { useState } from "react";
 import { ChevronLeft, Layers, Calendar, GripHorizontal, Map, X } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
-const STEPS = [
-  {
-    icon: <Map size={20} />,
-    title: "Carte interactive",
-    desc: "Pincez pour zoomer, glissez pour naviguer dans la zone d'analyse.",
-    anchor: "center",
-  },
-  {
-    icon: <ChevronLeft size={20} />,
-    title: "Retour",
-    desc: "Appuyez ici pour revenir a la liste des paris.",
-    anchor: "top-left",
-  },
-  {
-    icon: <Calendar size={20} />,
-    title: "Selecteur de date",
-    desc: "Choisissez T0, T1 ou une date personnalisee pour voir l'evolution des couches satellite.",
-    anchor: "top",
-  },
-  {
-    icon: <Layers size={20} />,
-    title: "Couches",
-    desc: "Activez ou desactivez les couches NDVI, cadastres et imagerie satellite.",
-    anchor: "bottom-right",
-  },
-  {
-    icon: <GripHorizontal size={20} />,
-    title: "Details du pari",
-    desc: "Glissez vers le bas pour masquer, vers le haut pour afficher les details et le resultat.",
-    anchor: "bottom",
-  },
+const STEP_KEYS = [
+  { icon: <Map size={20} />, titleKey: "onboarding.step0_title", descKey: "onboarding.step0_desc", anchor: "center" },
+  { icon: <ChevronLeft size={20} />, titleKey: "onboarding.step1_title", descKey: "onboarding.step1_desc", anchor: "top-left" },
+  { icon: <Calendar size={20} />, titleKey: "onboarding.step2_title", descKey: "onboarding.step2_desc", anchor: "top" },
+  { icon: <Layers size={20} />, titleKey: "onboarding.step3_title", descKey: "onboarding.step3_desc", anchor: "bottom-right" },
+  { icon: <GripHorizontal size={20} />, titleKey: "onboarding.step4_title", descKey: "onboarding.step4_desc", anchor: "bottom" },
 ] as const;
 
 type Props = { onDismiss: () => void };
 
 export function OnboardingOverlay({ onDismiss }: Props) {
+  const { t } = useI18n();
   const [step, setStep] = useState(0);
-  const current = STEPS[step];
-  const isLast = step === STEPS.length - 1;
+  const current = STEP_KEYS[step];
+  const isLast = step === STEP_KEYS.length - 1;
 
   return (
     <div className="onboarding-overlay" onClick={(e) => e.stopPropagation()}>
@@ -51,20 +28,17 @@ export function OnboardingOverlay({ onDismiss }: Props) {
         </button>
 
         <div className="onboarding-icon">{current.icon}</div>
-        <div className="onboarding-title">{current.title}</div>
-        <div className="onboarding-desc">{current.desc}</div>
+        <div className="onboarding-title">{t(current.titleKey)}</div>
+        <div className="onboarding-desc">{t(current.descKey)}</div>
 
         <div className="onboarding-footer">
           <div className="onboarding-dots">
-            {STEPS.map((_, i) => (
+            {STEP_KEYS.map((_, i) => (
               <span key={i} className={`onboarding-dot ${i === step ? "active" : ""}`} />
             ))}
           </div>
-          <button
-            className="onboarding-btn"
-            onClick={() => (isLast ? onDismiss() : setStep(step + 1))}
-          >
-            {isLast ? "C'est parti !" : "Suivant"}
+          <button className="onboarding-btn" onClick={() => (isLast ? onDismiss() : setStep(step + 1))}>
+            {isLast ? t("common.letsgo") : t("common.next")}
           </button>
         </div>
       </div>

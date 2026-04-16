@@ -23,13 +23,22 @@ function inferCategory(slug: string): LayerCategory {
   return "vector";
 }
 
-export const CATEGORY_META: Record<LayerCategory, { label: string; icon: string; order: number }> = {
-  basemap:   { label: "Fonds de carte",            icon: "🗺️", order: 0 },
-  satellite: { label: "Imagerie satellite",        icon: "🛰️", order: 1 },
-  verified:  { label: "Cadastres déforestation",   icon: "📜", order: 2 },
-  ndvi:      { label: "NDVI / pipeline",           icon: "🌿", order: 3 },
-  fire:      { label: "Feux actifs",               icon: "🔥", order: 4 },
-  vector:    { label: "Vecteurs",                  icon: "📐", order: 5 },
+export const CATEGORY_ICONS: Record<LayerCategory, { icon: string; order: number }> = {
+  basemap:   { icon: "🗺️", order: 0 },
+  satellite: { icon: "🛰️", order: 1 },
+  verified:  { icon: "📜", order: 2 },
+  ndvi:      { icon: "🌿", order: 3 },
+  fire:      { icon: "🔥", order: 4 },
+  vector:    { icon: "📐", order: 5 },
+};
+
+export const CATEGORY_I18N_KEYS: Record<LayerCategory, string> = {
+  basemap: "layers.basemap",
+  satellite: "layers.satellite",
+  verified: "layers.verified",
+  ndvi: "layers.ndvi",
+  fire: "layers.fire",
+  vector: "layers.vector",
 };
 
 /** Default opacity when a verified-deforestation overlay becomes visible. */

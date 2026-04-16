@@ -1,0 +1,271 @@
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+
+export type Locale = "fr" | "en";
+export type Currency = "EUR" | "USD";
+
+type Translations = Record<string, Record<string, string | string[]>>;
+
+const fr: Translations = {
+  common: {
+    loading: "Chargement...",
+    close: "Fermer",
+    reduce: "Reduire",
+    show: "Afficher",
+    hide: "Masquer",
+    next: "Suivant",
+    letsgo: "C'est parti !",
+    back: "Retour",
+    copy: "Copier",
+  },
+  auth: {
+    subtitle: "Oracle Sentinel-2 · Para deforestation",
+    password_label: "Mot de passe (mock)",
+    login_btn: "Se connecter",
+    login_loading: "Connexion...",
+    demo_hint: "Demo mock — n'importe quel mail/mdp fonctionne",
+    error: "Erreur de connexion. Backend accessible ?",
+  },
+  map: {
+    bets_on_zone: "{n} paris sur cette zone",
+  },
+  analysis: {
+    title: "Analyse NDVI",
+    show_details: "Afficher details",
+    threshold_label: "Seuil : {value} {unit} · Seuil NDVI : Δ < -{drop}",
+    result: "Resultat",
+    surface: "Surface deforestee",
+    resolve_btn: "Declencher l'oracle",
+    resolving: "Resolution en cours...",
+    show_zones: "Voir les {n} zones detectees",
+    hide_zones: "Masquer les preuves",
+    evidence_title: "Preuves",
+    sentinel_scenes: "Produits Sentinel-2 : {n} scenes",
+  },
+  betsheet: {
+    resolved_yes: "Resolu · YES",
+    resolved_no: "Resolu · NO",
+    period: "Periode",
+    threshold: "Seuil",
+    index: "Indice",
+    surface: "Surface deforestee",
+    view_analysis: "Voir l'analyse NDVI",
+  },
+  layers: {
+    title: "Couches",
+    show_layer: "Afficher",
+    hide_layer: "Masquer",
+    opacity: "Opacite {pct}%",
+    move_up: "Monter",
+    move_down: "Descendre",
+    basemap: "Fonds de carte",
+    satellite: "Imagerie satellite",
+    verified: "Cadastres deforestation",
+    ndvi: "NDVI / pipeline",
+    fire: "Feux actifs",
+    vector: "Vecteurs",
+  },
+  date: {
+    months_short: ["Jan", "Fev", "Mar", "Avr", "Mai", "Jun", "Jul", "Aou", "Sep", "Oct", "Nov", "Dec"],
+    period_start: "Debut periode : {d}",
+    period_end: "Fin periode : {d}",
+    today: "Aujourd'hui",
+    custom_date: "Date personnalisee",
+    prev_day: "Jour precedent",
+    next_day: "Jour suivant",
+    affected: "{n} couche{s} NASA affectee{s}",
+    latest_imagery: "Derniere imagerie disponible (J-1)",
+  },
+  legend: {
+    mask_title: "Masque deforestation",
+    mask_label: "Δ NDVI < -0.3",
+    delta_title: "Δ NDVI (T1 − T0)",
+    ndvi_title: "NDVI",
+  },
+  status: {
+    live: "Copernicus LIVE",
+    mock: "Mode demo",
+  },
+  onboarding: {
+    step0_title: "Carte interactive",
+    step0_desc: "Pincez pour zoomer, glissez pour naviguer dans la zone d'analyse.",
+    step1_title: "Retour",
+    step1_desc: "Appuyez ici pour revenir a la liste des paris.",
+    step2_title: "Selecteur de date",
+    step2_desc: "Choisissez T0, T1 ou une date personnalisee pour voir l'evolution des couches satellite.",
+    step3_title: "Couches",
+    step3_desc: "Activez ou desactivez les couches NDVI, cadastres et imagerie satellite.",
+    step4_title: "Details du pari",
+    step4_desc: "Glissez vers le bas pour masquer, vers le haut pour afficher les details et le resultat.",
+  },
+};
+
+const en: Translations = {
+  common: {
+    loading: "Loading...",
+    close: "Close",
+    reduce: "Collapse",
+    show: "Show",
+    hide: "Hide",
+    next: "Next",
+    letsgo: "Let's go!",
+    back: "Back",
+    copy: "Copy",
+  },
+  auth: {
+    subtitle: "Sentinel-2 Oracle · Para deforestation",
+    password_label: "Password (mock)",
+    login_btn: "Sign in",
+    login_loading: "Signing in...",
+    demo_hint: "Mock demo — any email/password works",
+    error: "Connection error. Is backend reachable?",
+  },
+  map: {
+    bets_on_zone: "{n} bets on this area",
+  },
+  analysis: {
+    title: "NDVI Analysis",
+    show_details: "Show details",
+    threshold_label: "Threshold: {value} {unit} · NDVI threshold: Δ < -{drop}",
+    result: "Result",
+    surface: "Deforested area",
+    resolve_btn: "Trigger oracle",
+    resolving: "Resolving...",
+    show_zones: "View {n} detected zones",
+    hide_zones: "Hide evidence",
+    evidence_title: "Evidence",
+    sentinel_scenes: "Sentinel-2 products: {n} scenes",
+  },
+  betsheet: {
+    resolved_yes: "Resolved · YES",
+    resolved_no: "Resolved · NO",
+    period: "Period",
+    threshold: "Threshold",
+    index: "Index",
+    surface: "Deforested area",
+    view_analysis: "View NDVI analysis",
+  },
+  layers: {
+    title: "Layers",
+    show_layer: "Show",
+    hide_layer: "Hide",
+    opacity: "Opacity {pct}%",
+    move_up: "Move up",
+    move_down: "Move down",
+    basemap: "Basemaps",
+    satellite: "Satellite imagery",
+    verified: "Deforestation cadastres",
+    ndvi: "NDVI / pipeline",
+    fire: "Active fires",
+    vector: "Vectors",
+  },
+  date: {
+    months_short: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    period_start: "Period start: {d}",
+    period_end: "Period end: {d}",
+    today: "Today",
+    custom_date: "Custom date",
+    prev_day: "Previous day",
+    next_day: "Next day",
+    affected: "{n} NASA layer{s} affected",
+    latest_imagery: "Latest available imagery (D-1)",
+  },
+  legend: {
+    mask_title: "Deforestation mask",
+    mask_label: "Δ NDVI < -0.3",
+    delta_title: "Δ NDVI (T1 − T0)",
+    ndvi_title: "NDVI",
+  },
+  status: {
+    live: "Copernicus LIVE",
+    mock: "Demo mode",
+  },
+  onboarding: {
+    step0_title: "Interactive map",
+    step0_desc: "Pinch to zoom, drag to navigate the analysis area.",
+    step1_title: "Go back",
+    step1_desc: "Tap here to return to the bet list.",
+    step2_title: "Date selector",
+    step2_desc: "Choose T0, T1 or a custom date to view satellite layer changes over time.",
+    step3_title: "Layers",
+    step3_desc: "Toggle NDVI, cadastre and satellite layers on or off.",
+    step4_title: "Bet details",
+    step4_desc: "Swipe down to hide, swipe up to show details and results.",
+  },
+};
+
+const LOCALES: Record<Locale, Translations> = { fr, en };
+
+const EUR_USD_RATE = 1.08;
+
+type I18nCtx = {
+  locale: Locale;
+  currency: Currency;
+  setLocale: (l: Locale) => void;
+  setCurrency: (c: Currency) => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
+  ta: (key: string) => string[];
+  formatAmount: (eur: number) => string;
+};
+
+const I18nContext = createContext<I18nCtx>(null!);
+
+export function I18nProvider({ children }: { children: ReactNode }) {
+  const [locale, setLocaleState] = useState<Locale>(
+    () => (localStorage.getItem("para_locale") as Locale) || "fr"
+  );
+  const [currency, setCurrencyState] = useState<Currency>(
+    () => (localStorage.getItem("para_currency") as Currency) || "EUR"
+  );
+
+  const setLocale = useCallback((l: Locale) => {
+    setLocaleState(l);
+    localStorage.setItem("para_locale", l);
+  }, []);
+
+  const setCurrency = useCallback((c: Currency) => {
+    setCurrencyState(c);
+    localStorage.setItem("para_currency", c);
+  }, []);
+
+  const t = useCallback(
+    (key: string, params?: Record<string, string | number>): string => {
+      const [ns, k] = key.split(".");
+      const val = LOCALES[locale]?.[ns]?.[k];
+      if (typeof val !== "string") return key;
+      if (!params) return val;
+      return Object.entries(params).reduce<string>(
+        (s, [pk, pv]) => s.replaceAll(`{${pk}}`, String(pv)),
+        val
+      );
+    },
+    [locale]
+  );
+
+  const ta = useCallback(
+    (key: string): string[] => {
+      const [ns, k] = key.split(".");
+      const val = LOCALES[locale]?.[ns]?.[k];
+      return Array.isArray(val) ? val : [];
+    },
+    [locale]
+  );
+
+  const formatAmount = useCallback(
+    (eur: number): string => {
+      const value = currency === "USD" ? eur * EUR_USD_RATE : eur;
+      const symbol = currency === "USD" ? "$" : "€";
+      return `${value.toFixed(2)} ${symbol}`;
+    },
+    [currency]
+  );
+
+  return (
+    <I18nContext.Provider value={{ locale, currency, setLocale, setCurrency, t, ta, formatAmount }}>
+      {children}
+    </I18nContext.Provider>
+  );
+}
+
+export function useI18n() {
+  return useContext(I18nContext);
+}

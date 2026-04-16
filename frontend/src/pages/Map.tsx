@@ -10,6 +10,7 @@ import { CrisisStats } from "@/components/CrisisStats";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { geojsonBounds } from "@/lib/mapLayers";
 import { LogOut, Plus } from "lucide-react";
+import { LocaleToggle } from "@/components/LocaleToggle";
 
 const WORLD_CENTER: [number, number] = [10, 15];
 
@@ -240,9 +241,12 @@ export function MapPage() {
         <div style={{ flex: 1, display: "flex", justifyContent: "center", overflow: "hidden" }}>
           <CrisisStats bets={bets} />
         </div>
-        <button onClick={logout} style={{ padding: "4px 8px", fontSize: 10, background: "transparent", border: "1px solid #1e293b", color: "#94a3b8", borderRadius: 4, cursor: "pointer", flexShrink: 0 }}>
-          <LogOut size={12} style={{ verticalAlign: "middle" }} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <LocaleToggle />
+          <button onClick={logout} style={{ padding: "4px 8px", fontSize: 10, background: "transparent", border: "1px solid #1e293b", color: "#94a3b8", borderRadius: 4, cursor: "pointer" }}>
+            <LogOut size={12} style={{ verticalAlign: "middle" }} />
+          </button>
+        </div>
       </div>
 
       <BetTicker bets={bets} />

@@ -10,6 +10,8 @@ import { DateSelector, type DatePreset } from "@/components/DateSelector";
 import { categorise, isDateAware, type CategorisedLayer } from "@/lib/layerCategories";
 import { syncLayers, ensureBasemapRadio, geojsonBounds, installRegionMask } from "@/lib/mapLayers";
 import { ChevronLeft, ChevronDown, ChevronUp, Play, Copy } from "lucide-react";
+import { LocaleToggle } from "@/components/LocaleToggle";
+import { useI18n } from "@/lib/i18n";
 import { OnboardingOverlay } from "@/components/OnboardingOverlay";
 import { MarketStats } from "@/components/MarketStats";
 import { BetTimeline } from "@/components/BetTimeline";
@@ -19,6 +21,7 @@ import { MapPin } from "lucide-react";
 
 export function Analysis() {
   const { slug = "" } = useParams();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -319,12 +322,15 @@ export function Analysis() {
           <ChevronLeft size={20} />
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 11, color: "#94a3b8" }}>Analyse NDVI</div>
+          <div style={{ fontSize: 11, color: "#94a3b8" }}>{t("analysis.title")}</div>
           <div style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {bet.region_name}
           </div>
         </div>
-        <StatusBadge />
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <LocaleToggle />
+          <StatusBadge />
+        </div>
       </div>
 
       <div ref={mapContainer} style={{ position: "absolute", inset: 0 }} />
@@ -359,7 +365,7 @@ export function Analysis() {
           <button className="bottom-sheet-handle" onClick={() => setSheetCollapsed((c) => !c)}>
             <span className="bottom-sheet-grabber" />
             <span style={{ fontSize: 10, color: "#64748b" }}>
-              {sheetCollapsed ? "Afficher details" : "Reduire"}
+              {sheetCollapsed ? t("analysis.show_details") : t("common.reduce")}
             </span>
             {sheetCollapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
@@ -369,24 +375,24 @@ export function Analysis() {
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{bet.question}</div>
                 <div style={{ fontSize: 11, color: "#94a3b8" }}>
-                  Seuil : {bet.threshold_value} {bet.threshold_unit} · Seuil NDVI : Δ &lt; -{bet.ndvi_drop_threshold}
+                  {t("analysis.threshold_label", { value: bet.threshold_value, unit: bet.threshold_unit, drop: bet.ndvi_drop_threshold })}
                 </div>
               </div>
 
               {resolved ? (
                 <div style={{ padding: 14, background: bet.result_bool ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)", borderRadius: 10, marginBottom: 12 }}>
-                  <div style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase" }}>Resultat</div>
+                  <div style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase" }}>{t("analysis.result")}</div>
                   <div style={{ fontSize: 22, fontWeight: 800, color: bet.result_bool ? "#34d399" : "#f87171" }}>
                     {bet.result_bool ? "YES" : "NO"}
                   </div>
                   <div style={{ fontSize: 13, color: "#cbd5e1", marginTop: 4 }}>
-                    Surface deforestee : <strong>{Number(bet.resolved_value).toFixed(2)} km²</strong>
+                    {t("analysis.surface")} : <strong>{Number(bet.resolved_value).toFixed(2)} km²</strong>
                   </div>
                 </div>
               ) : (
                 <button className="btn btn-primary" onClick={resolve} disabled={resolving}
                   style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
-                  <Play size={16} /> {resolving ? "Resolution en cours..." : "Declencher l'oracle"}
+                  <Play size={16} /> {resolving ? t("analysis.resolving") : t("analysis.resolve_btn")}
                 </button>
               )}
 
@@ -426,7 +432,7 @@ export function Analysis() {
                   }}
                 >
                   <MapPin size={14} />
-                  {showDetail ? "Masquer les preuves" : `Voir les ${zones.length} zones detectees`}
+                  {showDetail ? t("analysis.hide_zones") : t("analysis.show_zones", { n: zones.length })}
                 </button>
               )}
 
@@ -448,6 +454,7 @@ export function Analysis() {
 }
 
 function EvidencePanel({ r }: { r: OracleResult }) {
+  const { t } = useI18n();
   function copy(v: string) { navigator.clipboard.writeText(v); }
   const rows: [string, string][] = [
     ["IPFS CID", r.evidence.ipfs_cid],
@@ -459,9 +466,9 @@ function EvidencePanel({ r }: { r: OracleResult }) {
   ];
   return (
     <div>
-      <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", marginBottom: 6 }}>Preuves</div>
+      <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", marginBottom: 6 }}>{t("analysis.evidence_title")}</div>
       <div style={{ fontSize: 11, color: "#cbd5e1", marginBottom: 8 }}>
-        Produits Sentinel-2 : {r.evidence.sentinel_products_t0.length + r.evidence.sentinel_products_t1.length} scenes
+        {t("analysis.sentinel_scenes", { n: r.evidence.sentinel_products_t0.length + r.evidence.sentinel_products_t1.length })}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {rows.map(([k, v]) => (

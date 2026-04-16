@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Satellite, AlertCircle } from "lucide-react";
 import { api } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 type Status = {
   mode: "mock" | "live";
@@ -9,6 +10,7 @@ type Status = {
 };
 
 export function StatusBadge() {
+  const { t } = useI18n();
   const [status, setStatus] = useState<Status | null>(null);
 
   useEffect(() => {
@@ -21,7 +23,7 @@ export function StatusBadge() {
   return (
     <div className="status-badge" data-mode={live ? "live" : "mock"} title={status.copernicus_message}>
       {live ? <Satellite size={11} /> : <AlertCircle size={11} />}
-      <span>{live ? "Copernicus LIVE" : "Mode démo"}</span>
+      <span>{live ? t("status.live") : t("status.mock")}</span>
     </div>
   );
 }

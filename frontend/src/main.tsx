@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { I18nProvider } from "@/lib/i18n";
 import { Login } from "@/pages/Login";
 import { MapPage } from "@/pages/Map";
 import { Analysis } from "@/pages/Analysis";
@@ -14,13 +15,15 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
-        <Route path="/analysis/:slug" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <I18nProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
+          <Route path="/analysis/:slug" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </I18nProvider>
   </React.StrictMode>
 );
