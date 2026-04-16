@@ -47,15 +47,9 @@ export function MapPage() {
             tileSize: 256,
             attribution: "CARTO",
           },
-          "esri-satellite": {
-            type: "raster",
-            tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-            tileSize: 256,
-          },
         },
         layers: [
           { id: "carto-dark", type: "raster", source: "carto-dark" },
-          { id: "esri-satellite", type: "raster", source: "esri-satellite" },
         ],
       },
       center: WORLD_CENTER,
@@ -82,27 +76,23 @@ export function MapPage() {
 
       const visibleBets = allBets.filter((b) => b.region_geojson && !SUB_ZONES.has(b.slug));
 
-      const world: GeoJSON.Position[] = [[-180,-85],[180,-85],[180,85],[-180,85],[-180,-85]];
-      const holes: GeoJSON.Position[][] = visibleBets.map((b) => {
-        const g = b.region_geojson!;
-        const ring = g.type === "MultiPolygon" ? g.coordinates[0][0] : g.coordinates[0];
-        return [...ring].reverse();
-      });
-
-      map.addSource("sat-mask", {
-        type: "geojson",
-        data: {
-          type: "Feature",
-          properties: {},
-          geometry: { type: "Polygon", coordinates: [world, ...holes] },
-        },
-      });
-      map.addLayer({
-        id: "sat-mask-fill",
-        type: "fill",
-        source: "sat-mask",
-        paint: { "fill-color": "#0a0f1a", "fill-opacity": 1, "fill-antialias": false },
-      });
+      // Ajouter une source satellite par zone avec bounds limite
+      for (const bet of visibleBets) {
+        const b = geojsonBounds(bet.region_geojson!);
+        const satSrcId = `sat-${bet.slug}`;
+        map.addSource(satSrcId, {
+          type: "raster",
+          tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+          tileSize: 256,
+          bounds: [b[0], b[1], b[2], b[3]],
+        });
+        map.addLayer({
+          id: `sat-${bet.slug}`,
+          type: "raster",
+          source: satSrcId,
+          paint: { "raster-opacity": 1, "raster-fade-duration": 0 },
+        });
+      }
 
       const fillIds: string[] = [];
       for (const bet of visibleBets) {
