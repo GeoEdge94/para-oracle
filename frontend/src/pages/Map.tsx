@@ -61,9 +61,19 @@ export function MapPage() {
       setBets(allBets);
       betsRef.current = allBets;
 
+      const SUB_ZONES = new Set([
+        "br163-deforestation-fires-2025",
+        "para-fires-primary-2025",
+        "tapajos-flood-2026",
+        "tapajos-mining-2025",
+        "se-para-fires-deforestation-2025",
+        "mt-soja-drought-2026",
+      ]);
+
       const fillIds: string[] = [];
       for (const bet of allBets) {
         if (!bet.region_geojson) continue;
+        if (SUB_ZONES.has(bet.slug)) continue;
         const color = CAT_COLORS[bet.category] || "#8b5cf6";
         const srcId = `region-${bet.slug}`;
         const fillId = `fill-${bet.slug}`;
