@@ -556,10 +556,9 @@ button { cursor: pointer; font-family: inherit; }
   left: 0;
   right: 0;
   z-index: 29;
-  height: 28px;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(6px);
-  border-bottom: 1px solid #1e293b;
+  height: 26px;
+  background: #0a0f1a;
+  border-bottom: 1px solid #10b98133;
   overflow: hidden;
 }
 
@@ -601,9 +600,8 @@ button { cursor: pointer; font-family: inherit; }
   position: absolute;
   z-index: 200;
   transform: translate(-50%, -100%) translateY(-12px);
-  background: rgba(15, 23, 42, 0.97);
-  backdrop-filter: blur(12px);
-  border: 1px solid #334155;
+  background: #0a0f1a;
+  border: 1px solid #1e293b;
   border-radius: 12px;
   min-width: 180px;
   max-width: 260px;
@@ -653,8 +651,7 @@ button { cursor: pointer; font-family: inherit; }
 .bet-carousel-card {
   flex: 0 0 170px;
   scroll-snap-align: start;
-  background: rgba(15, 23, 42, 0.96);
-  backdrop-filter: blur(12px);
+  background: #0a0f1a;
   border: 1px solid #1e293b;
   border-radius: 14px;
   padding: 12px;

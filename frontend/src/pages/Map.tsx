@@ -7,7 +7,7 @@ import { BetSheet } from "@/components/BetSheet";
 import { BetCarousel } from "@/components/BetCarousel";
 import { BetTicker } from "@/components/BetTicker";
 import { StatusBadge } from "@/components/StatusBadge";
-import { geojsonBounds } from "@/lib/mapLayers";
+import { geojsonBounds, buildInvertedMask } from "@/lib/mapLayers";
 import { LogOut, Plus, X } from "lucide-react";
 
 const WORLD_CENTER: [number, number] = [10, 15];
@@ -41,14 +41,22 @@ export function MapPage() {
       style: {
         version: 8,
         sources: {
-          "__boot": {
+          "carto-dark": {
+            type: "raster",
+            tiles: ["https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png"],
+            tileSize: 256,
+            attribution: "CARTO",
+          },
+          "esri-satellite": {
             type: "raster",
             tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
             tileSize: 256,
-            attribution: "ESRI World Imagery",
           },
         },
-        layers: [{ id: "__boot", type: "raster", source: "__boot" }],
+        layers: [
+          { id: "carto-dark", type: "raster", source: "carto-dark" },
+          { id: "esri-satellite", type: "raster", source: "esri-satellite" },
+        ],
       },
       center: WORLD_CENTER,
       zoom: 2,
@@ -72,10 +80,30 @@ export function MapPage() {
         "mt-soja-drought-2026",
       ]);
 
+      const world: GeoJSON.Position[] = [[-180,-90],[180,-90],[180,90],[-180,90],[-180,-90]];
+      const visibleBets = allBets.filter((b) => b.region_geojson && !SUB_ZONES.has(b.slug));
+      const holes: GeoJSON.Position[][] = visibleBets.map((b) => {
+        const g = b.region_geojson!;
+        return g.type === "MultiPolygon" ? g.coordinates[0][0] : g.coordinates[0];
+      });
+
+      map.addSource("sat-mask", {
+        type: "geojson",
+        data: {
+          type: "Feature",
+          properties: {},
+          geometry: { type: "Polygon", coordinates: [world, ...holes] },
+        },
+      });
+      map.addLayer({
+        id: "sat-mask-fill",
+        type: "fill",
+        source: "sat-mask",
+        paint: { "fill-color": "#0f172a", "fill-opacity": 0.92 },
+      });
+
       const fillIds: string[] = [];
-      for (const bet of allBets) {
-        if (!bet.region_geojson) continue;
-        if (SUB_ZONES.has(bet.slug)) continue;
+      for (const bet of visibleBets) {
         const color = CAT_COLORS[bet.category] || "#8b5cf6";
         const srcId = `region-${bet.slug}`;
         const fillId = `fill-${bet.slug}`;
@@ -83,21 +111,28 @@ export function MapPage() {
 
         map.addSource(srcId, {
           type: "geojson",
-          data: { type: "Feature", properties: { slug: bet.slug }, geometry: bet.region_geojson },
+          data: { type: "Feature", properties: { slug: bet.slug }, geometry: bet.region_geojson! },
         });
 
         map.addLayer({
           id: fillId,
           type: "fill",
           source: srcId,
-          paint: { "fill-color": color, "fill-opacity": 0.12 },
+          paint: { "fill-color": color, "fill-opacity": 0.15 },
+        });
+
+        map.addLayer({
+          id: `glow-${bet.slug}`,
+          type: "line",
+          source: srcId,
+          paint: { "line-color": color, "line-width": 6, "line-opacity": 0.2, "line-blur": 4 },
         });
 
         map.addLayer({
           id: `border-${bet.slug}`,
           type: "line",
           source: srcId,
-          paint: { "line-color": color, "line-width": 2, "line-dasharray": [4, 2] },
+          paint: { "line-color": color, "line-width": 1.5, "line-opacity": 0.8 },
         });
       }
 
@@ -149,7 +184,7 @@ export function MapPage() {
     <div style={{ position: "relative", height: "100dvh" }}>
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 30,
-        padding: "10px 14px", background: "rgba(15,23,42,0.9)", backdropFilter: "blur(10px)",
+        padding: "8px 14px", background: "#0a0f1a",
         display: "flex", justifyContent: "space-between", alignItems: "center",
         borderBottom: "1px solid #1e293b",
       }}>
