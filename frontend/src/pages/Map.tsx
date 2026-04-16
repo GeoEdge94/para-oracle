@@ -40,15 +40,10 @@ export function MapPage() {
       container: mapContainer.current,
       style: {
         version: 8,
-        sources: {
-          "carto-dark": {
-            type: "raster",
-            tiles: ["https://a.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png"],
-            tileSize: 256,
-            attribution: "CARTO",
-          },
-        },
-        layers: [{ id: "carto-dark", type: "raster", source: "carto-dark" }],
+        sources: {},
+        layers: [
+          { id: "bg", type: "background", paint: { "background-color": "#0a0f1a" } },
+        ],
       },
       center: WORLD_CENTER,
       zoom: 2,
