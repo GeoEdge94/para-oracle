@@ -353,11 +353,13 @@ button { cursor: pointer; font-family: inherit; }
   line-height: 1.2;
 }
 
-/* Mobile: panneau moins large, scroll OK */
+/* Mobile: panneau moins large, sous la timeline */
 @media (max-width: 600px) {
-  .layer-panel { width: calc(100vw - 20px); max-width: 280px; }
-  .date-selector { left: 10px; transform: none; right: 10px; }
+  .date-selector { top: 46px; left: 10px; right: 10px; transform: none; }
   .date-selector-row { justify-content: space-between; }
   .date-chip { flex: 1; min-width: 0; }
   .date-chip-cal { flex: 0 0 36px; }
+
+  .layer-panel { top: 106px; width: calc(100vw - 20px); max-width: 280px; max-height: calc(100dvh - 120px); }
+  .layer-panel-handle { top: 106px; }
 }
