@@ -56,13 +56,19 @@ export function syncLayers(map: maplibregl.Map, layers: CategorisedLayer[], sele
             attribution: attributionFor(l.slug),
           });
         }
-        map.addLayer({
-          id: layerId,
-          type: "raster",
-          source: sourceId,
-          layout: { visibility: l.visible ? "visible" : "none" },
-          paint: { "raster-opacity": l.opacity },
-        });
+        // Insert raster layers BELOW the Pará vector fill/border (if present),
+        // so the region polygon stays visually on top of every overlay.
+        const beforeId = firstExistingLayer(map, ["para-fill", "para-border", "para-line"]);
+        map.addLayer(
+          {
+            id: layerId,
+            type: "raster",
+            source: sourceId,
+            layout: { visibility: l.visible ? "visible" : "none" },
+            paint: { "raster-opacity": l.opacity },
+          },
+          beforeId
+        );
       } catch (e) {
         console.warn(`[syncLayers] skipped ${l.slug}:`, e);
       }
@@ -70,6 +76,13 @@ export function syncLayers(map: maplibregl.Map, layers: CategorisedLayer[], sele
       continue;
     }
   }
+}
+
+function firstExistingLayer(map: maplibregl.Map, candidates: string[]): string | undefined {
+  for (const id of candidates) {
+    if (map.getLayer(id)) return id;
+  }
+  return undefined;
 }
 
 function paintOpacityProp(map: maplibregl.Map, id: string): string | null {
