@@ -7,12 +7,32 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.routers import auth, bets, layers, oracle, analyses, tiles
 
+TAGS_METADATA = [
+    {"name": "auth", "description": "Authentification mock (MVP). Accepte tout email/password, retourne un token."},
+    {"name": "bets", "description": "Paris de prediction. Un bet = une question YES/NO resolue par le pipeline NDVI."},
+    {"name": "layers", "description": "Configuration des 16 couches cartographiques (basemaps, satellite, cadastres, NDVI)."},
+    {"name": "oracle", "description": "Resolution deterministe des paris via pipeline Sentinel-2 NDVI. POST resolve + GET status."},
+    {"name": "analyses", "description": "Historique des resolutions avec preuves SHA-256, surfaces et CID IPFS."},
+    {"name": "tiles", "description": "Proxy de tuiles avec cache disque. Pre-warm PRODES/DETER sur Para z4-8."},
+]
+
 app = FastAPI(
     title="ParaOracle API",
-    description="Oracle determinist pour le marche de prediction Para deforestation",
+    description=(
+        "**Oracle deterministe pour le marche de prediction sur la deforestation au Para (Amazonie)**\n\n"
+        "Pipeline: Sentinel-2 L2A → NDVI composites → delta → masque binaire → surface km² → YES/NO.\n\n"
+        "Toute resolution est reproductible (memes entrees → memes sorties) et auditable "
+        "(5 hashes SHA-256 + CID IPFS).\n\n"
+        "---\n\n"
+        "**Sources de verite integrees**: PRODES/DETER (INPE), Hansen (GFW), NASA GIBS.\n\n"
+        "**Tile cache**: les couches sont servies depuis le disque local apres premier fetch upstream."
+    ),
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    openapi_tags=TAGS_METADATA,
+    contact={"name": "GeoEdge", "url": "https://github.com/GeoEdge94/para-oracle"},
+    license_info={"name": "MIT"},
 )
 
 app.add_middleware(
