@@ -549,6 +549,43 @@ button { cursor: pointer; font-family: inherit; }
 .maplibregl-ctrl-bottom-right,
 .maplibregl-ctrl-bottom-left { display: none !important; }
 
+/* ══════════════ Overlap selection menu ══════════════ */
+.overlap-menu {
+  position: absolute;
+  z-index: 200;
+  transform: translate(-50%, -100%) translateY(-12px);
+  background: rgba(15, 23, 42, 0.97);
+  backdrop-filter: blur(12px);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  min-width: 180px;
+  max-width: 260px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: overlap-in 0.15s ease;
+}
+
+@keyframes overlap-in {
+  from { opacity: 0; transform: translate(-50%, -100%) translateY(-4px) scale(0.95); }
+  to { opacity: 1; transform: translate(-50%, -100%) translateY(-12px) scale(1); }
+}
+
+.overlap-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-top: 1px solid #1e293b;
+  color: #e2e8f0;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.overlap-menu-item:hover { background: rgba(16, 185, 129, 0.08); }
+
 /* ══════════════ Bet carousel ══════════════ */
 .bet-carousel {
   position: fixed;

@@ -9,7 +9,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { geojsonBounds } from "@/lib/mapLayers";
 import { LogOut } from "lucide-react";
 
-const BRAZIL_CENTER: [number, number] = [-55, -10];
+const WORLD_CENTER: [number, number] = [10, 15];
 
 const CAT_COLORS: Record<string, string> = {
   deforestation: "#10b981",
@@ -17,6 +17,9 @@ const CAT_COLORS: Record<string, string> = {
   flood: "#3b82f6",
   mining: "#a855f7",
   drought: "#ef4444",
+  glacier: "#06b6d4",
+  urbanization: "#f97316",
+  water_quality: "#0ea5e9",
 };
 
 export function MapPage() {
@@ -25,6 +28,8 @@ export function MapPage() {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [selectedBet, setSelectedBet] = useState<Bet | null>(null);
+  const [overlapMenu, setOverlapMenu] = useState<{ x: number; y: number; bets: Bet[] } | null>(null);
+  const betsRef = useRef<Bet[]>([]);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -43,8 +48,8 @@ export function MapPage() {
         },
         layers: [{ id: "__boot", type: "raster", source: "__boot" }],
       },
-      center: BRAZIL_CENTER,
-      zoom: 4,
+      center: WORLD_CENTER,
+      zoom: 2,
       maxZoom: 14,
     });
 
@@ -54,11 +59,15 @@ export function MapPage() {
       const res = await API.listBets();
       const allBets = res.data;
       setBets(allBets);
+      betsRef.current = allBets;
 
+      const fillIds: string[] = [];
       for (const bet of allBets) {
         if (!bet.region_geojson) continue;
         const color = CAT_COLORS[bet.category] || "#8b5cf6";
         const srcId = `region-${bet.slug}`;
+        const fillId = `fill-${bet.slug}`;
+        fillIds.push(fillId);
 
         map.addSource(srcId, {
           type: "geojson",
@@ -66,7 +75,7 @@ export function MapPage() {
         });
 
         map.addLayer({
-          id: `fill-${bet.slug}`,
+          id: fillId,
           type: "fill",
           source: srcId,
           paint: { "fill-color": color, "fill-opacity": 0.12 },
@@ -78,14 +87,30 @@ export function MapPage() {
           source: srcId,
           paint: { "line-color": color, "line-width": 2, "line-dasharray": [4, 2] },
         });
-
-        map.on("click", `fill-${bet.slug}`, () => {
-          setSelectedBet(bet);
-        });
-
-        map.on("mouseenter", `fill-${bet.slug}`, () => { map.getCanvas().style.cursor = "pointer"; });
-        map.on("mouseleave", `fill-${bet.slug}`, () => { map.getCanvas().style.cursor = ""; });
       }
+
+      map.on("click", (e) => {
+        const features = map.queryRenderedFeatures(e.point, { layers: fillIds.filter((id) => map.getLayer(id)) });
+        if (!features.length) { setOverlapMenu(null); return; }
+
+        const slugs = [...new Set(features.map((f) => f.properties?.slug).filter(Boolean))];
+        const matched = slugs.map((s) => betsRef.current.find((b) => b.slug === s)).filter(Boolean) as Bet[];
+
+        if (matched.length === 1) {
+          setOverlapMenu(null);
+          setSelectedBet(matched[0]);
+          const b = geojsonBounds(matched[0].region_geojson!);
+          map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: { top: 60, bottom: 300, left: 20, right: 20 }, duration: 1200 });
+        } else if (matched.length > 1) {
+          setSelectedBet(null);
+          setOverlapMenu({ x: e.point.x, y: e.point.y, bets: matched });
+        }
+      });
+
+      map.on("mousemove", (e) => {
+        const features = map.queryRenderedFeatures(e.point, { layers: fillIds.filter((id) => map.getLayer(id)) });
+        map.getCanvas().style.cursor = features.length ? "pointer" : "";
+      });
     });
 
     mapRef.current = map;
@@ -127,9 +152,33 @@ export function MapPage() {
         </button>
       </div>
 
-      <div ref={mapContainer} style={{ position: "absolute", inset: 0 }} />
+      <div ref={mapContainer} style={{ position: "absolute", inset: 0 }} onClick={() => setOverlapMenu(null)} />
 
-      {!selectedBet && <BetCarousel bets={bets} onSelect={selectBet} />}
+      {overlapMenu && (
+        <div className="overlap-menu" style={{ left: overlapMenu.x, top: overlapMenu.y }}>
+          <div style={{ fontSize: 10, color: "#64748b", padding: "6px 10px 4px", textTransform: "uppercase" }}>
+            {overlapMenu.bets.length} paris sur cette zone
+          </div>
+          {overlapMenu.bets.map((b) => {
+            const color = CAT_COLORS[b.category] || "#8b5cf6";
+            return (
+              <button
+                key={b.slug}
+                className="overlap-menu-item"
+                onClick={() => { setOverlapMenu(null); selectBet(b); }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
+                <span style={{ flex: 1, textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {b.region_name}
+                </span>
+                <span style={{ fontSize: 9, color: "#64748b" }}>{b.index_type}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {!selectedBet && !overlapMenu && <BetCarousel bets={bets} onSelect={selectBet} />}
 
       {selectedBet && (
         <BetSheet
