@@ -47,15 +47,9 @@ export function MapPage() {
             tileSize: 256,
             attribution: "CARTO",
           },
-          "esri-satellite": {
-            type: "raster",
-            tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-            tileSize: 256,
-          },
         },
         layers: [
           { id: "carto-dark", type: "raster", source: "carto-dark" },
-          { id: "esri-satellite", type: "raster", source: "esri-satellite" },
         ],
       },
       center: WORLD_CENTER,
@@ -80,27 +74,7 @@ export function MapPage() {
         "mt-soja-drought-2026",
       ]);
 
-      const world: GeoJSON.Position[] = [[-180,-90],[180,-90],[180,90],[-180,90],[-180,-90]];
       const visibleBets = allBets.filter((b) => b.region_geojson && !SUB_ZONES.has(b.slug));
-      const holes: GeoJSON.Position[][] = visibleBets.map((b) => {
-        const g = b.region_geojson!;
-        return g.type === "MultiPolygon" ? g.coordinates[0][0] : g.coordinates[0];
-      });
-
-      map.addSource("sat-mask", {
-        type: "geojson",
-        data: {
-          type: "Feature",
-          properties: {},
-          geometry: { type: "Polygon", coordinates: [world, ...holes] },
-        },
-      });
-      map.addLayer({
-        id: "sat-mask-fill",
-        type: "fill",
-        source: "sat-mask",
-        paint: { "fill-color": "#0f172a", "fill-opacity": 0.92 },
-      });
 
       const fillIds: string[] = [];
       for (const bet of visibleBets) {
