@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS users_mock (
     email        VARCHAR(255) UNIQUE NOT NULL,
     pseudo       VARCHAR(100),
     token        VARCHAR(255),                -- dummy token, stocke pour demo
+    balance      NUMERIC(12,2) DEFAULT 10000.00,
+    total_won    NUMERIC(12,2) DEFAULT 0.00,
+    total_lost   NUMERIC(12,2) DEFAULT 0.00,
     created_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
