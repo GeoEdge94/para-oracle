@@ -14,6 +14,7 @@ import { LocaleToggle } from "@/components/LocaleToggle";
 import { useI18n } from "@/lib/i18n";
 import { OnboardingOverlay } from "@/components/OnboardingOverlay";
 import { MarketStats } from "@/components/MarketStats";
+import { PlaceBetForm } from "@/components/PlaceBetForm";
 import { BetTimeline } from "@/components/BetTimeline";
 import { EvidenceDetail } from "@/components/EvidenceDetail";
 import { VerdictPanel } from "@/components/VerdictPanel";
@@ -396,6 +397,10 @@ export function Analysis() {
                 </button>
               )}
 
+              <PlaceBetForm slug={slug} betStatus={bet.status} stats={marketStats} onPlaced={() => {
+                API.marketStats(slug).then(r => setMarketStats(r.data)).catch(() => {});
+                API.myBets(slug).then(r => setMyBets(r.data)).catch(() => {});
+              }} />
               <MarketStats stats={marketStats} myBets={myBets} />
               <BetTimeline placements={placements} periodStart={bet.period_start} periodEnd={bet.period_end} />
               {result && <EvidencePanel r={result} />}

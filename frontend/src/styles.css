@@ -1102,3 +1102,133 @@ button { cursor: pointer; font-family: inherit; }
   border-radius: 2px;
   transition: width 0.3s;
 }
+
+/* ══════════════ Wallet badge ══════════════ */
+.wallet-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 9999px;
+  background: rgba(16,185,129,0.12);
+  border: 1px solid rgba(16,185,129,0.3);
+  color: #34d399;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.wallet-badge:hover { background: rgba(16,185,129,0.2); }
+
+/* ══════════════ Place bet form ══════════════ */
+.place-bet-form {
+  padding: 12px 0;
+  border-top: 1px solid #1e293b;
+  margin-top: 12px;
+}
+.pbf-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.pbf-position-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.pbf-pos-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.12s;
+}
+.pbf-yes.active { background: rgba(52,211,153,0.12); border-color: #34d399; color: #34d399; }
+.pbf-no.active { background: rgba(248,113,113,0.12); border-color: #f87171; color: #f87171; }
+.pbf-amount-row { margin-bottom: 8px; }
+.pbf-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #f1f5f9;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.pbf-input:focus { outline: none; border-color: #10b981; }
+.pbf-presets {
+  display: flex;
+  gap: 4px;
+}
+.pbf-preset {
+  flex: 1;
+  padding: 4px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+}
+.pbf-preset:hover { border-color: #10b981; color: #10b981; }
+.pbf-preview {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+.pbf-preview-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #94a3b8;
+  padding: 2px 0;
+}
+.pbf-error { color: #f87171; font-size: 11px; margin-bottom: 4px; }
+.pbf-success { color: #34d399; font-size: 11px; margin-bottom: 4px; }
+
+/* ══════════════ Locale toggle ══════════════ */
+.locale-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid #334155;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 28px;
+}
+.locale-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  height: 100%;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.locale-btn:hover { background: rgba(51, 65, 85, 0.5); color: #f1f5f9; }
+.locale-btn:active { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.locale-sep {
+  width: 1px;
+  height: 16px;
+  background: #334155;
+}

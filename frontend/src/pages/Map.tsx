@@ -9,8 +9,9 @@ import { BetTicker } from "@/components/BetTicker";
 import { CrisisStats } from "@/components/CrisisStats";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { geojsonBounds } from "@/lib/mapLayers";
-import { LogOut, Plus } from "lucide-react";
+import { LogOut, Plus, Wallet, Trophy } from "lucide-react";
 import { LocaleToggle } from "@/components/LocaleToggle";
+import { WalletBadge } from "@/components/WalletBadge";
 import { useI18n } from "@/lib/i18n";
 
 const WORLD_CENTER: [number, number] = [10, 15];
@@ -244,6 +245,10 @@ export function MapPage() {
           <CrisisStats bets={bets} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <WalletBadge onClick={() => navigate("/wallet")} />
+          <button onClick={() => navigate("/leaderboard")} style={{ padding: "4px 8px", fontSize: 10, background: "transparent", border: "1px solid #1e293b", color: "#fbbf24", borderRadius: 4, cursor: "pointer" }} title="Leaderboard">
+            <Trophy size={12} style={{ verticalAlign: "middle" }} />
+          </button>
           <LocaleToggle />
           <button onClick={logout} style={{ padding: "4px 8px", fontSize: 10, background: "transparent", border: "1px solid #1e293b", color: "#94a3b8", borderRadius: 4, cursor: "pointer" }}>
             <LogOut size={12} style={{ verticalAlign: "middle" }} />

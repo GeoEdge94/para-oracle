@@ -119,6 +119,33 @@ export type DeforestationZone = {
   geojson: GeoJSON.Polygon;
 };
 
+export type WalletBalance = {
+  balance: number;
+  total_won: number;
+  total_lost: number;
+  pseudo: string;
+  email: string;
+};
+
+export type PlaceBetResponse = {
+  id: string;
+  position: string;
+  amount: number;
+  odds: number;
+  potential_payout: number;
+  balance: number;
+};
+
+export type LeaderboardEntry = {
+  pseudo: string;
+  email: string;
+  balance: number;
+  total_won: number;
+  total_lost: number;
+  pnl: number;
+  roi: number;
+};
+
 export const API = {
   login: (email: string, password: string) =>
     api.post<{ token: string; email: string; pseudo: string }>("/auth/login", { email, password }),
@@ -134,4 +161,16 @@ export const API = {
     return api.get<UserBetSummary>(`/user-bets/my/${slug}?token=${token}`);
   },
   listZones: (slug: string) => api.get<DeforestationZone[]>(`/zones/by-bet/${slug}`),
+  walletBalance: () => {
+    const token = localStorage.getItem("para_token") || "";
+    return api.get<WalletBalance>(`/wallet/balance?token=${token}`);
+  },
+  placeBet: (slug: string, position: "YES" | "NO", amount: number) => {
+    const token = localStorage.getItem("para_token") || "";
+    return api.post<PlaceBetResponse>(`/wallet/place-bet?token=${token}`, { slug, position, amount });
+  },
+  resetWallet: () => {
+    const token = localStorage.getItem("para_token") || "";
+    return api.post(`/wallet/reset?token=${token}`);
+  },
 };

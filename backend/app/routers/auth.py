@@ -45,3 +45,21 @@ def me(token: str = "", db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid token")
     return {"email": user.email, "pseudo": user.pseudo}
+
+
+@router.get("/leaderboard")
+def leaderboard(db: Session = Depends(get_db)):
+    """Classement des utilisateurs par PnL (total_won - total_lost)."""
+    users = db.query(UserMock).all()
+    entries = []
+    for u in users:
+        won = float(u.total_won or 0)
+        lost = float(u.total_lost or 0)
+        entries.append({
+            "pseudo": u.pseudo or u.email.split("@")[0],
+            "balance": float(u.balance or 10000),
+            "total_won": won,
+            "total_lost": lost,
+        })
+    entries.sort(key=lambda e: e["total_won"] - e["total_lost"], reverse=True)
+    return entries
