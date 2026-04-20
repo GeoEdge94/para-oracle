@@ -8,13 +8,23 @@ import { BetBottomSheet } from "@/components/BetBottomSheet";
 import { BetTicker } from "@/components/BetTicker";
 import { CrisisStats } from "@/components/CrisisStats";
 import { CategoryFilter } from "@/components/CategoryFilter";
+import { GlobeView } from "@/components/GlobeView";
 import { geojsonBounds } from "@/lib/mapLayers";
-import { LogOut, Plus, Wallet, Trophy } from "lucide-react";
+import { LogOut, Plus, Wallet, Trophy, Menu, X, Globe } from "lucide-react";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { WalletBadge } from "@/components/WalletBadge";
 import { useI18n } from "@/lib/i18n";
 
 const WORLD_CENTER: [number, number] = [10, 15];
+
+const SUB_ZONES = new Set([
+  "br163-deforestation-fires-2025",
+  "para-fires-primary-2025",
+  "tapajos-flood-2026",
+  "tapajos-mining-2025",
+  "se-para-fires-deforestation-2025",
+  "mt-soja-drought-2026",
+]);
 
 const CAT_COLORS: Record<string, string> = {
   deforestation: "#10b981",
@@ -37,6 +47,15 @@ export function MapPage() {
   const [overlapMenu, setOverlapMenu] = useState<{ x: number; y: number; bets: Bet[] } | null>(null);
   const [showCarousel, setShowCarousel] = useState(false);
   const [filterCat, setFilterCat] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"map" | "globe">("map");
+  const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+
+  useEffect(() => {
+    const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   const betsRef = useRef<Bet[]>([]);
   const dashAnimRef = useRef<number | null>(null);
   const pulseAnimRef = useRef<number | null>(null);
@@ -70,15 +89,6 @@ export function MapPage() {
       const allBets = res.data;
       setBets(allBets);
       betsRef.current = allBets;
-
-      const SUB_ZONES = new Set([
-        "br163-deforestation-fires-2025",
-        "para-fires-primary-2025",
-        "tapajos-flood-2026",
-        "tapajos-mining-2025",
-        "se-para-fires-deforestation-2025",
-        "mt-soja-drought-2026",
-      ]);
 
       const visibleBets = allBets.filter((b) => b.region_geojson && !SUB_ZONES.has(b.slug));
 
@@ -136,14 +146,27 @@ export function MapPage() {
         });
       }
 
-      // Ant march animation on borders (shifting dasharray)
-      let dashOffset = 0;
-      const animateDash = () => {
-        dashOffset = (dashOffset + 0.1) % 4;
-        for (const bet of visibleBets) {
-          const lid = `border-${bet.slug}`;
-          if (map.getLayer(lid)) {
-            map.setPaintProperty(lid, "line-dasharray", [2, 2, dashOffset]);
+      // Ant-march borders: cycle through a small fixed set of dash patterns
+      // (avoid creating unique arrays per frame — fills MapLibre's LineAtlas
+      // texture and causes layers to vanish after a minute).
+      const DASH_PATTERNS: [number, number][] = [
+        [2, 2],
+        [2.5, 1.5],
+        [3, 1],
+        [2.5, 1.5],
+      ];
+      let dashIdx = 0;
+      let lastDashTick = performance.now();
+      const animateDash = (now: number) => {
+        if (now - lastDashTick >= 180) {
+          lastDashTick = now;
+          dashIdx = (dashIdx + 1) % DASH_PATTERNS.length;
+          const pattern = DASH_PATTERNS[dashIdx];
+          for (const bet of visibleBets) {
+            const lid = `border-${bet.slug}`;
+            if (map.getLayer(lid)) {
+              map.setPaintProperty(lid, "line-dasharray", pattern);
+            }
           }
         }
         dashAnimRef.current = requestAnimationFrame(animateDash);
@@ -229,22 +252,17 @@ export function MapPage() {
 
   return (
     <div style={{ position: "relative", height: "100dvh" }}>
-      <div style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 30,
-        padding: "8px 14px", background: "#0a0f1a",
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-        borderBottom: "1px solid #1e293b", gap: 10,
-      }}>
+      <div className="topbar">
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <div style={{ fontWeight: 800, fontSize: 14, letterSpacing: "-0.5px" }}>
             Para<span style={{ color: "#10b981" }}>Oracle</span>
           </div>
           <span style={{ fontSize: 8, color: "#64748b", letterSpacing: "1px", fontFamily: "monospace" }}>/ GLOBAL</span>
         </div>
-        <div style={{ flex: 1, display: "flex", justifyContent: "center", overflow: "hidden" }}>
+        <div className="topbar-center">
           <CrisisStats bets={bets} />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        <div className="topbar-actions">
           <WalletBadge onClick={() => navigate("/wallet")} />
           <button onClick={() => navigate("/leaderboard")} style={{ padding: "4px 8px", fontSize: 10, background: "transparent", border: "1px solid #1e293b", color: "#fbbf24", borderRadius: 4, cursor: "pointer" }} title="Leaderboard">
             <Trophy size={12} style={{ verticalAlign: "middle" }} />
@@ -254,12 +272,61 @@ export function MapPage() {
             <LogOut size={12} style={{ verticalAlign: "middle" }} />
           </button>
         </div>
+        <button className="topbar-hamburger" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+          <Menu size={18} />
+        </button>
       </div>
+
+      {menuOpen && (
+        <>
+          <div className="sidebar-backdrop" onClick={() => setMenuOpen(false)} />
+          <aside className="sidebar-drawer" role="dialog" aria-label="Menu">
+            <div className="sidebar-head">
+              <span style={{ fontWeight: 700, fontSize: 13 }}>Menu</span>
+              <button onClick={() => setMenuOpen(false)} className="sidebar-close" aria-label="Close menu">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="sidebar-section">
+              <div className="sidebar-label">Crisis</div>
+              <CrisisStats bets={bets} />
+            </div>
+            <div className="sidebar-section sidebar-actions">
+              <WalletBadge onClick={() => { setMenuOpen(false); navigate("/wallet"); }} />
+              <button onClick={() => { setMenuOpen(false); navigate("/leaderboard"); }} className="sidebar-btn" style={{ color: "#fbbf24" }}>
+                <Trophy size={14} /> <span>Leaderboard</span>
+              </button>
+              <div className="sidebar-btn" style={{ justifyContent: "space-between" }}>
+                <span style={{ color: "#94a3b8", fontSize: 11 }}>Langue</span>
+                <LocaleToggle />
+              </div>
+              <button onClick={() => { setMenuOpen(false); logout(); }} className="sidebar-btn" style={{ color: "#94a3b8" }}>
+                <LogOut size={14} /> <span>Logout</span>
+              </button>
+            </div>
+          </aside>
+        </>
+      )}
 
       <BetTicker bets={bets} />
       <CategoryFilter bets={bets} active={filterCat} onSelect={setFilterCat} />
 
-      <div ref={mapContainer} style={{ position: "absolute", inset: 0 }} onClick={() => { setOverlapMenu(null); setShowCarousel(false); }} />
+      <div
+        ref={mapContainer}
+        style={{ position: "absolute", inset: 0, display: viewMode === "map" ? "block" : "none" }}
+        onClick={() => { setOverlapMenu(null); setShowCarousel(false); }}
+      />
+
+      {viewMode === "globe" && (
+        <div style={{ position: "absolute", inset: 0, background: "#000", zIndex: 1 }}>
+          <GlobeView
+            bets={bets.filter((b) => !SUB_ZONES.has(b.slug))}
+            width={size.w}
+            height={size.h}
+            onSelect={(b) => navigate(`/analysis/${b.slug}`)}
+          />
+        </div>
+      )}
 
       {overlapMenu && (
         <div className="overlap-menu" style={{ left: overlapMenu.x, top: overlapMenu.y }}>
@@ -286,13 +353,23 @@ export function MapPage() {
       )}
 
       {!selectedBet && !showCarousel && (
-        <button
-          className="fab"
-          style={{ bottom: 24, left: 16 }}
-          onClick={() => setShowCarousel(true)}
-        >
-          <Plus size={22} />
-        </button>
+        <>
+          <button
+            className={`fab fab-secondary${viewMode === "globe" ? " fab-active" : ""}`}
+            style={{ bottom: 24, right: 16, left: "auto" }}
+            onClick={() => setViewMode((v) => (v === "map" ? "globe" : "map"))}
+            title={viewMode === "globe" ? "Vue carte" : "Vue globe 3D"}
+          >
+            <Globe size={20} />
+          </button>
+          <button
+            className="fab"
+            style={{ bottom: 24, left: 16 }}
+            onClick={() => setShowCarousel(true)}
+          >
+            <Plus size={22} />
+          </button>
+        </>
       )}
 
       {showCarousel && !selectedBet && (
