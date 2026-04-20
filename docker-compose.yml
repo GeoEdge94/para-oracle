@@ -24,6 +24,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: dev
     container_name: para-backend
     restart: unless-stopped
     depends_on:
@@ -51,6 +52,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: dev
     container_name: para-frontend
     restart: unless-stopped
     depends_on:
