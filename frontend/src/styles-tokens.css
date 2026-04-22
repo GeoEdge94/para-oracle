@@ -175,6 +175,12 @@ html, body, #root {
   100% { background-position: -200% 0; }
 }
 
+/* ══════════════ Constellation arcs dash animation ══════════════ */
+@keyframes const-dash {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -125; }
+}
+
 /* ══════════════ Reduced motion ══════════════ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
