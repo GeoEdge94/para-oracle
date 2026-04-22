@@ -1,0 +1,18 @@
+# Veralith — registry des policies disponibles.
+# Pointe vers les fichiers YAML individuels dans src/veralith_pipeline/resolution/policies/
+
+policies:
+  - id: wildfire-default-v1
+    file: wildfire.yaml
+    event_types: [wildfire]
+    description: "Detection feu de foret multi-source avec quorum 2 (NASA + EFFIS ou NOAA)"
+
+  - id: flood-default-v1
+    file: flood.yaml
+    event_types: [flood]
+    description: "Detection inondation severe via NOAA ou Vigicrues, severity max"
+
+  - id: earthquake-default-v1
+    file: earthquake.yaml
+    event_types: [earthquake]
+    description: "Detection seisme M5.5+ via USGS"

@@ -1,0 +1,19 @@
+# Veralith policy — Flood event detection
+#
+# Resoudre YES si au moins 1 source officielle detecte une inondation
+# avec severite haute. Vigicrues seul suffit pour la France si severite >= 3.
+
+id: flood-default-v1
+version: 1.0.0
+event_type: flood
+
+aggregation: max_severity      # un seul evenement severe suffit
+threshold: 0.66                # severity > 0.66 → YES (correspond a Orange/Rouge sur Vigicrues)
+
+allowed_sources:
+  - NOAA
+  - VIGICRUES
+
+min_sources_agree: 1
+min_confidence: 0.6
+min_severity: 0.5

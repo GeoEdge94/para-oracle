@@ -1,0 +1,54 @@
+# Veralith — registry des sources de donnees disponibles.
+# Reference par les connectors et les policies.
+
+sources:
+  - name: NASA_FIRMS
+    full_name: NASA Fire Information for Resource Management System
+    coverage: global
+    update_frequency: ~3h
+    api_endpoint: https://firms.modaps.eosdis.nasa.gov/api/area/csv
+    requires_api_key: true
+    api_key_url: https://firms.modaps.eosdis.nasa.gov/api/map_key/
+    event_types: [wildfire]
+    license: NASA Open Data
+    default_weight: 1.0
+
+  - name: EFFIS
+    full_name: European Forest Fire Information System (Copernicus EMS)
+    coverage: Europe
+    update_frequency: daily
+    api_endpoint: https://maps.effis.emergency.copernicus.eu/effis/ows
+    requires_api_key: false
+    event_types: [wildfire]
+    license: Copernicus Open License
+    default_weight: 0.95
+
+  - name: NOAA
+    full_name: National Oceanic and Atmospheric Administration alerts
+    coverage: USA
+    update_frequency: ~5min
+    api_endpoint: https://api.weather.gov/alerts/active
+    requires_api_key: false
+    event_types: [wildfire, flood, storm, tornado, hurricane]
+    license: Public domain (US Government)
+    default_weight: 0.90
+
+  - name: USGS
+    full_name: United States Geological Survey earthquake catalog
+    coverage: global
+    update_frequency: real-time
+    api_endpoint: https://earthquake.usgs.gov/fdsnws/event/1/query
+    requires_api_key: false
+    event_types: [earthquake]
+    license: USGS Open Data
+    default_weight: 1.0
+
+  - name: VIGICRUES
+    full_name: Service francais de prevision des crues
+    coverage: France
+    update_frequency: ~3h
+    api_endpoint: https://www.vigicrues.gouv.fr/services/1/InfoVigiCru.json
+    requires_api_key: false
+    event_types: [flood]
+    license: Etalab Open License
+    default_weight: 0.85
