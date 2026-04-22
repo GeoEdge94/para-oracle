@@ -75,6 +75,9 @@ const fr: Translations = {
     winners: "{n} gagnants",
     pool_losers: "Pool perdants",
     losers: "{n} perdants",
+    tab_result: "Resultat",
+    tab_sources: "Preuves",
+    tab_payouts: "Paiements",
   },
   zones: {
     detected: "Zones detectees",
@@ -235,6 +238,9 @@ const en: Translations = {
     winners: "{n} winners",
     pool_losers: "Losers pool",
     losers: "{n} losers",
+    tab_result: "Result",
+    tab_sources: "Evidence",
+    tab_payouts: "Payouts",
   },
   zones: {
     detected: "Detected zones",

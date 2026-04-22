@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, RefreshCw, TrendingUp, TrendingDown, Wallet as WalletIcon } from "lucide-react";
+import { toast } from "sonner";
+import { motion } from "framer-motion";
 import { API, type WalletBalance, type UserBet } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { LocaleToggle } from "@/components/LocaleToggle";
@@ -34,6 +36,9 @@ export function WalletPage() {
     try {
       await API.resetWallet();
       load();
+      toast.success(t("wallet.reset_confirm"));
+    } catch {
+      toast.error(t("auth.error"));
     } finally {
       setResetting(false);
     }
@@ -86,10 +91,17 @@ export function WalletPage() {
         </div>
 
         {/* Reset button */}
-        <button className="btn btn-ghost" onClick={reset} disabled={resetting}
-          style={{ width: "100%", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+        <motion.button
+          className="btn btn-ghost"
+          onClick={reset}
+          disabled={resetting}
+          whileTap={{ scale: 0.98 }}
+          whileHover={{ y: -1 }}
+          transition={{ type: "spring", stiffness: 420, damping: 28 }}
+          style={{ width: "100%", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+        >
           <RefreshCw size={14} /> {t("wallet.reset")}
-        </button>
+        </motion.button>
 
         {/* History */}
         <div style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 8, letterSpacing: 0.5 }}>

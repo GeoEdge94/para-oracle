@@ -1,12 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "sonner";
 import { I18nProvider } from "@/lib/i18n";
 import { Login } from "@/pages/Login";
 import { MapPage } from "@/pages/Map";
 import { Analysis } from "@/pages/Analysis";
 import { WalletPage } from "@/pages/Wallet";
 import { LeaderboardPage } from "@/pages/Leaderboard";
+import "./styles-tokens.css";
 import "./styles.css";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -28,6 +30,20 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      <Toaster
+        position="top-center"
+        theme="dark"
+        richColors
+        closeButton
+        toastOptions={{
+          style: {
+            background: "var(--surface-2)",
+            border: "1px solid var(--border)",
+            color: "var(--fg)",
+            fontSize: "13px",
+          },
+        }}
+      />
     </I18nProvider>
   </React.StrictMode>
 );

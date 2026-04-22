@@ -1,0 +1,125 @@
+/* ══════════════════════════════════════════════════════════════════
+   Design tokens — single source of truth for colors, spacing, type,
+   radii, shadows, motion. Inspired by Tailwind / shadcn defaults.
+   ══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* — Surfaces (dark-first) — */
+  --bg:          #0a0f1a;
+  --surface-1:  #0f172a;
+  --surface-2:  #1e293b;
+  --surface-3:  #111826;
+  --border:     #334155;
+  --border-muted: #1e293b;
+
+  /* — Text — */
+  --fg:         #e2e8f0;
+  --fg-strong:  #f1f5f9;
+  --fg-muted:   #cbd5e1;  /* bumped from #94a3b8 for WCAG AA on dark */
+  --fg-subtle:  #94a3b8;
+  --fg-faint:   #64748b;
+
+  /* — Accent & semantic — */
+  --accent:      #10b981;
+  --accent-soft: rgba(16, 185, 129, 0.12);
+  --accent-ring: rgba(16, 185, 129, 0.35);
+  --success:     #34d399;
+  --danger:      #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.12);
+  --warning:     #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.12);
+  --info:        #60a5fa;
+
+  /* — Radius — */
+  --radius-sm:   6px;
+  --radius:      10px;
+  --radius-md:   12px;
+  --radius-lg:   14px;
+  --radius-xl:   18px;
+  --radius-full: 9999px;
+
+  /* — Space scale (4px base) — */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* — Type scale (1.2 ratio, compact for data-dense UI) — */
+  --text-2xs: 10px;
+  --text-xs:  11px;
+  --text-sm:  12px;
+  --text-base: 13px;
+  --text-md:  14px;
+  --text-lg:  16px;
+  --text-xl:  18px;
+  --text-2xl: 22px;
+  --text-3xl: 28px;
+  --text-4xl: 32px;
+
+  /* — Shadows / elevation — */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow:    0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 4px 12px rgba(16, 185, 129, 0.35);
+
+  /* — Motion — */
+  --ease:      cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-instant: 120ms;
+  --dur-fast:    160ms;
+  --dur:         220ms;
+  --dur-slow:    360ms;
+}
+
+/* ══════════════ Focus states (a11y, keyboard) ══════════════ */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.input:focus-visible,
+.pbf-input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ══════════════ Numerics — tabular & lining figures ══════════════ */
+.wallet-badge span,
+.cs-value,
+.cs-label,
+.bbs-count,
+.bbs-metric-value,
+.bcc-outcome,
+.bcc-surface,
+.pbf-preview span,
+.date-chip-date,
+.date-chip-label,
+code,
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ══════════════ Reduced motion ══════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .ticker-track { animation: none !important; }
+}

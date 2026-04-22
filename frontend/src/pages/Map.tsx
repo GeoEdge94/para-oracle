@@ -10,7 +10,8 @@ import { CrisisStats } from "@/components/CrisisStats";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { GlobeView } from "@/components/GlobeView";
 import { geojsonBounds } from "@/lib/mapLayers";
-import { LogOut, Plus, Wallet, Trophy, Menu, X, Globe } from "lucide-react";
+import { LogOut, Plus, Trophy, Menu, X, Globe } from "lucide-react";
+import { motion } from "framer-motion";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { WalletBadge } from "@/components/WalletBadge";
 import { useI18n } from "@/lib/i18n";
@@ -264,12 +265,14 @@ export function MapPage() {
         </div>
         <div className="topbar-actions">
           <WalletBadge onClick={() => navigate("/wallet")} />
-          <button onClick={() => navigate("/leaderboard")} style={{ padding: "4px 8px", fontSize: 10, background: "transparent", border: "1px solid #1e293b", color: "#fbbf24", borderRadius: 4, cursor: "pointer" }} title="Leaderboard">
-            <Trophy size={12} style={{ verticalAlign: "middle" }} />
+          <button className="topbar-icon-btn" data-variant="gold" onClick={() => navigate("/leaderboard")} title="Leaderboard" aria-label="Leaderboard">
+            <Trophy size={14} />
           </button>
+          <span className="topbar-sep" />
           <LocaleToggle />
-          <button onClick={logout} style={{ padding: "4px 8px", fontSize: 10, background: "transparent", border: "1px solid #1e293b", color: "#94a3b8", borderRadius: 4, cursor: "pointer" }}>
-            <LogOut size={12} style={{ verticalAlign: "middle" }} />
+          <span className="topbar-sep" />
+          <button className="topbar-icon-btn" data-variant="danger" onClick={logout} title="Logout" aria-label="Logout">
+            <LogOut size={14} />
           </button>
         </div>
         <button className="topbar-hamburger" onClick={() => setMenuOpen(true)} aria-label="Open menu">
@@ -354,21 +357,33 @@ export function MapPage() {
 
       {!selectedBet && !showCarousel && (
         <>
-          <button
+          <motion.button
             className={`fab fab-secondary${viewMode === "globe" ? " fab-active" : ""}`}
             style={{ bottom: 24, right: 16, left: "auto" }}
             onClick={() => setViewMode((v) => (v === "map" ? "globe" : "map"))}
             title={viewMode === "globe" ? "Vue carte" : "Vue globe 3D"}
+            aria-label={viewMode === "globe" ? "Vue carte" : "Vue globe 3D"}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 22, delay: 0.1 }}
+            whileTap={{ scale: 0.92 }}
+            whileHover={{ scale: 1.05 }}
           >
             <Globe size={20} />
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             className="fab"
             style={{ bottom: 24, left: 16 }}
             onClick={() => setShowCarousel(true)}
+            aria-label="Discover bets"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+            whileTap={{ scale: 0.92 }}
+            whileHover={{ scale: 1.05 }}
           >
             <Plus size={22} />
-          </button>
+          </motion.button>
         </>
       )}
 

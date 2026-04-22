@@ -10,6 +10,7 @@ import { DateSelector, type DatePreset } from "@/components/DateSelector";
 import { categorise, isDateAware, type CategorisedLayer } from "@/lib/layerCategories";
 import { syncLayers, ensureBasemapRadio, geojsonBounds, installRegionMask } from "@/lib/mapLayers";
 import { ChevronLeft, ChevronDown, ChevronUp, Play, Copy } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { useI18n } from "@/lib/i18n";
 import { OnboardingOverlay } from "@/components/OnboardingOverlay";
@@ -371,8 +372,15 @@ export function Analysis() {
             {sheetCollapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
 
+          <AnimatePresence initial={false}>
           {!sheetCollapsed && (
-            <>
+            <motion.div
+              key="sheet-body"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            >
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{betQ(bet)}</div>
                 <div style={{ fontSize: 11, color: "#94a3b8" }}>
@@ -391,10 +399,17 @@ export function Analysis() {
                   </div>
                 </div>
               ) : (
-                <button className="btn btn-primary" onClick={resolve} disabled={resolving}
-                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
+                <motion.button
+                  className="btn btn-primary"
+                  onClick={resolve}
+                  disabled={resolving}
+                  whileTap={{ scale: 0.97 }}
+                  whileHover={{ y: -1 }}
+                  transition={{ type: "spring", stiffness: 420, damping: 28 }}
+                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}
+                >
                   <Play size={16} /> {resolving ? t("analysis.resolving") : t("analysis.resolve_btn")}
-                </button>
+                </motion.button>
               )}
 
               <PlaceBetForm slug={slug} betStatus={bet.status} stats={marketStats} onPlaced={() => {
@@ -443,8 +458,9 @@ export function Analysis() {
 
               {showDetail && <EvidenceDetail zones={zones} />}
               {showDetail && <VerdictPanel bet={bet} zones={zones} placements={placements} />}
-            </>
+            </motion.div>
           )}
+          </AnimatePresence>
         </div>
       </div>
 

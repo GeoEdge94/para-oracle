@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { toast } from "sonner";
+import { motion } from "framer-motion";
 import { API, type BetMarketStats } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
@@ -16,7 +18,6 @@ export function PlaceBetForm({ slug, betStatus, stats, onPlaced }: Props) {
   const [amount, setAmount] = useState("");
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   if (betStatus !== "OPEN") return null;
 
@@ -29,17 +30,23 @@ export function PlaceBetForm({ slug, betStatus, stats, onPlaced }: Props) {
   const estimatedPayout = amountNum * estimatedOdds;
 
   async function submit() {
-    if (amountNum < 1) return;
+    if (amountNum < 1) {
+      setError(t("wallet.amount"));
+      return;
+    }
     setPlacing(true);
     setError("");
-    setSuccess("");
     try {
       const { data } = await API.placeBet(slug, position, amountNum);
-      setSuccess(`${t("wallet.success")} ${t("wallet.odds")}: ${data.odds.toFixed(3)} → ${formatAmount(data.potential_payout)}`);
+      toast.success(t("wallet.success"), {
+        description: `${position} · ${formatAmount(amountNum)} @ ${data.odds.toFixed(3)}× → ${formatAmount(data.potential_payout)}`,
+      });
       setAmount("");
       onPlaced();
     } catch (e: any) {
-      setError(e?.response?.data?.detail || t("wallet.insufficient"));
+      const msg = e?.response?.data?.detail || t("wallet.insufficient");
+      setError(msg);
+      toast.error(msg);
     } finally {
       setPlacing(false);
     }
@@ -95,16 +102,18 @@ export function PlaceBetForm({ slug, betStatus, stats, onPlaced }: Props) {
       )}
 
       {error && <div className="pbf-error">{error}</div>}
-      {success && <div className="pbf-success">{success}</div>}
 
-      <button
+      <motion.button
         className="btn btn-primary"
         onClick={submit}
         disabled={placing || amountNum < 1}
+        whileTap={{ scale: 0.97 }}
+        whileHover={{ y: -1 }}
+        transition={{ type: "spring", stiffness: 420, damping: 28 }}
         style={{ width: "100%", marginTop: 8 }}
       >
         {placing ? t("wallet.placing") : t("wallet.confirm")}
-      </button>
+      </motion.button>
     </div>
   );
 }
