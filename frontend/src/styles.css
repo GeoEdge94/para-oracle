@@ -11,9 +11,139 @@ html, body, #root {
 
 button { cursor: pointer; font-family: inherit; }
 
+/* ══════════════ Orion-style dashboard section ══════════════ */
+.orion-section {
+  padding: 96px 24px 80px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(168, 85, 247, 0.08), transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(96, 165, 250, 0.06), transparent 50%),
+    var(--bg);
+  border-top: 1px solid var(--hairline);
+}
+.orion-frame {
+  max-width: 1200px;
+  margin: 0 auto;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(15, 20, 35, 0.75) 0%, rgba(5, 8, 15, 0.9) 100%);
+  border: 1px solid var(--hairline-strong);
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+.orion-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--hairline);
+  background: rgba(5, 8, 15, 0.4);
+}
+.orion-nav {
+  display: flex;
+  gap: 22px;
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+  font-weight: 600;
+}
+.orion-nav a {
+  cursor: pointer;
+  padding: 8px 0;
+  position: relative;
+  transition: color 160ms var(--ease);
+}
+.orion-nav a:hover { color: var(--fg); }
+.orion-nav a.active { color: var(--fg-strong); }
+.orion-nav a.active::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+.orion-body {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) 1fr;
+  gap: 0;
+  min-height: 560px;
+}
+.orion-left {
+  padding: 36px 28px;
+  border-right: 1px solid var(--hairline);
+  display: flex;
+  flex-direction: column;
+}
+.orion-map {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(30, 41, 59, 0.35) 0%, transparent 70%);
+}
+.orion-foot {
+  border-top: 1px solid var(--hairline);
+  background: rgba(5, 8, 15, 0.5);
+}
+.orion-credit {
+  padding: 10px 24px;
+  font-size: 9px;
+  color: var(--fg-faint);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 600;
+  text-align: right;
+  border-top: 1px solid var(--hairline);
+  background: rgba(0, 0, 0, 0.4);
+}
+@media (max-width: 900px) {
+  .orion-body { grid-template-columns: 1fr; }
+  .orion-left { border-right: none; border-bottom: 1px solid var(--hairline); }
+  .orion-nav { display: none; }
+}
+
+/* ══════════════ Login split 2-col hero ══════════════ */
+.login-split {
+  position: relative;
+  z-index: 2;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 48px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 40px;
+  align-items: center;
+  min-height: calc(100dvh - 120px);
+}
+.login-col-form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+.login-col-globe {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+@media (max-width: 1024px) {
+  .login-split {
+    grid-template-columns: 1fr;
+    padding: 0 24px;
+    gap: 60px;
+    min-height: calc(100dvh - 100px);
+  }
+  .login-col-globe { order: -1; }
+}
+@media (max-width: 600px) {
+  .login-split { padding: 0 16px; gap: 40px; }
+}
+
 /* ══════════════ Login page aurora background ══════════════ */
 .login-bg {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 0;
   overflow: hidden;

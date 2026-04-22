@@ -4,10 +4,10 @@ import { motion } from "framer-motion";
 import { API, api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { LocaleToggle } from "@/components/LocaleToggle";
-import { GlobeHero } from "@/components/GlobeHero";
-import { ConstellationArcs } from "@/components/ConstellationArcs";
+import { GlobePopupCycle } from "@/components/GlobePopupCycle";
 import { TradingTicker } from "@/components/TradingTicker";
 import { WhyParaOracle } from "@/components/WhyParaOracle";
+import { OrionDashboard } from "@/components/OrionDashboard";
 import { Satellite, ShieldCheck, FileCode2, ArrowDownRight } from "lucide-react";
 import type { Bet } from "@/lib/api";
 
@@ -42,49 +42,17 @@ export function Login() {
     }
   }
 
-  const globeSize = Math.min(860, typeof window !== "undefined" ? window.innerWidth * 1.1 : 720);
+  const globeSize = typeof window !== "undefined"
+    ? Math.min(620, Math.max(380, Math.floor(window.innerWidth * 0.42)))
+    : 560;
 
   return (
     <div style={{ height: "100dvh", overflowY: "auto", overflowX: "hidden", background: "var(--bg)", position: "relative" }}>
-      <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, position: "relative", overflow: "hidden" }}>
+      {/* First screen: split 2-col hero */}
+      <div style={{ minHeight: "100dvh", padding: "52px 0 40px", position: "relative", overflow: "hidden" }}>
         <div className="login-bg" aria-hidden>
           <div className="login-grid" />
         </div>
-
-        {/* Globe hero — pro muted variant, full centered */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            pointerEvents: "none",
-            zIndex: 0,
-          }}
-        >
-          <div style={{ position: "relative", width: globeSize, height: globeSize }}>
-            <GlobeHero size={globeSize} opacity={0.92} variant="pro" />
-            {/* Overlay: thin animated arcs = satellite network feel */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1.8, delay: 0.6 }}
-              style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
-            >
-              <ConstellationArcs size={globeSize} opacity={0.9} count={18} seed={11} />
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* Editorial vignette for form legibility, lighter than before */}
-        <div aria-hidden style={{
-          position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none",
-          background: "radial-gradient(ellipse at 50% 55%, transparent 0%, rgba(5,8,15,0.38) 55%, rgba(5,8,15,0.78) 100%)",
-        }} />
 
         {/* Pre-auth Bloomberg ticker */}
         {bets.length > 0 && (
@@ -97,144 +65,154 @@ export function Login() {
           <LocaleToggle />
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
-          style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 2 }}
-        >
-          {/* Brand mark */}
-          <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+        {/* Split layout */}
+        <div className="login-split">
+          {/* LEFT — form + branding */}
+          <div className="login-col login-col-form">
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
               <div style={{
-                width: 34, height: 34,
+                width: 36, height: 36,
                 borderRadius: 8,
                 background: "rgba(16,185,129,0.08)",
                 border: "1px solid rgba(16,185,129,0.22)",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <Satellite size={16} strokeWidth={1.6} color="var(--accent)" />
+                <Satellite size={18} strokeWidth={1.6} color="var(--accent)" />
               </div>
-              <div className="display" style={{ fontSize: 28, letterSpacing: -0.6, lineHeight: 1 }}>
+              <div className="display" style={{ fontSize: 30, letterSpacing: -0.7, lineHeight: 1 }}>
                 Para<span style={{ color: "var(--accent)" }}>Oracle</span>
               </div>
             </div>
-            <div className="mono" style={{ fontSize: 10, color: "var(--fg-subtle)", letterSpacing: 2.2, textTransform: "uppercase", fontWeight: 600 }}>
+
+            <h1 className="display" style={{
+              fontSize: "clamp(32px, 4vw, 44px)",
+              lineHeight: 1.05,
+              letterSpacing: -1.2,
+              margin: "6px 0 10px",
+              color: "var(--fg-strong)",
+              maxWidth: 440,
+            }}>
+              Read the planet.<br />
+              <span style={{ color: "var(--accent)" }}>The market answers.</span>
+            </h1>
+
+            <p className="mono" style={{ fontSize: 11, color: "var(--fg-subtle)", letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 600, marginBottom: 24 }}>
               Climate prediction market · Sentinel-2 oracle
-            </div>
-          </div>
+            </p>
 
-          <form
-            onSubmit={onSubmit}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 14,
-              padding: "22px 22px 18px",
-              borderRadius: "var(--radius-lg)",
-              background: "rgba(10, 15, 26, 0.78)",
-              backdropFilter: "blur(10px) saturate(125%)",
-              border: "1px solid var(--hairline-strong)",
-              boxShadow: "var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.035)",
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label className="mono" style={{ fontSize: 9, color: "var(--fg-subtle)", letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 600 }}>Email</label>
-              <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label className="mono" style={{ fontSize: 9, color: "var(--fg-subtle)", letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 600 }}>{t("auth.password_label")}</label>
-              <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
-            </div>
-
-            {error && <div style={{ color: "var(--danger)", fontSize: 12 }}>{error}</div>}
-
-            <motion.button
-              className="btn btn-primary"
-              type="submit"
-              disabled={loading}
-              whileTap={{ scale: 0.97 }}
-              whileHover={{ y: -1 }}
-              transition={{ type: "spring", stiffness: 420, damping: 28 }}
-              style={{ marginTop: 6, padding: "12px 20px", fontSize: 14, fontWeight: 600 }}
+            <form
+              onSubmit={onSubmit}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
+                padding: "22px 22px 18px",
+                borderRadius: "var(--radius-lg)",
+                background: "rgba(10, 15, 26, 0.78)",
+                backdropFilter: "blur(10px) saturate(125%)",
+                border: "1px solid var(--hairline-strong)",
+                boxShadow: "var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.035)",
+                maxWidth: 440,
+              }}
             >
-              {loading ? t("auth.login_loading") : t("auth.login_btn")}
-            </motion.button>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label className="mono" style={{ fontSize: 9, color: "var(--fg-subtle)", letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 600 }}>Email</label>
+                <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label className="mono" style={{ fontSize: 9, color: "var(--fg-subtle)", letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 600 }}>{t("auth.password_label")}</label>
+                <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
+              </div>
 
-            <div className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", textAlign: "center", marginTop: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
-              {t("auth.demo_hint")}
-            </div>
-          </form>
+              {error && <div style={{ color: "var(--danger)", fontSize: 12 }}>{error}</div>}
 
-          {/* Live stats strip */}
-          {bets.length > 0 && (
+              <motion.button
+                className="btn btn-primary"
+                type="submit"
+                disabled={loading}
+                whileTap={{ scale: 0.97 }}
+                whileHover={{ y: -1 }}
+                transition={{ type: "spring", stiffness: 420, damping: 28 }}
+                style={{ marginTop: 6, padding: "12px 20px", fontSize: 14, fontWeight: 600 }}
+              >
+                {loading ? t("auth.login_loading") : t("auth.login_btn")}
+              </motion.button>
+
+              <div className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", textAlign: "center", marginTop: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                {t("auth.demo_hint")}
+              </div>
+            </form>
+
+            {/* Stats + trust strip */}
+            {bets.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.8 }}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, auto)",
+                  gap: 28,
+                  marginTop: 22,
+                  maxWidth: 440,
+                }}
+              >
+                <div>
+                  <div className="display num" style={{ fontSize: 22, color: "var(--fg-strong)", letterSpacing: -0.5 }}>
+                    {bets.length}
+                  </div>
+                  <div className="mono" style={{ fontSize: 8, color: "var(--fg-faint)", letterSpacing: 1.3, textTransform: "uppercase", marginTop: 2 }}>
+                    Markets
+                  </div>
+                </div>
+                <div>
+                  <div className="display num" style={{ fontSize: 22, color: "var(--accent)", letterSpacing: -0.5 }}>
+                    {bets.filter((b) => b.status === "OPEN").length}
+                  </div>
+                  <div className="mono" style={{ fontSize: 8, color: "var(--fg-faint)", letterSpacing: 1.3, textTransform: "uppercase", marginTop: 2 }}>
+                    Open live
+                  </div>
+                </div>
+                <div>
+                  <div className="display num" style={{ fontSize: 22, color: "var(--fg-strong)", letterSpacing: -0.5 }}>
+                    24/7
+                  </div>
+                  <div className="mono" style={{ fontSize: 8, color: "var(--fg-faint)", letterSpacing: 1.3, textTransform: "uppercase", marginTop: 2 }}>
+                    Sentinel-2
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.8 }}
+              transition={{ duration: 0.5, delay: 1 }}
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: 0,
-                marginTop: 20,
-                padding: "14px 0",
-                borderTop: "1px solid var(--border-muted)",
-                borderBottom: "1px solid var(--border-muted)",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginTop: 16,
+                flexWrap: "wrap",
               }}
             >
-              <div style={{ textAlign: "center", borderRight: "1px solid var(--border-muted)" }}>
-                <div className="display num" style={{ fontSize: 22, color: "var(--fg-strong)", letterSpacing: -0.5 }}>
-                  {bets.length}
-                </div>
-                <div className="mono" style={{ fontSize: 8, color: "var(--fg-faint)", letterSpacing: 1.3, textTransform: "uppercase", marginTop: 2 }}>
-                  Markets
-                </div>
-              </div>
-              <div style={{ textAlign: "center", borderRight: "1px solid var(--border-muted)" }}>
-                <div className="display num" style={{ fontSize: 22, color: "var(--accent)", letterSpacing: -0.5 }}>
-                  {bets.filter((b) => b.status === "OPEN").length}
-                </div>
-                <div className="mono" style={{ fontSize: 8, color: "var(--fg-faint)", letterSpacing: 1.3, textTransform: "uppercase", marginTop: 2 }}>
-                  Open
-                </div>
-              </div>
-              <div style={{ textAlign: "center" }}>
-                <div className="display num" style={{ fontSize: 22, color: "var(--fg-strong)", letterSpacing: -0.5 }}>
-                  24/7
-                </div>
-                <div className="mono" style={{ fontSize: 8, color: "var(--fg-faint)", letterSpacing: 1.3, textTransform: "uppercase", marginTop: 2 }}>
-                  Sentinel-2
-                </div>
-              </div>
+              <TrustPill icon={<Satellite size={10} />} label="ESA Copernicus" />
+              <TrustPill icon={<FileCode2 size={10} />} label="Open data" />
+              <TrustPill icon={<ShieldCheck size={10} />} label="Deterministic oracle" />
             </motion.div>
-          )}
+          </div>
 
-          {/* Trust signals */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 1 }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 14,
-              marginTop: 16,
-              flexWrap: "wrap",
-            }}
-          >
-            <TrustPill icon={<Satellite size={10} />} label="ESA Copernicus" />
-            <TrustPill icon={<FileCode2 size={10} />} label="Open data" />
-            <TrustPill icon={<ShieldCheck size={10} />} label="Deterministic oracle" />
-          </motion.div>
-        </motion.div>
+          {/* RIGHT — Globe + cycling popups */}
+          <div className="login-col login-col-globe">
+            <GlobePopupCycle size={globeSize} intervalMs={9000} />
+          </div>
+        </div>
 
-        {/* Sober scroll affordance */}
         <motion.a
-          href="#why"
+          href="#dashboard"
           onClick={(e) => {
             e.preventDefault();
-            const el = document.getElementById("why");
+            const el = document.getElementById("dashboard");
             if (el) el.scrollIntoView({ behavior: "smooth" });
           }}
           initial={{ opacity: 0 }}
@@ -250,17 +228,22 @@ export function Login() {
             textDecoration: "none",
             padding: "6px 12px",
             borderRadius: 999,
-            border: "1px solid var(--border-muted)",
+            border: "1px solid var(--hairline-strong)",
             background: "rgba(10, 15, 26, 0.5)",
             backdropFilter: "blur(8px)",
           }}
         >
-          <span>How the oracle works</span>
+          <span>Live dashboard below</span>
           <ArrowDownRight size={11} />
         </motion.a>
       </div>
 
-      {/* Features section under the fold */}
+      {/* Orion-style dashboard on scroll */}
+      <div id="dashboard">
+        <OrionDashboard />
+      </div>
+
+      {/* Keep Why section below (editorial features) */}
       <div id="why">
         <WhyParaOracle />
       </div>
@@ -278,7 +261,7 @@ function TrustPill({ icon, label }: { icon: React.ReactNode; label: string }) {
         gap: 5,
         padding: "3px 8px",
         borderRadius: 999,
-        border: "1px solid var(--border-muted)",
+        border: "1px solid var(--hairline-strong)",
         background: "rgba(10, 15, 26, 0.55)",
         color: "var(--fg-subtle)",
         fontSize: 9,
