@@ -9,6 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@deck.gl/core": "^9.3.1",
+    "@deck.gl/geo-layers": "^9.3.1",
+    "@deck.gl/layers": "^9.3.1",
+    "@deck.gl/mapbox": "^9.3.1",
     "@dicebear/collection": "^9.4.2",
     "@dicebear/core": "^9.4.2",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -20,7 +24,11 @@
     "canvas-confetti": "^1.9.4",
     "cmdk": "^1.1.1",
     "cobe": "^2.0.1",
+    "echarts": "^5.6.0",
+    "echarts-for-react": "^3.0.6",
+    "echarts-gl": "^2.0.9",
     "framer-motion": "^12.38.0",
+    "h3-js": "^4.4.0",
     "lucide-react": "^0.454.0",
     "maplibre-gl": "^4.7.1",
     "react": "^18.3.1",

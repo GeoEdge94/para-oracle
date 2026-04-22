@@ -1977,6 +1977,96 @@ button { cursor: pointer; font-family: inherit; }
   .market-layout { grid-template-columns: 1fr !important; }
 }
 
+/* ══════════════ 3D signature carousel (Market page) ══════════════ */
+.m3d-wrap {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.m3d-card {
+  position: relative;
+  background: linear-gradient(180deg, #0b0f17 0%, #05080f 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-lg);
+  padding: 16px 16px 14px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+.m3d-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.m3d-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--fg-strong);
+  letter-spacing: -0.2px;
+}
+.m3d-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  box-shadow: 0 0 8px currentColor;
+}
+.m3d-chart {
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.04) 0%, transparent 70%);
+}
+.m3d-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 10px;
+}
+.m3d-metric-label {
+  font-size: 8px;
+  color: var(--fg-faint);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.m3d-metric-value {
+  font-size: 22px;
+  letter-spacing: -0.4px;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.m3d-metric-unit {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-left: 4px;
+  font-weight: 500;
+}
+.m3d-break {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.m3d-break-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+}
+.m3d-break-label { color: var(--fg-faint); }
+.m3d-break-value { color: var(--fg-strong); font-weight: 600; }
+
+@media (max-width: 900px) {
+  .m3d-wrap { grid-template-columns: 1fr; }
+}
+
 /* ══════════════ Notifications drawer ══════════════ */
 .notif-drawer {
   position: fixed;

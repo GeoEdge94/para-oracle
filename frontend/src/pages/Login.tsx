@@ -133,8 +133,8 @@ export function Login() {
               padding: "22px 22px 18px",
               borderRadius: "var(--radius-lg)",
               background: "rgba(10, 15, 26, 0.78)",
-              backdropFilter: "blur(18px) saturate(135%)",
-              border: "1px solid rgba(51, 65, 85, 0.7)",
+              backdropFilter: "blur(10px) saturate(125%)",
+              border: "1px solid var(--hairline-strong)",
               boxShadow: "var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.035)",
             }}
           >

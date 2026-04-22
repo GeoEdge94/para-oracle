@@ -7,6 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { PriceHistoryChart } from "@/components/PriceHistoryChart";
 import { DepthChart } from "@/components/DepthChart";
 import { MarketMeta } from "@/components/MarketMeta";
+import { Market3DSignature } from "@/components/Market3DSignature";
 import { BoostedBadge } from "@/components/BoostedBadge";
 import { NumberTicker } from "@/components/NumberTicker";
 import { Avatar } from "@/components/Avatar";
@@ -69,8 +70,20 @@ export function Market() {
   const totalVolume = Number(stats?.total_volume ?? 0);
   const yesPct = Math.round(stats?.yes_pct ?? 50);
 
+  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    e.currentTarget.style.setProperty("--spot-x", `${x}%`);
+    e.currentTarget.style.setProperty("--spot-y", `${y}%`);
+  }
+
   return (
-    <div style={{ height: "100dvh", overflowY: "auto", overflowX: "hidden", background: "var(--bg)", color: "var(--fg)" }}>
+    <div
+      className="spotlight grid-dot-bg spotlight-active"
+      onPointerMove={handlePointerMove}
+      style={{ height: "100dvh", overflowY: "auto", overflowX: "hidden", background: "var(--bg)", color: "var(--fg)" }}
+    >
       {/* Editorial topbar */}
       <div style={{
         position: "sticky", top: 0, zIndex: 20,
@@ -155,8 +168,13 @@ export function Market() {
           </div>
         </motion.div>
 
+        {/* 3D signature carousel — ECharts-GL */}
+        <div style={{ marginTop: 28 }}>
+          <Market3DSignature bet={bet} stats={stats} positions={positions} />
+        </div>
+
         {/* Main 2-col layout */}
-        <div className="market-layout" style={{ display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1fr)", gap: 24, marginTop: 28 }}>
+        <div className="market-layout" style={{ display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1fr)", gap: 24, marginTop: 4 }}>
           {/* MAIN column */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}

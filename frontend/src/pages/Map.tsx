@@ -15,6 +15,7 @@ import { motion } from "framer-motion";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { WalletBadge } from "@/components/WalletBadge";
 import { StreakBadge } from "@/components/StreakBadge";
+import { DeckOverlay } from "@/components/DeckOverlay";
 import { useMissions, isBoosted } from "@/lib/engage";
 import { usePulseOnNewBet } from "@/lib/usePulseOnNewBet";
 import { useI18n } from "@/lib/i18n";
@@ -46,6 +47,7 @@ export function MapPage() {
   const navigate = useNavigate();
   const { bump: bumpMission } = useMissions();
   const seenRef = useRef<Set<string>>(new Set());
+  const [deckMap, setDeckMap] = useState<maplibregl.Map | null>(null);
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
@@ -91,6 +93,7 @@ export function MapPage() {
     map.addControl(new maplibregl.NavigationControl({ showCompass: false, showZoom: false }), "top-right");
 
     map.on("load", async () => {
+      setDeckMap(map);
       const res = await API.listBets();
       const allBets = res.data;
       setBets(allBets);
@@ -350,6 +353,13 @@ export function MapPage() {
         ref={mapContainer}
         style={{ position: "absolute", inset: 0, display: viewMode === "map" ? "block" : "none" }}
         onClick={() => { setOverlapMenu(null); setShowCarousel(false); }}
+      />
+
+      {/* deck.gl hex density + glow nodes overlay (over ESRI satellite) */}
+      <DeckOverlay
+        map={deckMap}
+        bets={viewMode === "map" ? bets : []}
+        onNodeClick={(slug) => navigate(`/market/${slug}`)}
       />
 
       {viewMode === "globe" && (
