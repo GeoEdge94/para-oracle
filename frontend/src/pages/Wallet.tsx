@@ -6,16 +6,19 @@ import { motion } from "framer-motion";
 import { API, type WalletBalance, type UserBet } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { LocaleToggle } from "@/components/LocaleToggle";
+import { Skeleton } from "@/components/Skeleton";
 
 export function WalletPage() {
   const navigate = useNavigate();
   const { t, formatAmount, locale } = useI18n();
   const [wallet, setWallet] = useState<WalletBalance | null>(null);
   const [bets, setBets] = useState<UserBet[]>([]);
+  const [betsLoaded, setBetsLoaded] = useState(false);
   const [resetting, setResetting] = useState(false);
 
   function load() {
     API.walletBalance().then((r) => setWallet(r.data)).catch(() => {});
+    setBetsLoaded(false);
     API.listBets().then(async (r) => {
       const allBets: UserBet[] = [];
       for (const b of r.data) {
@@ -26,7 +29,8 @@ export function WalletPage() {
       }
       allBets.sort((a, b) => new Date(b.placed_at).getTime() - new Date(a.placed_at).getTime());
       setBets(allBets);
-    });
+      setBetsLoaded(true);
+    }).catch(() => setBetsLoaded(true));
   }
 
   useEffect(load, []);
@@ -108,14 +112,32 @@ export function WalletPage() {
           {t("wallet.history")} ({bets.length})
         </div>
 
-        {bets.length === 0 && (
-          <div style={{ textAlign: "center", padding: 20, color: "#64748b", fontSize: 12 }}>
+        {!betsLoaded && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="card" style={{ padding: 10, display: "flex", alignItems: "center", gap: 10 }}>
+                <Skeleton width={28} height={28} radius={6} />
+                <div style={{ flex: 1 }}>
+                  <Skeleton width="60%" height={11} style={{ marginBottom: 6 }} />
+                  <Skeleton width="35%" height={9} />
+                </div>
+                <div style={{ textAlign: "right", width: 70 }}>
+                  <Skeleton width="100%" height={11} style={{ marginBottom: 6 }} />
+                  <Skeleton width="80%" height={9} style={{ marginLeft: "auto" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {betsLoaded && bets.length === 0 && (
+          <div style={{ textAlign: "center", padding: 20, color: "var(--fg-faint)", fontSize: 12 }}>
             {t("wallet.no_bets")}
           </div>
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {bets.map((ub) => (
+          {betsLoaded && bets.map((ub) => (
             <div key={ub.id} className="card" style={{ padding: 10, display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 28, height: 28, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center",
                 background: ub.position === "YES" ? "rgba(52,211,153,0.12)" : "rgba(248,113,113,0.12)" }}>

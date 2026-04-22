@@ -16,6 +16,7 @@ const fr: Translations = {
     letsgo: "C'est parti !",
     back: "Retour",
     copy: "Copier",
+    skip: "Passer",
   },
   auth: {
     subtitle: "Oracle Sentinel-2 · Para deforestation",
@@ -179,6 +180,7 @@ const en: Translations = {
     letsgo: "Let's go!",
     back: "Back",
     copy: "Copy",
+    skip: "Skip",
   },
   auth: {
     subtitle: "Sentinel-2 Oracle · Para deforestation",

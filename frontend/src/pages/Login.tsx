@@ -30,7 +30,10 @@ export function Login() {
   }
 
   return (
-    <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+    <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, position: "relative", overflow: "hidden" }}>
+      <div className="login-bg" aria-hidden>
+        <div className="login-grid" />
+      </div>
       <div style={{ position: "fixed", top: 12, right: 12, zIndex: 10 }}>
         <LocaleToggle />
       </div>

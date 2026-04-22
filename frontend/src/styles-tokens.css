@@ -114,6 +114,12 @@ code,
   font-feature-settings: "tnum" 1;
 }
 
+/* ══════════════ Skeleton shimmer ══════════════ */
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 /* ══════════════ Reduced motion ══════════════ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
