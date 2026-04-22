@@ -332,27 +332,37 @@ export function MapPage() {
       )}
 
       {overlapMenu && (
-        <div className="overlap-menu" style={{ left: overlapMenu.x, top: overlapMenu.y }}>
-          <div style={{ fontSize: 10, color: "#64748b", padding: "6px 10px 4px", textTransform: "uppercase" }}>
+        <motion.div
+          className="overlap-menu"
+          style={{ left: overlapMenu.x, top: overlapMenu.y }}
+          initial={{ opacity: 0, y: -4, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div style={{ fontSize: 10, color: "var(--fg-faint)", padding: "6px 10px 4px", textTransform: "uppercase", letterSpacing: 0.5 }}>
             {t("map.bets_on_zone", { n: overlapMenu.bets.length })}
           </div>
-          {overlapMenu.bets.map((b) => {
+          {overlapMenu.bets.map((b, idx) => {
             const color = CAT_COLORS[b.category] || "#8b5cf6";
             return (
-              <button
+              <motion.button
                 key={b.slug}
                 className="overlap-menu-item"
                 onClick={() => { setOverlapMenu(null); selectBet(b); }}
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.04 + idx * 0.035, duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                whileHover={{ x: 2 }}
               >
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
                 <span style={{ flex: 1, textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {b.region_name}
                 </span>
-                <span style={{ fontSize: 9, color: "#64748b" }}>{b.index_type}</span>
-              </button>
+                <span style={{ fontSize: 9, color: "var(--fg-faint)" }}>{b.index_type}</span>
+              </motion.button>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       {!selectedBet && !showCarousel && (

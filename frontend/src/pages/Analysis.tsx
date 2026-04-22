@@ -317,20 +317,26 @@ export function Analysis() {
     <div style={{ position: "relative", height: "100dvh" }}>
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 30,
-        padding: "10px 14px", background: "rgba(15,23,42,0.9)", backdropFilter: "blur(10px)",
-        display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid #1e293b",
+        padding: "10px 14px", background: "rgba(15, 23, 42, 0.9)", backdropFilter: "blur(10px)",
+        display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid var(--border-muted)",
       }}>
-        <button onClick={() => navigate("/")} style={{ background: "none", border: "none", color: "#cbd5e1", padding: 2 }}>
-          <ChevronLeft size={20} />
+        <button
+          onClick={() => navigate("/")}
+          className="topbar-icon-btn"
+          aria-label={t("common.back")}
+          style={{ width: 32, height: 32 }}
+        >
+          <ChevronLeft size={18} />
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 11, color: "#94a3b8" }}>{t("analysis.title")}</div>
-          <div style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ fontSize: 10, color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: 0.8 }}>{t("analysis.title")}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--fg-strong)" }}>
             {bet.region_name}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <LocaleToggle />
+          <span className="topbar-sep" />
           <StatusBadge />
         </div>
       </div>

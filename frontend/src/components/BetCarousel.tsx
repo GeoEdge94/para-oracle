@@ -1,5 +1,6 @@
 import type { Bet } from "@/lib/api";
 import { TrendingUp, Flame, Droplets, Mountain, Thermometer, Snowflake, Building, Fish, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 
 type Props = {
@@ -30,14 +31,23 @@ export function BetCarousel({ bets, onSelect }: Props) {
 
   return (
     <div className="bet-carousel">
-      {bets.map((b) => {
+      {bets.map((b, idx) => {
         const cat = CAT_CONFIG[b.category] || CAT_CONFIG.deforestation;
         const Icon = cat.icon;
         const resolved = b.status.startsWith("RESOLVED");
         const pct = yesPct(b);
 
         return (
-          <button key={b.slug} className="bet-carousel-card" onClick={() => onSelect(b)}>
+          <motion.button
+            key={b.slug}
+            className="bet-carousel-card"
+            onClick={() => onSelect(b)}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.04, duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+            whileHover={{ y: -3, borderColor: cat.color, boxShadow: `0 10px 24px ${cat.color}22` }}
+            whileTap={{ scale: 0.97 }}
+          >
             <div className="bcc-header">
               <div className="bcc-icon" style={{ background: `${cat.color}18`, color: cat.color }}>
                 <Icon size={14} />
@@ -69,10 +79,16 @@ export function BetCarousel({ bets, onSelect }: Props) {
 
             {pct !== null && (
               <div className="bcc-bar">
-                <div className="bcc-bar-fill" style={{ width: `${pct}%`, background: pct > 50 ? "#10b981" : "#f87171" }} />
+                <motion.div
+                  className="bcc-bar-fill"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ delay: 0.15 + idx * 0.04, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ background: pct > 50 ? "var(--accent)" : "var(--danger)" }}
+                />
               </div>
             )}
-          </button>
+          </motion.button>
         );
       })}
     </div>

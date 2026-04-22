@@ -27,32 +27,34 @@ export function CategoryFilter({ bets, active, onSelect }: Props) {
   const cats = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
 
   return (
-    <div className="cat-filter">
-      <button
-        className={`cat-chip ${active === null ? "active" : ""}`}
-        onClick={() => onSelect(null)}
-      >
-        <span className="cat-chip-dot" style={{ background: "#94a3b8" }} />
-        <span>{t("categories.all")}</span>
-        <span className="cat-chip-count">{bets.length}</span>
-      </button>
-      {cats.map((c) => {
-        const meta = CAT_META[c] || { color: "#8b5cf6", icon: TrendingUp, i18nKey: "" };
-        const Icon = meta.icon;
-        const isActive = active === c;
-        return (
-          <button
-            key={c}
-            className={`cat-chip ${isActive ? "active" : ""}`}
-            onClick={() => onSelect(isActive ? null : c)}
-            style={isActive ? { borderColor: meta.color, background: `${meta.color}15` } : {}}
-          >
-            <Icon size={11} style={{ color: meta.color }} />
-            <span>{meta.i18nKey ? t(meta.i18nKey) : c}</span>
-            <span className="cat-chip-count">{counts[c]}</span>
-          </button>
-        );
-      })}
+    <div className="cat-filter-wrap">
+      <div className="cat-filter">
+        <button
+          className={`cat-chip ${active === null ? "active" : ""}`}
+          onClick={() => onSelect(null)}
+        >
+          <span className="cat-chip-dot" style={{ background: "var(--fg-subtle)" }} />
+          <span>{t("categories.all")}</span>
+          <span className="cat-chip-count">{bets.length}</span>
+        </button>
+        {cats.map((c) => {
+          const meta = CAT_META[c] || { color: "#8b5cf6", icon: TrendingUp, i18nKey: "" };
+          const Icon = meta.icon;
+          const isActive = active === c;
+          return (
+            <button
+              key={c}
+              className={`cat-chip ${isActive ? "active" : ""}`}
+              onClick={() => onSelect(isActive ? null : c)}
+              style={isActive ? { borderColor: meta.color, background: `${meta.color}15` } : {}}
+            >
+              <Icon size={11} style={{ color: meta.color }} />
+              <span>{meta.i18nKey ? t(meta.i18nKey) : c}</span>
+              <span className="cat-chip-count">{counts[c]}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

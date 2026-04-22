@@ -54,18 +54,23 @@ export function WalletPage() {
   const roi = wallet.total_lost > 0 ? (pnl / wallet.total_lost) * 100 : 0;
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#0f172a", color: "#e2e8f0" }}>
+    <div style={{ minHeight: "100dvh", background: "var(--surface-1)", color: "var(--fg)" }}>
       <div style={{
         position: "sticky", top: 0, zIndex: 30,
-        padding: "10px 14px", background: "#0a0f1a",
+        padding: "10px 14px", background: "var(--bg)",
         display: "flex", alignItems: "center", gap: 10,
-        borderBottom: "1px solid #1e293b",
+        borderBottom: "1px solid var(--border-muted)",
       }}>
-        <button onClick={() => navigate("/")} style={{ background: "none", border: "none", color: "#cbd5e1", padding: 2 }}>
-          <ChevronLeft size={20} />
+        <button
+          onClick={() => navigate("/")}
+          className="topbar-icon-btn"
+          aria-label={t("common.back")}
+          style={{ width: 32, height: 32 }}
+        >
+          <ChevronLeft size={18} />
         </button>
-        <WalletIcon size={16} color="#10b981" />
-        <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>{t("wallet.title")}</span>
+        <WalletIcon size={16} color="var(--accent)" />
+        <span style={{ fontWeight: 700, fontSize: 14, flex: 1, color: "var(--fg-strong)" }}>{t("wallet.title")}</span>
         <LocaleToggle />
       </div>
 
