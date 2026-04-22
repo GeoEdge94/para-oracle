@@ -5,6 +5,8 @@ import { API, api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { GlobeHero } from "@/components/GlobeHero";
+import { TradingTicker } from "@/components/TradingTicker";
+import type { Bet } from "@/lib/api";
 
 type BetLite = { slug: string; region_geojson: GeoJSON.Polygon | GeoJSON.MultiPolygon | null; status: string };
 
@@ -88,7 +90,14 @@ export function Login() {
         background: "radial-gradient(ellipse at 50% 62%, transparent 0%, rgba(5,8,15,0.45) 58%, rgba(5,8,15,0.85) 100%)",
       }} />
 
-      <div style={{ position: "fixed", top: 12, right: 12, zIndex: 10 }}>
+      {/* Pre-auth Bloomberg ticker \u2014 instant social proof, no login needed */}
+      {bets.length > 0 && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 5 }}>
+          <TradingTicker bets={bets as unknown as Bet[]} />
+        </div>
+      )}
+
+      <div style={{ position: "fixed", top: bets.length > 0 ? 52 : 12, right: 12, zIndex: 10 }}>
         <LocaleToggle />
       </div>
 

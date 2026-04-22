@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────────────────────────────
 import { useEffect, useState, useCallback } from "react";
 import type { UserBet } from "@/lib/api";
+export type { UserBet } from "@/lib/api";
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
@@ -265,3 +266,93 @@ export function formatCountdown(periodEnd: string, now: Date = new Date()): stri
 }
 
 export const BOOST_XP_MULTIPLIER = 1.25; // +25% XP on correct prediction
+
+// ─── Wallet performance analytics ─────────────────────────────────
+// All derivations are PURE and from real bet history — no inflation.
+export type WalletStats = {
+  totalInvested: number;
+  totalDecided: number;
+  bestMonth: { month: string; pnl: number } | null;
+  currentWinStreak: number;
+  bestWinStreak: number;
+  winRate: number; // 0..1
+  annualizedPnL: number; // pct points, rough estimate
+};
+
+export function computeWalletStats(bets: UserBet[]): WalletStats {
+  const totalInvested = bets.reduce((s, b) => s + Number(b.amount), 0);
+  const decided = bets.filter((b) => b.status !== "PENDING");
+  const totalDecided = decided.length;
+
+  // Monthly P&L buckets from placed_at
+  const byMonth = new Map<string, number>();
+  for (const b of decided) {
+    const month = b.placed_at.slice(0, 7);
+    const pnl = b.status === "WON" ? Number(b.potential_payout) - Number(b.amount) : -Number(b.amount);
+    byMonth.set(month, (byMonth.get(month) ?? 0) + pnl);
+  }
+  let bestMonth: WalletStats["bestMonth"] = null;
+  for (const [month, pnl] of byMonth.entries()) {
+    if (!bestMonth || pnl > bestMonth.pnl) bestMonth = { month, pnl };
+  }
+
+  // Win streaks — iterate decided bets by placed_at asc
+  const ordered = [...decided].sort((a, b) => new Date(a.placed_at).getTime() - new Date(b.placed_at).getTime());
+  let cur = 0, best = 0;
+  for (const b of ordered) {
+    if (b.status === "WON") { cur += 1; if (cur > best) best = cur; }
+    else cur = 0;
+  }
+  const currentWinStreak = cur;
+  const bestWinStreak = best;
+
+  const won = decided.filter((b) => b.status === "WON").length;
+  const winRate = totalDecided > 0 ? won / totalDecided : 0;
+
+  // Rough annualized PnL in pct of totalInvested — uses span between first
+  // and last decided bet. Not financial advice, display-only.
+  let annualizedPnL = 0;
+  if (ordered.length >= 2 && totalInvested > 0) {
+    const firstT = new Date(ordered[0].placed_at).getTime();
+    const lastT = new Date(ordered[ordered.length - 1].placed_at).getTime();
+    const years = Math.max((lastT - firstT) / (365.25 * 86_400_000), 1 / 12);
+    const pnl = ordered.reduce((s, b) => s + (b.status === "WON" ? Number(b.potential_payout) - Number(b.amount) : -Number(b.amount)), 0);
+    annualizedPnL = (pnl / totalInvested) * (1 / years) * 100;
+  }
+
+  return { totalInvested, totalDecided, bestMonth, currentWinStreak, bestWinStreak, winRate, annualizedPnL };
+}
+
+// ─── Missed-opportunity analytics ──────────────────────────────────
+// Scans RESOLVED markets the user did NOT bet on and returns the best-
+// case "what if you had taken the winning side with 2× avg odds".
+// Honest regret framing — not manipulative; same reasoning a trader
+// does manually after a session.
+export type MissedOpportunity = {
+  slug: string;
+  regionName: string;
+  outcome: "YES" | "NO";
+  hypotheticalPnL: number; // if user had bet 100€ at avg 1.9x
+  resolvedAt: string | null;
+};
+const HYPOTHETICAL_STAKE = 100; // virtual
+const HYPOTHETICAL_ODDS = 1.9;
+
+export function missedOpportunities(
+  allBets: Array<{ slug: string; status: string; result_bool: boolean | null; region_name: string; resolved_at?: string | null }>,
+  userBetSlugs: Set<string>,
+): MissedOpportunity[] {
+  const out: MissedOpportunity[] = [];
+  for (const b of allBets) {
+    if (!b.status.startsWith("RESOLVED")) continue;
+    if (userBetSlugs.has(b.slug)) continue;
+    out.push({
+      slug: b.slug,
+      regionName: b.region_name,
+      outcome: b.result_bool ? "YES" : "NO",
+      hypotheticalPnL: HYPOTHETICAL_STAKE * HYPOTHETICAL_ODDS - HYPOTHETICAL_STAKE,
+      resolvedAt: b.resolved_at ?? null,
+    });
+  }
+  return out;
+}

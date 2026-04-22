@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, RefreshCw, TrendingUp, TrendingDown, Wallet as WalletIcon } from "lucide-react";
+import { ChevronLeft, RefreshCw, TrendingUp, TrendingDown, Wallet as WalletIcon, MoreHorizontal, AlertTriangle, Trophy, Zap, Target } from "lucide-react";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import * as Dialog from "@radix-ui/react-dialog";
 import { API, type WalletBalance, type UserBet } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { Skeleton } from "@/components/Skeleton";
 import { RankCard } from "@/components/RankCard";
 import { NumberTicker } from "@/components/NumberTicker";
-import { useStreak, computeXP } from "@/lib/engage";
+import { useStreak, computeXP, computeWalletStats } from "@/lib/engage";
 
 export function WalletPage() {
   const navigate = useNavigate();
@@ -21,6 +22,8 @@ export function WalletPage() {
   const [resetting, setResetting] = useState(false);
 
   const xp = useMemo(() => computeXP(bets, Math.max(streakCurrent, streakLongest)), [bets, streakCurrent, streakLongest]);
+  const stats = useMemo(() => computeWalletStats(bets), [bets]);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   function load() {
     API.walletBalance().then((r) => setWallet(r.data)).catch(() => {});
@@ -78,7 +81,45 @@ export function WalletPage() {
         <WalletIcon size={16} color="var(--accent)" />
         <span style={{ fontWeight: 700, fontSize: 14, flex: 1, color: "var(--fg-strong)" }}>{t("wallet.title")}</span>
         <LocaleToggle />
+        <button
+          className="topbar-icon-btn"
+          aria-label={t("wallet.reset")}
+          title={t("wallet.reset")}
+          style={{ width: 32, height: 32 }}
+          onClick={() => setConfirmReset(true)}
+        >
+          <MoreHorizontal size={16} />
+        </button>
       </div>
+
+      {/* Reset confirmation dialog */}
+      <Dialog.Root open={confirmReset} onOpenChange={setConfirmReset}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="cmd-overlay" />
+          <Dialog.Content className="confirm-dialog" aria-describedby={undefined}>
+            <Dialog.Title style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "var(--fg-strong)", marginBottom: 6 }}>
+              <AlertTriangle size={16} color="var(--warning)" />
+              Réinitialiser le portefeuille ?
+            </Dialog.Title>
+            <p className="serif" style={{ fontSize: 14, color: "var(--fg-muted)", fontStyle: "italic", marginBottom: 16, lineHeight: 1.5 }}>
+              Ton historique sera effacé et ton solde remis à 10 000 €. Les rangs et badges obtenus depuis ton historique peuvent être affectés.
+            </p>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button className="btn btn-ghost" onClick={() => setConfirmReset(false)} style={{ padding: "8px 14px", fontSize: 12 }}>
+                Annuler
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => { setConfirmReset(false); reset(); }}
+                disabled={resetting}
+                style={{ padding: "8px 14px", fontSize: 12, background: "var(--danger)" }}
+              >
+                {resetting ? "Réinitialisation…" : "Confirmer la réinitialisation"}
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       <div style={{ padding: "16px 14px", maxWidth: 480, margin: "0 auto" }}>
         {/* Rank card */}
@@ -110,18 +151,79 @@ export function WalletPage() {
           </div>
         </div>
 
-        {/* Reset button */}
-        <motion.button
-          className="btn btn-ghost"
-          onClick={reset}
-          disabled={resetting}
-          whileTap={{ scale: 0.98 }}
-          whileHover={{ y: -1 }}
-          transition={{ type: "spring", stiffness: 420, damping: 28 }}
-          style={{ width: "100%", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-        >
-          <RefreshCw size={14} /> {t("wallet.reset")}
-        </motion.button>
+        {/* Performance block \u2014 what a pro trader wants to see */}
+        {betsLoaded && stats.totalDecided > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            style={{ marginBottom: 16 }}
+          >
+            <div className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", letterSpacing: 1.3, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>
+              Performance
+            </div>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, 1fr)",
+              gap: 8,
+              padding: 14,
+              borderRadius: "var(--radius)",
+              background: "var(--surface-1)",
+              border: "1px solid var(--border-muted)",
+            }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--fg-faint)", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                  <Trophy size={10} /> Meilleur mois
+                </div>
+                <div className="display num" style={{ fontSize: 18, color: stats.bestMonth && stats.bestMonth.pnl > 0 ? "var(--success)" : "var(--fg-muted)", marginTop: 2, letterSpacing: -0.3 }}>
+                  {stats.bestMonth ? (
+                    <>
+                      {stats.bestMonth.pnl > 0 ? "+" : ""}{formatAmount(stats.bestMonth.pnl)}
+                    </>
+                  ) : (
+                    "\u2014"
+                  )}
+                </div>
+                <div className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", marginTop: 2 }}>
+                  {stats.bestMonth?.month ?? "\u2014"}
+                </div>
+              </div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--fg-faint)", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                  <Zap size={10} /> Record de victoires
+                </div>
+                <div className="display num" style={{ fontSize: 18, color: "var(--fg-strong)", marginTop: 2, letterSpacing: -0.3 }}>
+                  {stats.bestWinStreak} <span style={{ fontSize: 11, color: "var(--fg-subtle)" }}>d'aff.</span>
+                </div>
+                <div className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", marginTop: 2 }}>
+                  Actuel&nbsp;: {stats.currentWinStreak}
+                </div>
+              </div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--fg-faint)", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                  <Target size={10} /> Taux de r\u00e9ussite
+                </div>
+                <div className="display num" style={{ fontSize: 18, color: "var(--fg-strong)", marginTop: 2, letterSpacing: -0.3 }}>
+                  {Math.round(stats.winRate * 100)}<span style={{ fontSize: 11, color: "var(--fg-subtle)" }}>%</span>
+                </div>
+                <div className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", marginTop: 2 }}>
+                  sur {stats.totalDecided} pr\u00e9dictions
+                </div>
+              </div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--fg-faint)", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                  <TrendingUp size={10} /> PnL annualis\u00e9
+                </div>
+                <div className="display num" style={{ fontSize: 18, color: stats.annualizedPnL >= 0 ? "var(--success)" : "var(--danger)", marginTop: 2, letterSpacing: -0.3 }}>
+                  {stats.annualizedPnL >= 0 ? "+" : ""}{stats.annualizedPnL.toFixed(1)}<span style={{ fontSize: 11, opacity: 0.7 }}>%</span>
+                </div>
+                <div className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", marginTop: 2 }}>
+                  Mise&nbsp;: {formatAmount(stats.totalInvested)}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* History */}
         <div style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 8, letterSpacing: 0.5 }}>

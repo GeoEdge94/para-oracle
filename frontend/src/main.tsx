@@ -7,6 +7,7 @@ import { Login } from "@/pages/Login";
 import { Home } from "@/pages/Home";
 import { MapPage } from "@/pages/Map";
 import { Analysis } from "@/pages/Analysis";
+import { Market } from "@/pages/Market";
 import { WalletPage } from "@/pages/Wallet";
 import { LeaderboardPage } from "@/pages/Leaderboard";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -28,6 +29,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
           <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
           <Route path="/analysis/:slug" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
+          <Route path="/market/:slug" element={<ProtectedRoute><Market /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />

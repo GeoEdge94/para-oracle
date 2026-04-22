@@ -1709,6 +1709,88 @@ button { cursor: pointer; font-family: inherit; }
 }
 .tt-item:hover { background: rgba(16, 185, 129, 0.06); }
 
+/* ══════════════ Editorial market page ══════════════ */
+@media (max-width: 900px) {
+  .market-layout { grid-template-columns: 1fr !important; }
+}
+
+/* ══════════════ Notifications drawer ══════════════ */
+.notif-drawer {
+  position: fixed;
+  top: 54px;
+  right: 12px;
+  width: min(380px, calc(100vw - 24px));
+  max-height: calc(100vh - 70px);
+  background: rgba(10, 15, 26, 0.97);
+  backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: cmd-in 200ms var(--ease-out);
+}
+.notif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-muted);
+  background: var(--bg);
+}
+.notif-list {
+  padding: 6px;
+  overflow-y: auto;
+  max-height: 420px;
+}
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 2px;
+  transition: background var(--dur-instant) var(--ease);
+  text-align: left;
+}
+.notif-item:hover { background: var(--surface-1); }
+.notif-item[data-unread="true"] { background: rgba(16, 185, 129, 0.04); }
+.notif-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+/* Ensure bell button can host badge */
+.topbar-icon-btn { position: relative; }
+
+/* ══════════════ Confirm dialog ══════════════ */
+.confirm-dialog {
+  position: fixed;
+  top: 30vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(440px, 92vw);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  z-index: 100;
+  box-shadow: var(--shadow-lg);
+  animation: cmd-in 200ms var(--ease-out);
+}
+
 /* ══════════════ Command palette (Cmd+K) ══════════════ */
 .cmd-trigger {
   display: inline-flex;

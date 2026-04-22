@@ -18,6 +18,8 @@ import { LiveActivityTicker } from "@/components/LiveActivityTicker";
 import { TradingTicker } from "@/components/TradingTicker";
 import { VolumeBlock } from "@/components/VolumeBlock";
 import { TopTraderTile } from "@/components/TopTraderTile";
+import { MissedTile } from "@/components/MissedTile";
+import { NotificationsBell } from "@/components/NotificationsBell";
 
 const CAT_COLORS: Record<string, string> = {
   deforestation: "#10b981", wildfire: "#f59e0b", flood: "#3b82f6",
@@ -113,6 +115,7 @@ export function Home() {
         <div className="topbar-actions">
           <StreakBadge />
           <WalletBadge onClick={() => navigate("/wallet")} />
+          <NotificationsBell bets={bets} myBets={myBets} />
           <button className="topbar-icon-btn" data-variant="gold" onClick={() => navigate("/leaderboard")} title={t("wallet.leaderboard")}>
             <Trophy size={14} />
           </button>
@@ -405,6 +408,9 @@ export function Home() {
 
           {/* Top trader spotlight (editorial social proof) */}
           <TopTraderTile onClick={() => navigate("/leaderboard")} />
+
+          {/* Missed opportunities (subtle regret framing, ethical) */}
+          <MissedTile bets={bets} userBetSlugs={new Set(myBets.map((b) => b.bet_id))} />
 
           {/* Badges shelf */}
           <BentoTile span={4} delay={0.45}>

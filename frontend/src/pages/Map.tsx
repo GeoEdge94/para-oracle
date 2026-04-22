@@ -16,6 +16,7 @@ import { LocaleToggle } from "@/components/LocaleToggle";
 import { WalletBadge } from "@/components/WalletBadge";
 import { StreakBadge } from "@/components/StreakBadge";
 import { useMissions, isBoosted } from "@/lib/engage";
+import { usePulseOnNewBet } from "@/lib/usePulseOnNewBet";
 import { useI18n } from "@/lib/i18n";
 
 const WORLD_CENTER: [number, number] = [10, 15];
@@ -242,6 +243,25 @@ export function MapPage() {
     }
   }, [filterCat, bets]);
 
+  // Poll /user-bets for new placements; pulse pin + discreet toast
+  const pulsingSlugs = usePulseOnNewBet(bets);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    for (const bet of bets) {
+      const lid = `pulse-${bet.slug}`;
+      if (!map.getLayer(lid)) continue;
+      if (pulsingSlugs.has(bet.slug)) {
+        map.setPaintProperty(lid, "circle-stroke-width", 6);
+        map.setPaintProperty(lid, "circle-radius", 10);
+        map.setPaintProperty(lid, "circle-stroke-opacity", 0.9);
+      } else {
+        map.setPaintProperty(lid, "circle-stroke-width", 2);
+        map.setPaintProperty(lid, "circle-stroke-opacity", 0.9);
+      }
+    }
+  }, [pulsingSlugs, bets]);
+
   function selectBet(bet: Bet) {
     if (!seenRef.current.has(bet.slug)) {
       seenRef.current.add(bet.slug);
@@ -425,7 +445,7 @@ export function MapPage() {
         <BetSheet
           bet={selectedBet}
           onClose={() => setSelectedBet(null)}
-          onOpen={() => navigate(`/analysis/${selectedBet.slug}`)}
+          onOpen={() => navigate(`/market/${selectedBet.slug}`)}
         />
       )}
     </div>
