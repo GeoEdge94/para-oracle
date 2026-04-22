@@ -6,6 +6,8 @@ import { useI18n } from "@/lib/i18n";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { GlobeHero } from "@/components/GlobeHero";
 import { TradingTicker } from "@/components/TradingTicker";
+import { WhyParaOracle } from "@/components/WhyParaOracle";
+import { ChevronDown } from "lucide-react";
 import type { Bet } from "@/lib/api";
 
 type BetLite = { slug: string; region_geojson: GeoJSON.Polygon | GeoJSON.MultiPolygon | null; status: string };
@@ -61,6 +63,7 @@ export function Login() {
   }
 
   return (
+    <div style={{ height: "100dvh", overflowY: "auto", overflowX: "hidden", background: "var(--bg)", position: "relative" }}>
     <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, position: "relative", overflow: "hidden" }}>
       <div className="login-bg" aria-hidden>
         <div className="login-grid" />
@@ -197,6 +200,27 @@ export function Login() {
           </motion.div>
         )}
       </motion.div>
+
+      {/* Discover arrow hint at bottom of fold */}
+      <motion.div
+        initial={{ opacity: 0, y: -4 }}
+        animate={{ opacity: 0.6, y: 0 }}
+        transition={{ delay: 1.2, duration: 0.6, repeat: Infinity, repeatType: "reverse", repeatDelay: 0.5 }}
+        style={{
+          position: "absolute", bottom: 18, left: "50%", transform: "translateX(-50%)",
+          display: "flex", alignItems: "center", gap: 6,
+          color: "var(--fg-faint)", zIndex: 3, pointerEvents: "none",
+        }}
+      >
+        <span className="mono" style={{ fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase" }}>
+          D\u00e9couvrir
+        </span>
+        <ChevronDown size={12} />
+      </motion.div>
+    </div>
+
+    {/* Features section scroll-revealed under the fold */}
+    <WhyParaOracle />
     </div>
   );
 }
