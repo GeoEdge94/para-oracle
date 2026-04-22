@@ -150,7 +150,7 @@ export function WalletPage() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {ub.position} · {formatAmount(ub.amount)} @ {ub.odds.toFixed(3)}x
+                  {ub.position} · {formatAmount(ub.amount)} @ {Number(ub.odds).toFixed(3)}x
                 </div>
                 <div style={{ fontSize: 10, color: "#64748b" }}>
                   {new Date(ub.placed_at).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-US")}

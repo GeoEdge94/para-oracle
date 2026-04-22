@@ -42,7 +42,7 @@ export function Login() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        style={{ width: "100%", maxWidth: 360 }}
+        style={{ width: "100%", maxWidth: 360, position: "relative", zIndex: 1 }}
       >
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>

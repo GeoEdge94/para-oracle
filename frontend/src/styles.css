@@ -15,7 +15,7 @@ button { cursor: pointer; font-family: inherit; }
 .login-bg {
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   overflow: hidden;
   pointer-events: none;
   background: radial-gradient(ellipse at 50% 60%, #0f1a2a 0%, #070b14 60%, #05080f 100%);

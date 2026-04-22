@@ -346,7 +346,7 @@ type I18nCtx = {
   setCurrency: (c: Currency) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
   ta: (key: string) => string[];
-  formatAmount: (eur: number) => string;
+  formatAmount: (eur: number | string) => string;
   betQ: (bet: Localizable) => string;
   betDesc: (bet: Localizable) => string;
 };
@@ -395,8 +395,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   );
 
   const formatAmount = useCallback(
-    (eur: number): string => {
-      const value = currency === "USD" ? eur * EUR_USD_RATE : eur;
+    (eur: number | string): string => {
+      const n = typeof eur === "number" ? eur : Number(eur);
+      const safe = Number.isFinite(n) ? n : 0;
+      const value = currency === "USD" ? safe * EUR_USD_RATE : safe;
       const symbol = currency === "USD" ? "$" : "€";
       return `${value.toFixed(2)} ${symbol}`;
     },
