@@ -151,9 +151,40 @@ export function Login() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.8 }}
-            style={{ textAlign: "center", fontSize: 10, color: "var(--fg-faint)", marginTop: 14, letterSpacing: 1.5, textTransform: "uppercase" }}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 0,
+              marginTop: 20,
+              padding: "14px 0",
+              borderTop: "1px solid var(--border-muted)",
+              borderBottom: "1px solid var(--border-muted)",
+            }}
           >
-            <span className="num">{bets.length}</span> marchés actifs · Sentinel-2 · temps réel
+            <div style={{ textAlign: "center", borderRight: "1px solid var(--border-muted)" }}>
+              <div className="display num" style={{ fontSize: 22, color: "var(--fg-strong)", letterSpacing: -0.5 }}>
+                {bets.length}
+              </div>
+              <div className="mono" style={{ fontSize: 8, color: "var(--fg-faint)", letterSpacing: 1.3, textTransform: "uppercase", marginTop: 2 }}>
+                Markets
+              </div>
+            </div>
+            <div style={{ textAlign: "center", borderRight: "1px solid var(--border-muted)" }}>
+              <div className="display num" style={{ fontSize: 22, color: "var(--accent)", letterSpacing: -0.5 }}>
+                {bets.filter((b) => b.status === "OPEN").length}
+              </div>
+              <div className="mono" style={{ fontSize: 8, color: "var(--fg-faint)", letterSpacing: 1.3, textTransform: "uppercase", marginTop: 2 }}>
+                Open
+              </div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div className="display num" style={{ fontSize: 22, color: "var(--fg-strong)", letterSpacing: -0.5 }}>
+                24/7
+              </div>
+              <div className="mono" style={{ fontSize: 8, color: "var(--fg-faint)", letterSpacing: 1.3, textTransform: "uppercase", marginTop: 2 }}>
+                Sentinel-2
+              </div>
+            </div>
           </motion.div>
         )}
       </motion.div>

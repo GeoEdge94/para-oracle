@@ -1,6 +1,7 @@
 import type { Bet } from "@/lib/api";
 import { TrendingUp, Flame, Droplets, Mountain, Thermometer, Snowflake, Building, Fish, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
+import Tilt from "react-parallax-tilt";
 import { useI18n } from "@/lib/i18n";
 import { Sparkline } from "@/components/Sparkline";
 import { BoostedBadge } from "@/components/BoostedBadge";
@@ -42,16 +43,31 @@ export function BetCarousel({ bets, onSelect }: Props) {
 
         const boosted = isBoosted(b.period_end, b.status);
         return (
-          <motion.button
+          <Tilt
             key={b.slug}
+            tiltMaxAngleX={5}
+            tiltMaxAngleY={5}
+            glareEnable
+            glareMaxOpacity={0.1}
+            glareColor={boosted ? "#fbbf24" : cat.color}
+            glarePosition="all"
+            scale={1}
+            transitionSpeed={600}
+            perspective={1200}
+            style={{ flex: "0 0 170px", scrollSnapAlign: "start" }}
+          >
+          <motion.button
             className="bet-carousel-card"
             onClick={() => onSelect(b)}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.04, duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
-            whileHover={{ y: -3, borderColor: boosted ? "#fbbf24" : cat.color, boxShadow: `0 10px 24px ${boosted ? "#fbbf2422" : `${cat.color}22`}` }}
             whileTap={{ scale: 0.97 }}
-            style={boosted ? { borderColor: "rgba(251,191,36,0.35)" } : undefined}
+            style={{
+              width: "100%",
+              flex: "initial",
+              ...(boosted ? { borderColor: "rgba(251,191,36,0.35)" } : {}),
+            }}
           >
             <div className="bcc-header">
               <div className="bcc-icon" style={{ background: `${cat.color}18`, color: cat.color }}>
@@ -104,6 +120,7 @@ export function BetCarousel({ bets, onSelect }: Props) {
               </div>
             )}
           </motion.button>
+          </Tilt>
         );
       })}
     </div>

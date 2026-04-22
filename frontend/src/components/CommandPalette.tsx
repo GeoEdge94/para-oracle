@@ -31,15 +31,42 @@ export function CommandPalette() {
   const { t } = useI18n();
 
   useEffect(() => {
+    let gPending = false;
+    let gTimer: ReturnType<typeof setTimeout> | null = null;
+    function clearG() { gPending = false; if (gTimer) clearTimeout(gTimer); gTimer = null; }
     function onKey(e: KeyboardEvent) {
+      const tgt = e.target as HTMLElement | null;
+      const typing = tgt && ["INPUT", "TEXTAREA"].includes(tgt.tagName);
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setOpen((o) => !o);
+        return;
+      }
+      if (typing) return;
+      // Vim/Linear-style "g + letter" navigation
+      if (!gPending && e.key.toLowerCase() === "g" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        gPending = true;
+        gTimer = setTimeout(clearG, 1100);
+        return;
+      }
+      if (gPending && !e.metaKey && !e.ctrlKey) {
+        const k = e.key.toLowerCase();
+        const map: Record<string, string> = { h: "/", m: "/map", w: "/wallet", l: "/leaderboard" };
+        if (map[k]) {
+          e.preventDefault();
+          clearG();
+          navigate(map[k]);
+          return;
+        }
+        clearG();
       }
     }
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (gTimer) clearTimeout(gTimer);
+    };
+  }, [navigate]);
 
   useEffect(() => {
     if (open && bets.length === 0) {

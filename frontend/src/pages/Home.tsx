@@ -15,6 +15,9 @@ import { Avatar } from "@/components/Avatar";
 import { Sparkline } from "@/components/Sparkline";
 import { BoostedBadge } from "@/components/BoostedBadge";
 import { LiveActivityTicker } from "@/components/LiveActivityTicker";
+import { TradingTicker } from "@/components/TradingTicker";
+import { VolumeBlock } from "@/components/VolumeBlock";
+import { TopTraderTile } from "@/components/TopTraderTile";
 
 const CAT_COLORS: Record<string, string> = {
   deforestation: "#10b981", wildfire: "#f59e0b", flood: "#3b82f6",
@@ -93,7 +96,7 @@ export function Home() {
   }
 
   return (
-    <div style={{ minHeight: "100dvh", background: "var(--bg)" }}>
+    <div style={{ height: "100dvh", overflowY: "auto", overflowX: "hidden", background: "var(--bg)" }}>
       {/* Topbar */}
       <div className="topbar">
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
@@ -122,32 +125,11 @@ export function Home() {
         </div>
       </div>
 
-      {/* Community marquee */}
-      {bets.length > 0 && (
-        <div style={{ borderBottom: "1px solid var(--border-muted)", padding: "6px 0", background: "var(--bg)" }}>
-          <Marquee speedSeconds={48}>
-            {bets.slice(0, 20).map((b) => {
-              const color = CAT_COLORS[b.category] || "#8b5cf6";
-              const resolved = b.status.startsWith("RESOLVED");
-              return (
-                <span key={b.slug} className="mono" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--fg-muted)" }}>
-                  <span style={{ width: 6, height: 6, borderRadius: 3, background: color }} />
-                  <span style={{ color: "var(--fg)" }}>{b.region_name}</span>
-                  <span style={{ color: "var(--border)" }}>·</span>
-                  {resolved ? (
-                    <span style={{ color: b.result_bool ? "var(--success)" : "var(--danger)", fontWeight: 700 }}>
-                      {b.result_bool ? "YES" : "NO"}
-                    </span>
-                  ) : (
-                    <span style={{ color: "var(--accent)" }}>LIVE</span>
-                  )}
-                  <span style={{ color: "var(--fg-faint)" }}>· {b.index_type}</span>
-                </span>
-              );
-            })}
-          </Marquee>
-        </div>
-      )}
+      {/* Bloomberg-style trading ticker with implied YES% and deltas */}
+      {bets.length > 0 && <TradingTicker bets={bets} />}
+
+      {/* Volume / positions / traders aggregate block */}
+      {bets.length > 0 && <VolumeBlock bets={bets} />}
 
       {/* Hero stat row (editorial) */}
       <div style={{ maxWidth: 1120, margin: "0 auto", padding: "28px 16px 12px" }}>
@@ -421,29 +403,8 @@ export function Home() {
             </div>
           </BentoTile>
 
-          {/* Top 3 leaderboard */}
-          <BentoTile span={2} delay={0.4} onClick={() => navigate("/leaderboard")}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <div className="bento-label">{t("wallet.leaderboard")} · TOP 3</div>
-              <Sparkles size={14} color="var(--warning)" />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
-              {leaderboard.slice(0, 3).map((e, i) => {
-                const medal = ["#fbbf24", "#cbd5e1", "#cd7f32"][i];
-                const pnl = e.total_won - e.total_lost;
-                return (
-                  <div key={e.pseudo} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 8px", borderRadius: 6, background: "var(--surface-1)" }}>
-                    <span className="mono" style={{ width: 16, fontSize: 11, fontWeight: 700, color: medal }}>{String(i + 1).padStart(2, "0")}</span>
-                    <Avatar seed={e.pseudo} size={22} radius={4} />
-                    <span style={{ flex: 1, fontWeight: 600, fontSize: 12, color: "var(--fg-strong)" }}>{e.pseudo}</span>
-                    <span className="mono num" style={{ fontSize: 12, fontWeight: 700, color: pnl >= 0 ? "var(--success)" : "var(--danger)" }}>
-                      {pnl >= 0 ? "+" : ""}{formatAmount(pnl)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </BentoTile>
+          {/* Top trader spotlight (editorial social proof) */}
+          <TopTraderTile onClick={() => navigate("/leaderboard")} />
 
           {/* Badges shelf */}
           <BentoTile span={4} delay={0.45}>
@@ -504,6 +465,29 @@ export function Home() {
             </motion.button>
           )}
         </motion.div>
+      </div>
+
+      {/* Keyboard hints footer */}
+      <div style={{
+        maxWidth: 1120, margin: "0 auto", padding: "0 16px 24px",
+        display: "flex", justifyContent: "center", gap: 14, flexWrap: "wrap",
+      }}>
+        {[
+          { k: "⌘ K", label: "Recherche" },
+          { k: "G H", label: "Dashboard" },
+          { k: "G M", label: "Carte" },
+          { k: "G W", label: "Portefeuille" },
+          { k: "G L", label: "Classement" },
+        ].map((x) => (
+          <span key={x.k} className="mono" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 10, color: "var(--fg-faint)", letterSpacing: 0.5 }}>
+            <kbd style={{
+              padding: "2px 6px", borderRadius: 3,
+              background: "var(--surface-2)", border: "1px solid var(--border-muted)",
+              color: "var(--fg-muted)", fontSize: 10, letterSpacing: 0.3,
+            }}>{x.k}</kbd>
+            <span>{x.label}</span>
+          </span>
+        ))}
       </div>
 
       {/* Live community activity (bottom fixed) */}

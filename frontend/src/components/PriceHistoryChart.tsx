@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { Bet } from "@/lib/api";
 
@@ -6,6 +6,14 @@ type Props = {
   bet: Bet;
   height?: number;
 };
+
+type Timeframe = "1D" | "1W" | "1M" | "ALL";
+const TIMEFRAMES: { key: Timeframe; label: string; pct: number }[] = [
+  { key: "1D",  label: "1D",  pct: 0.035 },
+  { key: "1W",  label: "1W",  pct: 0.12  },
+  { key: "1M",  label: "1M",  pct: 0.40  },
+  { key: "ALL", label: "ALL", pct: 1.00  },
+];
 
 // Deterministic PRNG
 function mulberry32(seed: number) {
@@ -29,20 +37,20 @@ function hashStr(s: string): number {
  * marker + tooltip.
  */
 export function PriceHistoryChart({ bet, height = 180 }: Props) {
-  const data = useMemo(() => {
+  const [tf, setTf] = useState<Timeframe>("ALL");
+  const fullSeries = useMemo(() => {
     const rnd = mulberry32(hashStr(bet.slug));
     const start = new Date(bet.period_start + "T00:00:00Z").getTime();
     const end = new Date(bet.period_end + "T23:59:59Z").getTime();
     const resolved = bet.status.startsWith("RESOLVED");
     const target = resolved && bet.result_bool ? 88 : resolved ? 12 : 50;
 
-    const samples = 64;
+    const samples = 128;
     const series: { t: number; d: string; y: number }[] = [];
     let v = 50 + (rnd() - 0.5) * 14;
     for (let i = 0; i < samples; i++) {
-      // Mean-reverting random walk toward target (stronger as we approach end)
-      const pullStrength = 0.05 + (i / samples) * 0.15;
-      v = v + (target - v) * pullStrength + (rnd() - 0.5) * 8;
+      const pullStrength = 0.04 + (i / samples) * 0.14;
+      v = v + (target - v) * pullStrength + (rnd() - 0.5) * 7;
       v = Math.max(3, Math.min(97, v));
       const t = start + ((end - start) * i) / (samples - 1);
       const d = new Date(t);
@@ -55,12 +63,56 @@ export function PriceHistoryChart({ bet, height = 180 }: Props) {
     return series;
   }, [bet.slug, bet.period_start, bet.period_end, bet.status, bet.result_bool]);
 
+  const data = useMemo(() => {
+    const entry = TIMEFRAMES.find((x) => x.key === tf) ?? TIMEFRAMES[3];
+    const take = Math.max(8, Math.floor(fullSeries.length * entry.pct));
+    return fullSeries.slice(-take);
+  }, [fullSeries, tf]);
+
   const resolved = bet.status.startsWith("RESOLVED");
   const stroke = resolved ? (bet.result_bool ? "#34d399" : "#f87171") : "#10b981";
   const gradId = `price-g-${hashStr(bet.slug)}`;
+  const current = data[data.length - 1]?.y ?? 50;
+  const first = data[0]?.y ?? 50;
+  const pctChange = current - first;
 
   return (
-    <div className="market-price-chart" style={{ width: "100%", height }}>
+    <div>
+      {/* Header: current price + change + timeframe tabs */}
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+          <div className="display num" style={{ fontSize: 28, color: stroke, letterSpacing: -0.5 }}>
+            {current.toFixed(1)}%
+          </div>
+          <div
+            className="mono data"
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: pctChange > 0 ? "var(--success)" : pctChange < 0 ? "var(--danger)" : "var(--fg-faint)",
+            }}
+          >
+            {pctChange > 0 ? "+" : ""}{pctChange.toFixed(1)} pts
+          </div>
+          <div className="mono" style={{ fontSize: 10, color: "var(--fg-faint)", letterSpacing: 0.5 }}>
+            · Implied YES
+          </div>
+        </div>
+        <div className="tf-tabs">
+          {TIMEFRAMES.map((x) => (
+            <button
+              key={x.key}
+              className={`tf-tab ${tf === x.key ? "tf-active" : ""}`}
+              onClick={() => setTf(x.key)}
+              aria-pressed={tf === x.key}
+            >
+              {x.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="market-price-chart" style={{ width: "100%", height }}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 12, right: 12, left: -6, bottom: 0 }}>
           <defs>
@@ -127,6 +179,7 @@ export function PriceHistoryChart({ bet, height = 180 }: Props) {
           />
         </AreaChart>
       </ResponsiveContainer>
+      </div>
     </div>
   );
 }

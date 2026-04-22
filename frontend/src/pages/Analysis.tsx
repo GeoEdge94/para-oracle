@@ -18,6 +18,7 @@ import { useMissions, isBoosted } from "@/lib/engage";
 import { BoostedBadge } from "@/components/BoostedBadge";
 import { MarketMeta } from "@/components/MarketMeta";
 import { PriceHistoryChart } from "@/components/PriceHistoryChart";
+import { DepthChart } from "@/components/DepthChart";
 import { useI18n } from "@/lib/i18n";
 import { OnboardingOverlay } from "@/components/OnboardingOverlay";
 import { MarketStats } from "@/components/MarketStats";
@@ -421,8 +422,13 @@ export function Analysis() {
                 </div>
               </div>
 
-              {/* Price history chart (YES% over time) */}
+              {/* Price history chart with multi-timeframe */}
               <PriceHistoryChart bet={bet} height={160} />
+
+              {/* Orderbook-style depth chart */}
+              <div style={{ marginTop: 14 }}>
+                <DepthChart stats={marketStats} />
+              </div>
 
               {/* Editorial meta block (criteria + sources) */}
               <MarketMeta bet={bet} />

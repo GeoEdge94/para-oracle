@@ -138,6 +138,31 @@ code,
 .ts { font-size: var(--text-2xs); color: var(--fg-faint); letter-spacing: 0.3px; }
 .data { letter-spacing: 0.1px; }
 
+/* Variable-font hover bold (Geist supports weight 100-900 continuous) */
+.font-hover-bold {
+  transition: font-variation-settings var(--dur) var(--ease-out);
+  font-variation-settings: "wght" 500;
+}
+.font-hover-bold:hover,
+.font-hover-bold:focus-visible {
+  font-variation-settings: "wght" 680;
+}
+.btn-primary,
+.cat-chip,
+.tt-item,
+.sidebar-btn,
+[cmdk-item] {
+  font-variation-settings: "wght" 500;
+  transition: font-variation-settings var(--dur) var(--ease-out), background var(--dur-instant) var(--ease), color var(--dur-instant) var(--ease), border-color var(--dur-instant) var(--ease), transform var(--dur-instant) var(--ease);
+}
+.btn-primary:hover,
+.cat-chip:hover,
+.tt-item:hover,
+.sidebar-btn:hover,
+[cmdk-item][data-selected="true"] {
+  font-variation-settings: "wght" 680;
+}
+
 /* ══════════════ Apply Geist globally ══════════════ */
 html, body, #root {
   font-family: var(--font-sans);
