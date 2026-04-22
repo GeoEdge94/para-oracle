@@ -14,6 +14,8 @@ import { LogOut, Plus, Trophy, Menu, X, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { WalletBadge } from "@/components/WalletBadge";
+import { StreakBadge } from "@/components/StreakBadge";
+import { useMissions } from "@/lib/engage";
 import { useI18n } from "@/lib/i18n";
 
 const WORLD_CENTER: [number, number] = [10, 15];
@@ -41,6 +43,8 @@ const CAT_COLORS: Record<string, string> = {
 export function MapPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { bump: bumpMission } = useMissions();
+  const seenRef = useRef<Set<string>>(new Set());
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
@@ -236,6 +240,10 @@ export function MapPage() {
   }, [filterCat, bets]);
 
   function selectBet(bet: Bet) {
+    if (!seenRef.current.has(bet.slug)) {
+      seenRef.current.add(bet.slug);
+      bumpMission("check");
+    }
     setSelectedBet(bet);
     if (mapRef.current && bet.region_geojson) {
       const b = geojsonBounds(bet.region_geojson);
@@ -264,6 +272,7 @@ export function MapPage() {
           <CrisisStats bets={bets} />
         </div>
         <div className="topbar-actions">
+          <StreakBadge />
           <WalletBadge onClick={() => navigate("/wallet")} />
           <button className="topbar-icon-btn" data-variant="gold" onClick={() => navigate("/leaderboard")} title="Leaderboard" aria-label="Leaderboard">
             <Trophy size={14} />

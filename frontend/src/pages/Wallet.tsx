@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, RefreshCw, TrendingUp, TrendingDown, Wallet as WalletIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -7,14 +7,20 @@ import { API, type WalletBalance, type UserBet } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { Skeleton } from "@/components/Skeleton";
+import { RankCard } from "@/components/RankCard";
+import { NumberTicker } from "@/components/NumberTicker";
+import { useStreak, computeXP } from "@/lib/engage";
 
 export function WalletPage() {
   const navigate = useNavigate();
   const { t, formatAmount, locale } = useI18n();
+  const { current: streakCurrent, longest: streakLongest } = useStreak();
   const [wallet, setWallet] = useState<WalletBalance | null>(null);
   const [bets, setBets] = useState<UserBet[]>([]);
   const [betsLoaded, setBetsLoaded] = useState(false);
   const [resetting, setResetting] = useState(false);
+
+  const xp = useMemo(() => computeXP(bets, Math.max(streakCurrent, streakLongest)), [bets, streakCurrent, streakLongest]);
 
   function load() {
     API.walletBalance().then((r) => setWallet(r.data)).catch(() => {});
@@ -75,24 +81,29 @@ export function WalletPage() {
       </div>
 
       <div style={{ padding: "16px 14px", maxWidth: 480, margin: "0 auto" }}>
+        {/* Rank card */}
+        <div style={{ marginBottom: 14 }}>
+          <RankCard xp={xp} />
+        </div>
+
         {/* Balance card */}
         <div className="card" style={{ marginBottom: 16, textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 1 }}>{t("wallet.balance")}</div>
-          <div style={{ fontSize: 32, fontWeight: 800, color: "#10b981", margin: "8px 0" }}>
-            {formatAmount(wallet.balance)}
+          <div style={{ fontSize: 10, color: "var(--fg-subtle)", textTransform: "uppercase", letterSpacing: 1 }}>{t("wallet.balance")}</div>
+          <div className="display num" style={{ fontSize: 36, color: "var(--accent)", margin: "8px 0", letterSpacing: -0.5 }}>
+            <NumberTicker value={Number(wallet.balance)} decimals={2} locale={locale === "fr" ? "fr-FR" : "en-US"} suffix=" €" />
           </div>
           <div style={{ display: "flex", justifyContent: "center", gap: 24, fontSize: 12 }}>
             <div>
-              <div style={{ color: "#94a3b8", fontSize: 10 }}>{t("wallet.total_won")}</div>
-              <div style={{ color: "#34d399", fontWeight: 600 }}>+{formatAmount(wallet.total_won)}</div>
+              <div style={{ color: "var(--fg-subtle)", fontSize: 10 }}>{t("wallet.total_won")}</div>
+              <div className="num" style={{ color: "var(--success)", fontWeight: 600 }}>+{formatAmount(wallet.total_won)}</div>
             </div>
             <div>
-              <div style={{ color: "#94a3b8", fontSize: 10 }}>{t("wallet.total_lost")}</div>
-              <div style={{ color: "#f87171", fontWeight: 600 }}>-{formatAmount(wallet.total_lost)}</div>
+              <div style={{ color: "var(--fg-subtle)", fontSize: 10 }}>{t("wallet.total_lost")}</div>
+              <div className="num" style={{ color: "var(--danger)", fontWeight: 600 }}>-{formatAmount(wallet.total_lost)}</div>
             </div>
             <div>
-              <div style={{ color: "#94a3b8", fontSize: 10 }}>{t("wallet.pnl")}</div>
-              <div style={{ color: pnl >= 0 ? "#34d399" : "#f87171", fontWeight: 600 }}>
+              <div style={{ color: "var(--fg-subtle)", fontSize: 10 }}>{t("wallet.pnl")}</div>
+              <div className="num" style={{ color: pnl >= 0 ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>
                 {pnl >= 0 ? "+" : ""}{formatAmount(pnl)}
               </div>
             </div>

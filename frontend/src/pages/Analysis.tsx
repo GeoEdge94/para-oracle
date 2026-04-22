@@ -12,6 +12,9 @@ import { syncLayers, ensureBasemapRadio, geojsonBounds, installRegionMask } from
 import { ChevronLeft, ChevronDown, ChevronUp, Play, Copy } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LocaleToggle } from "@/components/LocaleToggle";
+import { StreakBadge } from "@/components/StreakBadge";
+import { ResolutionScene } from "@/components/ResolutionScene";
+import { useMissions } from "@/lib/engage";
 import { useI18n } from "@/lib/i18n";
 import { OnboardingOverlay } from "@/components/OnboardingOverlay";
 import { MarketStats } from "@/components/MarketStats";
@@ -24,6 +27,7 @@ import { MapPin } from "lucide-react";
 export function Analysis() {
   const { slug = "" } = useParams();
   const { t, betQ } = useI18n();
+  const { bump: bumpMission } = useMissions();
   const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -42,8 +46,11 @@ export function Analysis() {
   const [myBets, setMyBets] = useState<UserBetSummary | null>(null);
   const [zones, setZones] = useState<DeforestationZone[]>([]);
   const [showDetail, setShowDetail] = useState(false);
+  const [showResolution, setShowResolution] = useState(false);
+  const [userPosition, setUserPosition] = useState<"YES" | "NO" | null>(null);
 
   useEffect(() => {
+    bumpMission("analyze");
     API.getBet(slug).then((r) => {
       setBet(r.data);
       if (!selectedDate) setSelectedDate(r.data.period_end);
@@ -131,7 +138,15 @@ export function Analysis() {
 
   async function resolve() {
     setResolving(true);
+    setShowResolution(true);
     try {
+      // Determine user's position from myBets before resolving
+      if (myBets && myBets.positions.length > 0) {
+        const pending = myBets.positions.find((p) => p.status === "PENDING");
+        setUserPosition(pending ? pending.position : null);
+      } else {
+        setUserPosition(null);
+      }
       const { data } = await API.resolveBet(slug);
       setResult(data);
       const r = await API.getBet(slug);
@@ -335,6 +350,8 @@ export function Analysis() {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <StreakBadge />
+          <span className="topbar-sep" />
           <LocaleToggle />
           <span className="topbar-sep" />
           <StatusBadge />
@@ -476,6 +493,18 @@ export function Analysis() {
           localStorage.setItem("para_onboarding_done", "1");
         }} />
       )}
+
+      <AnimatePresence>
+        {showResolution && bet && (
+          <ResolutionScene
+            bet={bet}
+            result={result}
+            userPosition={userPosition}
+            loading={resolving}
+            onClose={() => setShowResolution(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

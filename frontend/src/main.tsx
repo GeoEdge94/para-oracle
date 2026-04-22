@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { I18nProvider } from "@/lib/i18n";
 import { Login } from "@/pages/Login";
+import { Home } from "@/pages/Home";
 import { MapPage } from "@/pages/Map";
 import { Analysis } from "@/pages/Analysis";
 import { WalletPage } from "@/pages/Wallet";
@@ -23,7 +24,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
           <Route path="/analysis/:slug" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />

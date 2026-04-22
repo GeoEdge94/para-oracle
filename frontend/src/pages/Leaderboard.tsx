@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Trophy, Medal } from "lucide-react";
 import { motion } from "framer-motion";
-import { api } from "@/lib/api";
+import { api, API, type UserBet } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { Skeleton } from "@/components/Skeleton";
+import { computeXP, daysUntilNextMonday, leagueFor, useStreak } from "@/lib/engage";
+import { NumberTicker } from "@/components/NumberTicker";
 
 type Entry = {
   pseudo: string;
@@ -17,8 +19,10 @@ type Entry = {
 export function LeaderboardPage() {
   const navigate = useNavigate();
   const { t, formatAmount } = useI18n();
+  const { current: streak, longest } = useStreak();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [myBets, setMyBets] = useState<UserBet[]>([]);
 
   useEffect(() => {
     api
@@ -28,7 +32,28 @@ export function LeaderboardPage() {
         setLoaded(true);
       })
       .catch(() => setLoaded(true));
+    // Fetch my bets (for XP computation) — best-effort across all markets
+    API.listBets().then(async (r) => {
+      const all: UserBet[] = [];
+      for (const b of r.data.slice(0, 40)) {
+        try {
+          const { data } = await API.myBets(b.slug);
+          all.push(...(data.positions || []));
+        } catch {}
+      }
+      setMyBets(all);
+    }).catch(() => {});
   }, []);
+
+  const xp = useMemo(() => computeXP(myBets, Math.max(streak, longest)), [myBets, streak, longest]);
+  const league = leagueFor(xp);
+  const leagues: { key: "bronze" | "silver" | "gold" | "platinum" | "diamond"; color: string }[] = [
+    { key: "bronze", color: "#cd7f32" },
+    { key: "silver", color: "#cbd5e1" },
+    { key: "gold", color: "#fbbf24" },
+    { key: "platinum", color: "#e2e8f0" },
+    { key: "diamond", color: "#67e8f9" },
+  ];
 
   return (
     <div style={{ minHeight: "100dvh", background: "var(--surface-1)", color: "var(--fg)" }}>
@@ -51,7 +76,67 @@ export function LeaderboardPage() {
         <LocaleToggle />
       </div>
 
-      <div style={{ padding: "16px 14px", maxWidth: 480, margin: "0 auto" }}>
+      <div style={{ padding: "16px 14px", maxWidth: 520, margin: "0 auto" }}>
+        {/* Weekly League panel */}
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            marginBottom: 20,
+            padding: 18,
+            borderRadius: "var(--radius-lg)",
+            background: `linear-gradient(145deg, ${leagues.find((l) => l.key === league.league)?.color}14 0%, var(--surface-2) 60%)`,
+            border: `1px solid ${leagues.find((l) => l.key === league.league)?.color}35`,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+            <div className="bento-label">{t("engage.league")}</div>
+            <div className="mono" style={{ fontSize: 10, color: "var(--fg-faint)", letterSpacing: 0.6 }}>
+              {t("engage.league_reset_in", { n: daysUntilNextMonday() })}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+            <Trophy size={32} color={leagues.find((l) => l.key === league.league)?.color} />
+            <div style={{ flex: 1 }}>
+              <div className="display" style={{ fontSize: 26, color: leagues.find((l) => l.key === league.league)?.color, letterSpacing: -0.5 }}>
+                {t(`engage.league_${league.league}`)}
+              </div>
+              <div className="num" style={{ fontSize: 12, color: "var(--fg-muted)", marginTop: 2 }}>
+                <NumberTicker value={xp} /> XP
+              </div>
+            </div>
+          </div>
+
+          {/* League ladder */}
+          <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+            {leagues.map((l) => {
+              const current = l.key === league.league;
+              const below = leagues.findIndex((x) => x.key === league.league) > leagues.findIndex((x) => x.key === l.key);
+              return (
+                <div
+                  key={l.key}
+                  style={{
+                    flex: 1,
+                    height: 4,
+                    borderRadius: 2,
+                    background: current ? l.color : below ? `${l.color}55` : "var(--border-muted)",
+                    transition: "background 220ms",
+                  }}
+                />
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "var(--fg-faint)", letterSpacing: 0.5, textTransform: "uppercase" }}>
+            {leagues.map((l) => (
+              <span key={l.key} style={{ color: l.key === league.league ? l.color : "inherit", fontWeight: l.key === league.league ? 700 : 500, flex: 1, textAlign: "center" }}>
+                {t(`engage.league_${l.key}`)}
+              </span>
+            ))}
+          </div>
+        </motion.div>
+
         {!loaded && (
           <>
             {Array.from({ length: 6 }).map((_, i) => (

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { API, type BetMarketStats } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { useMissions } from "@/lib/engage";
 
 type Props = {
   slug: string;
@@ -14,6 +15,7 @@ type Props = {
 
 export function PlaceBetForm({ slug, betStatus, stats, onPlaced }: Props) {
   const { t, formatAmount } = useI18n();
+  const { bump: bumpMission } = useMissions();
   const [position, setPosition] = useState<"YES" | "NO">("YES");
   const [amount, setAmount] = useState("");
   const [placing, setPlacing] = useState(false);
@@ -41,6 +43,7 @@ export function PlaceBetForm({ slug, betStatus, stats, onPlaced }: Props) {
       toast.success(t("wallet.success"), {
         description: `${position} · ${formatAmount(amountNum)} @ ${data.odds.toFixed(3)}× → ${formatAmount(data.potential_payout)}`,
       });
+      bumpMission("predict");
       setAmount("");
       onPlaced();
     } catch (e: any) {
