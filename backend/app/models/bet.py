@@ -32,6 +32,7 @@ class Bet(Base):
     change_threshold = Column(Numeric, nullable=False, default=0.3)
     ground_truth_source = Column(String(50), nullable=False, default="PRODES")
     proof_layers = Column(ARRAY(String), nullable=False, default=[])
+    pipeline_kind = Column(String(20), nullable=False, default="spectral")  # spectral | weather
     status = Column(String(20), nullable=False, default="OPEN")
     result_bool = Column(Boolean)
     resolved_value = Column(Numeric)

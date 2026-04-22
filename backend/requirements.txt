@@ -16,3 +16,6 @@ numpy==1.26.4
 shapely==2.0.6
 geopandas==1.0.1
 pystac-client==0.8.5
+cdsapi==0.7.4
+web3==7.5.0
+eth-account==0.13.4

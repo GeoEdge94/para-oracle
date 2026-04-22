@@ -1,0 +1,3 @@
+httpx==0.27.2
+# web3==7.5.0       # M4bis : signature + dispute on-chain
+# eth-account==0.13.4

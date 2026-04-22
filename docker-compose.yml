@@ -44,6 +44,7 @@ services:
     volumes:
       - ./backend:/app
       - ./data:/data
+      - ./scripts:/scripts:ro
     networks:
       - para-net
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
@@ -68,6 +69,28 @@ services:
     networks:
       - para-net
     command: npm run dev -- --host 0.0.0.0 --port 3000
+
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    container_name: para-challenger
+    depends_on:
+      - backend
+    environment:
+      BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
+      IPFS_GATEWAY_URL: ${IPFS_GATEWAY_URL:-https://gateway.pinata.cloud/ipfs/}
+      CHALLENGER_POLL_SECONDS: ${CHALLENGER_POLL_SECONDS:-30}
+      MOCK_IPFS_DIR: /data/ipfs-mock
+      RESOLUTION_SCRIPT_PATH: /scripts/resolution_script.py
+    volumes:
+      - ./data:/data:ro
+      - ./scripts:/scripts:ro
+      - ./bot/challenger.py:/bot/challenger.py:ro
+    networks:
+      - para-net
+    profiles:
+      - bot   # active uniquement si docker compose --profile bot up
 
   qgis-server:
     image: camptocamp/qgis-server:3.34
