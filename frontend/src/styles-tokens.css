@@ -119,17 +119,24 @@ textarea:focus-visible,
 .date-chip-label,
 code,
 .num,
-.mono {
+.mono,
+.data {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
 }
-.mono { font-family: var(--font-mono); }
+.mono, .data, .ts {
+  font-family: var(--font-mono);
+  font-feature-settings: "ss01" 1, "cv11" 1, "tnum" 1;
+}
 .serif { font-family: var(--font-serif); }
 .display {
   font-family: var(--font-display);
   font-weight: 800;
   letter-spacing: -0.02em;
 }
+/* Timestamps + volumes + IDs always monospace */
+.ts { font-size: var(--text-2xs); color: var(--fg-faint); letter-spacing: 0.3px; }
+.data { letter-spacing: 0.1px; }
 
 /* ══════════════ Apply Geist globally ══════════════ */
 html, body, #root {

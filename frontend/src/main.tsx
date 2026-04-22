@@ -9,6 +9,7 @@ import { MapPage } from "@/pages/Map";
 import { Analysis } from "@/pages/Analysis";
 import { WalletPage } from "@/pages/Wallet";
 import { LeaderboardPage } from "@/pages/Leaderboard";
+import { CommandPalette } from "@/components/CommandPalette";
 import "./styles-tokens.css";
 import "./styles.css";
 
@@ -31,6 +32,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <CommandPalette />
       </BrowserRouter>
       <Toaster
         position="top-center"

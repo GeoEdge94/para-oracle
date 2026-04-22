@@ -8,6 +8,7 @@ import { LocaleToggle } from "@/components/LocaleToggle";
 import { Skeleton } from "@/components/Skeleton";
 import { computeXP, daysUntilNextMonday, leagueFor, useStreak } from "@/lib/engage";
 import { NumberTicker } from "@/components/NumberTicker";
+import { Avatar } from "@/components/Avatar";
 
 type Entry = {
   pseudo: string;
@@ -170,18 +171,18 @@ export function LeaderboardPage() {
                 display: "flex", alignItems: "center", gap: 12,
                 border: isTop3 ? `1px solid ${medalColors[i]}33` : undefined,
               }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: 8,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                background: isTop3 ? `${medalColors[i]}18` : "#1e293b",
-                fontSize: 14, fontWeight: 800, color: isTop3 ? medalColors[i] : "#64748b",
+              <div className="mono" style={{
+                width: 22, textAlign: "center",
+                fontSize: 12, fontWeight: 700, color: isTop3 ? medalColors[i] : "var(--fg-faint)",
+                flexShrink: 0,
               }}>
-                {isTop3 ? <Medal size={16} color={medalColors[i]} /> : i + 1}
+                {isTop3 ? <Medal size={14} color={medalColors[i]} /> : String(i + 1).padStart(2, "0")}
               </div>
+              <Avatar seed={e.pseudo} size={36} radius={8} />
 
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>{e.pseudo}</div>
-                <div style={{ fontSize: 10, color: "#64748b" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--fg-strong)" }}>{e.pseudo}</div>
+                <div className="mono" style={{ fontSize: 10, color: "var(--fg-faint)", letterSpacing: 0.2 }}>
                   {t("wallet.balance")}: {formatAmount(e.balance)}
                 </div>
               </div>

@@ -221,3 +221,47 @@ export function daysUntilNextMonday(): number {
   const day = d.getUTCDay() || 7;
   return 8 - day; // reset Monday 00 UTC
 }
+
+// ─── Boosted bets (closing-soon urgency, ethically) ────────────────
+// A market is "boosted" in its final 24h. At T-6h a second tier kicks
+// in (visually intensified). Bonus: +25% XP on correct prediction.
+// No odds manipulation — honest info-based urgency.
+
+export type BoostTier = "none" | "day" | "sprint";
+
+export function getBoostTier(periodEnd: string, status: string, now: Date = new Date()): BoostTier {
+  if (!status || !status.startsWith("OPEN")) return "none";
+  const end = new Date(periodEnd + "T23:59:59Z").getTime();
+  const ms = end - now.getTime();
+  if (ms <= 0) return "none";
+  const hours = ms / 3_600_000;
+  if (hours <= 6) return "sprint";
+  if (hours <= 24) return "day";
+  return "none";
+}
+
+export function isBoosted(periodEnd: string, status: string): boolean {
+  return getBoostTier(periodEnd, status) !== "none";
+}
+
+export function hoursUntilClose(periodEnd: string, now: Date = new Date()): number {
+  const end = new Date(periodEnd + "T23:59:59Z").getTime();
+  return Math.max(0, (end - now.getTime()) / 3_600_000);
+}
+
+export function formatCountdown(periodEnd: string, now: Date = new Date()): string {
+  const end = new Date(periodEnd + "T23:59:59Z").getTime();
+  const ms = Math.max(0, end - now.getTime());
+  if (ms <= 0) return "closed";
+  const h = Math.floor(ms / 3_600_000);
+  const m = Math.floor((ms % 3_600_000) / 60_000);
+  const s = Math.floor((ms % 60_000) / 1000);
+  if (h >= 24) {
+    const d = Math.floor(h / 24);
+    return `${d}d ${h % 24}h`;
+  }
+  if (h >= 1) return `${h}h ${String(m).padStart(2, "0")}m`;
+  return `${m}m ${String(s).padStart(2, "0")}s`;
+}
+
+export const BOOST_XP_MULTIPLIER = 1.25; // +25% XP on correct prediction

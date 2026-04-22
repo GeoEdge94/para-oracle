@@ -2,6 +2,9 @@ import type { Bet } from "@/lib/api";
 import { TrendingUp, Flame, Droplets, Mountain, Thermometer, Snowflake, Building, Fish, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
+import { Sparkline } from "@/components/Sparkline";
+import { BoostedBadge } from "@/components/BoostedBadge";
+import { isBoosted } from "@/lib/engage";
 
 type Props = {
   bets: Bet[];
@@ -37,6 +40,7 @@ export function BetCarousel({ bets, onSelect }: Props) {
         const resolved = b.status.startsWith("RESOLVED");
         const pct = yesPct(b);
 
+        const boosted = isBoosted(b.period_end, b.status);
         return (
           <motion.button
             key={b.slug}
@@ -45,14 +49,19 @@ export function BetCarousel({ bets, onSelect }: Props) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.04, duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
-            whileHover={{ y: -3, borderColor: cat.color, boxShadow: `0 10px 24px ${cat.color}22` }}
+            whileHover={{ y: -3, borderColor: boosted ? "#fbbf24" : cat.color, boxShadow: `0 10px 24px ${boosted ? "#fbbf2422" : `${cat.color}22`}` }}
             whileTap={{ scale: 0.97 }}
+            style={boosted ? { borderColor: "rgba(251,191,36,0.35)" } : undefined}
           >
             <div className="bcc-header">
               <div className="bcc-icon" style={{ background: `${cat.color}18`, color: cat.color }}>
                 <Icon size={14} />
               </div>
-              <ChevronRight size={12} className="bcc-arrow" />
+              {boosted ? (
+                <BoostedBadge periodEnd={b.period_end} status={b.status} variant="pill" />
+              ) : (
+                <ChevronRight size={12} className="bcc-arrow" />
+              )}
             </div>
 
             <div className="bcc-region">{b.region_name}</div>
@@ -86,6 +95,12 @@ export function BetCarousel({ bets, onSelect }: Props) {
                   transition={{ delay: 0.15 + idx * 0.04, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                   style={{ background: pct > 50 ? "var(--accent)" : "var(--danger)" }}
                 />
+              </div>
+            )}
+
+            {!resolved && (
+              <div style={{ marginTop: 6 }}>
+                <Sparkline seed={b.slug} color={cat.color} height={26} trend="up" />
               </div>
             )}
           </motion.button>

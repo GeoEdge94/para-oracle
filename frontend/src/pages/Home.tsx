@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Flame, Trophy, MapPin, LogOut, Map as MapIcon, Wallet as WalletIcon, Sparkles, TrendingUp, Clock } from "lucide-react";
+import { Flame, Trophy, MapPin, LogOut, Map as MapIcon, Wallet as WalletIcon, Sparkles, TrendingUp, Clock, Zap } from "lucide-react";
 import { API, api, type Bet, type WalletBalance, type UserBet } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { NumberTicker } from "@/components/NumberTicker";
@@ -10,7 +10,11 @@ import { LocaleToggle } from "@/components/LocaleToggle";
 import { StreakBadge } from "@/components/StreakBadge";
 import { WalletBadge } from "@/components/WalletBadge";
 import { Marquee } from "@/components/Marquee";
-import { computeXP, computeBadges, daysUntilNextMonday, leagueFor, rankFor, RANKS, useMissions, useStreak } from "@/lib/engage";
+import { computeXP, computeBadges, daysUntilNextMonday, leagueFor, rankFor, RANKS, useMissions, useStreak, isBoosted, formatCountdown, hoursUntilClose } from "@/lib/engage";
+import { Avatar } from "@/components/Avatar";
+import { Sparkline } from "@/components/Sparkline";
+import { BoostedBadge } from "@/components/BoostedBadge";
+import { LiveActivityTicker } from "@/components/LiveActivityTicker";
 
 const CAT_COLORS: Record<string, string> = {
   deforestation: "#10b981", wildfire: "#f59e0b", flood: "#3b82f6",
@@ -64,6 +68,13 @@ export function Home() {
       .filter((b) => b.status === "OPEN")
       .sort(() => 0.5 - Math.random())
       .slice(0, 3);
+  }, [bets]);
+
+  const boostedBets = useMemo(() => {
+    return bets
+      .filter((b) => isBoosted(b.period_end, b.status))
+      .sort((a, b) => hoursUntilClose(a.period_end) - hoursUntilClose(b.period_end))
+      .slice(0, 6);
   }, [bets]);
 
   const nextResolve = useMemo(() => {
@@ -157,6 +168,75 @@ export function Home() {
           </p>
         </motion.div>
       </div>
+
+      {/* Closing Today — boosted markets horizontal carousel */}
+      {boostedBets.length > 0 && (
+        <div style={{ maxWidth: 1120, margin: "0 auto", padding: "4px 16px 12px" }}>
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              borderRadius: "var(--radius-lg)",
+              background: "linear-gradient(145deg, rgba(251,191,36,0.10) 0%, var(--surface-2) 60%)",
+              border: "1px solid rgba(251,191,36,0.28)",
+              overflow: "hidden",
+            }}
+          >
+            <BoostedBadge periodEnd={boostedBets[0].period_end} status={boostedBets[0].status} variant="ribbon" />
+            <div style={{ padding: "12px 14px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+                <div>
+                  <div className="bento-label" style={{ marginBottom: 2, color: "#fbbf24" }}>Ferme aujourd'hui</div>
+                  <div className="serif" style={{ fontSize: 15, fontStyle: "italic", color: "var(--fg-muted)" }}>
+                    Dernière fenêtre pour prédire · bonus +25% XP sur les prédictions justes
+                  </div>
+                </div>
+                <span className="mono" style={{ fontSize: 10, color: "var(--fg-faint)" }}>
+                  {boostedBets.length} marché{boostedBets.length > 1 ? "s" : ""}
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
+                {boostedBets.map((b, i) => {
+                  const color = CAT_COLORS[b.category] || "#8b5cf6";
+                  return (
+                    <motion.button
+                      key={b.slug}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.05 + i * 0.04 }}
+                      whileHover={{ y: -2 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => navigate(`/analysis/${b.slug}`)}
+                      style={{
+                        flex: "0 0 220px",
+                        background: "rgba(10,15,26,0.85)",
+                        border: "1px solid rgba(251,191,36,0.25)",
+                        borderRadius: "var(--radius)",
+                        padding: 12,
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: 4, background: color }} />
+                        <BoostedBadge periodEnd={b.period_end} status={b.status} variant="pill" />
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--fg-strong)", lineHeight: 1.25, marginBottom: 6, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                        {b.region_name}
+                      </div>
+                      <div className="mono" style={{ fontSize: 10, color: "var(--fg-faint)", marginBottom: 6 }}>
+                        {b.index_type} · {b.threshold_value.toLocaleString()} {b.threshold_unit}
+                      </div>
+                      <Sparkline seed={b.slug} color="#fbbf24" height={18} />
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Bento dashboard */}
       <div style={{ maxWidth: 1120, margin: "0 auto", padding: "12px 16px 48px" }}>
@@ -311,27 +391,33 @@ export function Home() {
               <TrendingUp size={14} color="var(--accent)" />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 6 }}>
-              {trending.map((b, i) => (
-                <motion.button
-                  key={b.slug}
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + i * 0.05 }}
-                  onClick={() => navigate(`/analysis/${b.slug}`)}
-                  style={{
-                    background: "var(--surface-1)", border: "1px solid var(--border-muted)",
-                    borderRadius: "var(--radius-sm)", padding: "8px 10px",
-                    display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
-                    textAlign: "left",
-                  }}
-                >
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: CAT_COLORS[b.category] || "#8b5cf6" }} />
-                  <span style={{ flex: 1, fontSize: 12, color: "var(--fg)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {b.region_name}
-                  </span>
-                  <span className="mono" style={{ fontSize: 10, color: "var(--fg-faint)" }}>{b.index_type}</span>
-                </motion.button>
-              ))}
+              {trending.map((b, i) => {
+                const color = CAT_COLORS[b.category] || "#8b5cf6";
+                return (
+                  <motion.button
+                    key={b.slug}
+                    initial={{ opacity: 0, x: -6 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 + i * 0.05 }}
+                    onClick={() => navigate(`/analysis/${b.slug}`)}
+                    style={{
+                      background: "var(--surface-1)", border: "1px solid var(--border-muted)",
+                      borderRadius: "var(--radius-sm)", padding: "8px 10px",
+                      display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
+                    <span style={{ flex: 1, fontSize: 12, color: "var(--fg)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {b.region_name}
+                    </span>
+                    <div style={{ width: 64, flexShrink: 0 }}>
+                      <Sparkline seed={b.slug} color={color} height={20} />
+                    </div>
+                    <span className="mono" style={{ fontSize: 10, color: "var(--fg-faint)" }}>{b.index_type}</span>
+                  </motion.button>
+                );
+              })}
             </div>
           </BentoTile>
 
@@ -347,14 +433,10 @@ export function Home() {
                 const pnl = e.total_won - e.total_lost;
                 return (
                   <div key={e.pseudo} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 8px", borderRadius: 6, background: "var(--surface-1)" }}>
-                    <div style={{
-                      width: 24, height: 24, borderRadius: 6,
-                      background: `${medal}22`, color: medal,
-                      fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>{i + 1}</div>
-                    <span style={{ flex: 1, fontWeight: 600, fontSize: 12 }}>{e.pseudo}</span>
-                    <span className="num" style={{ fontSize: 12, fontWeight: 700, color: pnl >= 0 ? "var(--success)" : "var(--danger)" }}>
+                    <span className="mono" style={{ width: 16, fontSize: 11, fontWeight: 700, color: medal }}>{String(i + 1).padStart(2, "0")}</span>
+                    <Avatar seed={e.pseudo} size={22} radius={4} />
+                    <span style={{ flex: 1, fontWeight: 600, fontSize: 12, color: "var(--fg-strong)" }}>{e.pseudo}</span>
+                    <span className="mono num" style={{ fontSize: 12, fontWeight: 700, color: pnl >= 0 ? "var(--success)" : "var(--danger)" }}>
                       {pnl >= 0 ? "+" : ""}{formatAmount(pnl)}
                     </span>
                   </div>
@@ -423,6 +505,10 @@ export function Home() {
           )}
         </motion.div>
       </div>
+
+      {/* Live community activity (bottom fixed) */}
+      <div style={{ height: 40 }} aria-hidden />
+      <LiveActivityTicker bets={bets} />
     </div>
   );
 }

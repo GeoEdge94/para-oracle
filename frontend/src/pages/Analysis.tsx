@@ -14,7 +14,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { StreakBadge } from "@/components/StreakBadge";
 import { ResolutionScene } from "@/components/ResolutionScene";
-import { useMissions } from "@/lib/engage";
+import { useMissions, isBoosted } from "@/lib/engage";
+import { BoostedBadge } from "@/components/BoostedBadge";
+import { MarketMeta } from "@/components/MarketMeta";
+import { PriceHistoryChart } from "@/components/PriceHistoryChart";
 import { useI18n } from "@/lib/i18n";
 import { OnboardingOverlay } from "@/components/OnboardingOverlay";
 import { MarketStats } from "@/components/MarketStats";
@@ -405,11 +408,24 @@ export function Analysis() {
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             >
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{betQ(bet)}</div>
-                <div style={{ fontSize: 11, color: "#94a3b8" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                  <div className="serif" style={{ fontSize: 16, fontWeight: 600, lineHeight: 1.35, color: "var(--fg-strong)", flex: 1 }}>
+                    {betQ(bet)}
+                  </div>
+                  {isBoosted(bet.period_end, bet.status) && (
+                    <BoostedBadge periodEnd={bet.period_end} status={bet.status} variant="pill" />
+                  )}
+                </div>
+                <div className="mono" style={{ fontSize: 10, color: "var(--fg-faint)", marginTop: 6, letterSpacing: 0.3 }}>
                   {t("analysis.threshold_label", { value: bet.threshold_value, unit: bet.threshold_unit, drop: bet.ndvi_drop_threshold })}
                 </div>
               </div>
+
+              {/* Price history chart (YES% over time) */}
+              <PriceHistoryChart bet={bet} height={160} />
+
+              {/* Editorial meta block (criteria + sources) */}
+              <MarketMeta bet={bet} />
 
               {resolved ? (
                 <div style={{ padding: 14, background: bet.result_bool ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)", borderRadius: 10, marginBottom: 12 }}>

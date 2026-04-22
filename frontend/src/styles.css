@@ -1500,6 +1500,185 @@ button { cursor: pointer; font-family: inherit; }
   box-shadow: var(--shadow-sm);
 }
 
+/* ══════════════ Command palette (Cmd+K) ══════════════ */
+.cmd-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+  border: 1px solid var(--border-muted);
+  color: var(--fg-subtle);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: background var(--dur-instant) var(--ease),
+              border-color var(--dur-instant) var(--ease);
+}
+.cmd-trigger:hover { background: var(--surface-2); border-color: var(--border); color: var(--fg); }
+.cmd-trigger kbd {
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-muted);
+  font-size: 9px;
+  color: var(--fg-faint);
+}
+
+.cmd-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 15, 0.5);
+  backdrop-filter: blur(6px);
+  z-index: 80;
+  animation: cmd-fade 160ms var(--ease-out);
+}
+@keyframes cmd-fade { from { opacity: 0 } to { opacity: 1 } }
+
+.cmd-content {
+  position: fixed;
+  top: 15vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(640px, 92vw);
+  background: rgba(10, 15, 26, 0.96);
+  backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.03);
+  z-index: 81;
+  overflow: hidden;
+  animation: cmd-in 200ms var(--ease-out);
+}
+@keyframes cmd-in {
+  from { opacity: 0; transform: translate(-50%, -4px) scale(0.98); }
+  to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+.cmd-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-muted);
+}
+.cmd-input-wrap input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--fg-strong);
+  font-size: var(--text-md);
+  font-family: var(--font-sans);
+}
+.cmd-input-wrap input::placeholder { color: var(--fg-faint); }
+.cmd-esc {
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-muted);
+  font-size: 9px;
+  color: var(--fg-faint);
+  letter-spacing: 0.5px;
+}
+
+.cmd-list {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 6px;
+  scrollbar-width: thin;
+}
+.cmd-list::-webkit-scrollbar { width: 6px; }
+.cmd-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.cmd-group [cmdk-group-heading] {
+  font-size: 9px;
+  color: var(--fg-faint);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 10px 10px 4px;
+  font-weight: 600;
+}
+
+[cmdk-item] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--fg);
+  cursor: pointer;
+  transition: background var(--dur-instant) var(--ease);
+}
+[cmdk-item] kbd {
+  margin-left: auto;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-muted);
+  font-size: 9px;
+  color: var(--fg-faint);
+}
+[cmdk-item][data-selected="true"] {
+  background: var(--accent-soft);
+  color: var(--fg-strong);
+}
+
+.cmd-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--fg-faint);
+  font-size: var(--text-sm);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ══════════════ Live activity ticker ══════════════ */
+.live-activity-ticker {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 29;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px;
+  background: rgba(5, 8, 15, 0.82);
+  backdrop-filter: blur(14px) saturate(150%);
+  border-top: 1px solid var(--border-muted);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.lat-scroll {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 48px), transparent 100%);
+}
+.lat-scroll::-webkit-scrollbar { display: none; }
+.lat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-right: 4px;
+}
+
 /* ══════════════ Marquee primitive ══════════════ */
 .mq-wrap {
   position: relative;

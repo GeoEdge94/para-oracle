@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { WalletBadge } from "@/components/WalletBadge";
 import { StreakBadge } from "@/components/StreakBadge";
-import { useMissions } from "@/lib/engage";
+import { useMissions, isBoosted } from "@/lib/engage";
 import { useI18n } from "@/lib/i18n";
 
 const WORLD_CENTER: [number, number] = [10, 15];
@@ -230,7 +230,10 @@ export function MapPage() {
     const map = mapRef.current;
     if (!map || !bets.length) return;
     for (const bet of bets) {
-      const show = filterCat === null || bet.category === filterCat;
+      const show =
+        filterCat === null ? true :
+        filterCat === "__boosted__" ? isBoosted(bet.period_end, bet.status) :
+        bet.category === filterCat;
       for (const layerId of [`fill-${bet.slug}`, `border-${bet.slug}`, `glow-${bet.slug}`, `pulse-${bet.slug}`]) {
         if (map.getLayer(layerId)) {
           map.setLayoutProperty(layerId, "visibility", show ? "visible" : "none");
@@ -408,7 +411,11 @@ export function MapPage() {
 
       {showCarousel && !selectedBet && (
         <BetBottomSheet
-          bets={filterCat ? bets.filter((b) => b.category === filterCat) : bets}
+          bets={
+            filterCat === null ? bets :
+            filterCat === "__boosted__" ? bets.filter((b) => isBoosted(b.period_end, b.status)) :
+            bets.filter((b) => b.category === filterCat)
+          }
           onSelect={(b) => { setShowCarousel(false); selectBet(b); }}
           onClose={() => setShowCarousel(false)}
         />
