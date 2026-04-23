@@ -1,0 +1,22 @@
+# Node / Hardhat
+contracts/node_modules/
+contracts/cache/
+contracts/artifacts/
+contracts/typechain-types/
+contracts/.env
+contracts/coverage/
+contracts/coverage.json
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.venv/
+venv/
+
+# IDE / OS
+.vscode/
+.DS_Store

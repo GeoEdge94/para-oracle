@@ -26,13 +26,26 @@ class Analysis(Base):
     pixels_deforested = Column(BigInteger)
     cloud_coverage_mean = Column(Numeric)
 
-    # Proofs
+    # Proofs (legacy M0)
     script_hash = Column(String(128))
     ndvi_t0_hash = Column(String(128))
     ndvi_t1_hash = Column(String(128))
     delta_hash = Column(String(128))
     mask_hash = Column(String(128))
-    ipfs_cid = Column(String(100))
+    ipfs_cid = Column(String(100))  # alias de data_cid, conserve pour compat frontend
+
+    # Proofs Web3 (M2+)
+    data_cid = Column(String(100))
+    script_cid = Column(String(100))
+    schema_cid = Column(String(100))
+    tls_proof_cid = Column(String(100))
+    fingerprint_sha256 = Column(String(80))
+
+    # On-chain (M3+)
+    chain_tx_hash = Column(String(80))
+    bond_amount_usdc = Column(Numeric(18, 6))
+    dispute_window_end = Column(DateTime(timezone=True))
+    dispute_status = Column(String(20), default="NONE")  # NONE|PENDING|DISPUTED|FINALIZED
 
     error_message = Column(Text)
     duration_seconds = Column(Numeric)

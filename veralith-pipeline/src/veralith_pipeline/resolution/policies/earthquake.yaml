@@ -1,0 +1,17 @@
+# Veralith policy — Earthquake detection
+#
+# Source unique USGS suffit (autorite mondiale). Resolution YES si magnitude > seuil.
+
+id: earthquake-default-v1
+version: 1.0.0
+event_type: earthquake
+
+aggregation: max_severity
+threshold: 0.5                # severity 0.5 = magnitude ≈ 5.5
+
+allowed_sources:
+  - USGS
+
+min_sources_agree: 1
+min_confidence: 0.4
+min_severity: 0.0

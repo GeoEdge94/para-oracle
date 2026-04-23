@@ -26,6 +26,17 @@ class AnalysisRead(BaseModel):
     delta_hash: Optional[str] = None
     mask_hash: Optional[str] = None
     ipfs_cid: Optional[str] = None
+    # Web3 M2+
+    data_cid: Optional[str] = None
+    script_cid: Optional[str] = None
+    schema_cid: Optional[str] = None
+    tls_proof_cid: Optional[str] = None
+    fingerprint_sha256: Optional[str] = None
+    # On-chain M3+
+    chain_tx_hash: Optional[str] = None
+    bond_amount_usdc: Optional[Decimal] = None
+    dispute_window_end: Optional[datetime] = None
+    dispute_status: Optional[str] = None
     error_message: Optional[str] = None
     duration_seconds: Optional[Decimal] = None
 

@@ -27,7 +27,9 @@ import time
 import os
 
 from app.core.config import settings
+from app.services.canonical import fingerprint_sha256
 from app.services.copernicus_client import CopernicusClient
+from app.services.pipeline_base import BlobRef, build_manifest
 
 
 SCRIPT_VERSION = "spectral-pipeline-v2.0.0"
@@ -95,6 +97,14 @@ class PipelineResult:
     duration_seconds: float = 0.0
     error: str = ""
 
+    # Champs Web3 (M1) — alignes avec BasePipelineResult
+    observed_value: float = 0.0
+    threshold_value: float = 0.0
+    threshold_unit: str = ""
+    direction: str = "gt"
+    data_normalized: dict = field(default_factory=dict)
+    blobs: list[BlobRef] = field(default_factory=list)
+
 
 class SpectralPipeline:
     """Pipeline deterministe multi-indice. Memes entrees → memes sorties."""
@@ -136,13 +146,22 @@ class SpectralPipeline:
                 )
 
             if settings.USE_MOCK_SENTINEL:
-                hashes, stats = self._mock_compute()
+                hashes, stats, blobs = self._mock_compute(bbox)
             else:
-                hashes, stats = self._real_compute(products_t0, products_t1)
+                hashes, stats, blobs = self._real_compute(products_t0, products_t1)
 
             surface = stats["surface"]
             outcome = self._evaluate_outcome(surface)
             script_hash = self._script_hash()
+
+            manifest = self._build_manifest(
+                bbox=bbox,
+                blobs=blobs,
+                outcome=outcome,
+                observed=surface,
+            )
+            params = self._serialize_params()
+            params["fingerprint_sha256"] = fingerprint_sha256(manifest)
 
             return PipelineResult(
                 success=True,
@@ -159,8 +178,15 @@ class SpectralPipeline:
                 sentinel_products_t0=[p.id for p in products_t0],
                 sentinel_products_t1=[p.id for p in products_t1],
                 stac_uris=[p.stac_uri for p in products_t0 + products_t1],
-                params=self._serialize_params(),
+                params=params,
                 duration_seconds=round(time.time() - start, 2),
+                # Champs Web3
+                observed_value=surface,
+                threshold_value=float(cfg.threshold_value),
+                threshold_unit=cfg.threshold_unit,
+                direction="gt",
+                data_normalized=manifest,
+                blobs=blobs,
             )
         except Exception as e:
             return PipelineResult(
@@ -176,7 +202,7 @@ class SpectralPipeline:
             return surface > cfg.threshold_value
         return surface > cfg.threshold_value
 
-    def _mock_compute(self) -> tuple[tuple[str, str, str, str], dict]:
+    def _mock_compute(self, bbox: list[float]) -> tuple[tuple[str, str, str, str], dict, list[BlobRef]]:
         """Deterministic mock: PRNG seeded on bet_slug + index_type."""
         cfg = self.config
         rng = random.Random(f"{cfg.bet_slug}:{cfg.index_type}")
@@ -198,13 +224,58 @@ class SpectralPipeline:
             path.write_bytes(content)
 
         hashes = tuple(self._hash_file(p) for p, _ in files)
-        return hashes, {"surface": surface, "pixels": pixels, "cloud_mean": cloud_mean}
+        blobs = [
+            BlobRef(kind=kind, path=path, sha256=hashes[i], bbox=list(bbox))
+            for i, (path, kind) in enumerate(files)
+        ]
+        return hashes, {"surface": surface, "pixels": pixels, "cloud_mean": cloud_mean}, blobs
 
     def _real_compute(self, products_t0, products_t1):
         """Stub for real rioxarray processing. To be implemented with Sentinel Hub Process API."""
         raise NotImplementedError(
             f"Real compute not yet implemented for {self.config.index_type}. "
             f"Bands needed: {BANDS_NEEDED.get(self.config.index_type, [])}"
+        )
+
+    def _build_manifest(
+        self,
+        *,
+        bbox: list[float],
+        blobs: list[BlobRef],
+        outcome: bool,
+        observed: float,
+    ) -> dict:
+        """Construit le manifest schema_v1 pour ce pipeline spectral.
+
+        Les `cid` des blobs sont None a ce stade ; web3_publisher les remplira
+        apres le pinning IPFS, puis recomputera le fingerprint.
+        """
+        cfg = self.config
+        return build_manifest(
+            pipeline_kind="spectral",
+            bet_slug=cfg.bet_slug,
+            period_start=cfg.period_start.isoformat(),
+            period_end=cfg.period_end.isoformat(),
+            region_bbox=list(bbox),
+            fingerprint_inputs={
+                "rasters": [
+                    {
+                        "kind": b.kind,
+                        "cid": b.cid,
+                        "sha256": b.sha256,
+                        "bbox": b.bbox,
+                    }
+                    for b in blobs
+                ],
+                "bands": BANDS_NEEDED.get(cfg.index_type, []),
+                "index_type": cfg.index_type,
+                "script_version": SCRIPT_VERSION,
+            },
+            outcome_yes=outcome,
+            observed_value=observed,
+            threshold_value=float(cfg.threshold_value),
+            threshold_unit=cfg.threshold_unit,
+            direction="gt",
         )
 
     def _serialize_params(self) -> dict:

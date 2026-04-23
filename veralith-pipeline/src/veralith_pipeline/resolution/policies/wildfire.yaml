@@ -1,0 +1,21 @@
+# Veralith policy — Wildfire detection
+#
+# Resoudre YES si au moins 2 sources detectent N feux (selon agregation)
+# avec confidence minimale. Quorum multi-sources obligatoire pour eviter
+# faux-positif d'une seule source.
+
+id: wildfire-default-v1
+version: 1.0.0
+event_type: wildfire
+
+aggregation: weighted_count   # count | sum_severity | max_severity | weighted_count
+threshold: 5.0                # weighted_count > 5.0 → YES (≈ 5 events confiance moyenne)
+
+allowed_sources:
+  - NASA_FIRMS
+  - EFFIS
+  - NOAA
+
+min_sources_agree: 2          # quorum cross-validation
+min_confidence: 0.5
+min_severity: 0.0
