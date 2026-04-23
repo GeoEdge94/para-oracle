@@ -51,13 +51,13 @@ export function GlobeHero({
       phi: 0,
       theta: 0.28,
       dark: 1,
-      diffuse: pro ? 1.4 : 1.2,
-      mapSamples: pro ? 60_000 : 16_000,
-      mapBrightness: pro ? 9 : 4.6,
-      mapBaseBrightness: pro ? 0.25 : 0.05,
-      baseColor: pro ? [0.55, 0.68, 0.92] : [0.12, 0.18, 0.26],
+      diffuse: pro ? 1.2 : 1.2,
+      mapSamples: pro ? 16_000 : 16_000,
+      mapBrightness: pro ? 4 : 4.6,
+      mapBaseBrightness: pro ? 0 : 0.05,
+      baseColor: pro ? [0.28, 0.4, 0.62] : [0.12, 0.18, 0.26],
       markerColor: mc,
-      glowColor: pro ? [0.45, 0.6, 0.95] : [0.062, 0.3, 0.24],
+      glowColor: pro ? [0.4, 0.55, 0.9] : [0.062, 0.3, 0.24],
       scale: 1,
       offset: [0, 0],
       markers,
@@ -84,7 +84,7 @@ export function GlobeHero({
         maxWidth: "100%",
       }}
     >
-      {/* Atmospheric halo — subtle outer glow so the sphere reads as a planet against dark bg */}
+      {/* Planet body — solid sphere surface w/ subtle rim light + terminator shadow */}
       {pro && (
         <div
           aria-hidden
@@ -93,23 +93,24 @@ export function GlobeHero({
             inset: "4%",
             borderRadius: "50%",
             background:
-              "radial-gradient(circle at 40% 38%, rgba(120,160,230,0.18) 0%, rgba(70,100,180,0.10) 42%, rgba(0,0,0,0) 68%)",
-            filter: "blur(2px)",
+              "radial-gradient(circle at 38% 32%, #3a5f9e 0%, #1f3a6e 28%, #0d1a36 62%, #05091a 86%, #030611 100%)",
+            boxShadow:
+              "inset -30px -40px 70px rgba(0, 0, 0, 0.55), inset 18px 22px 60px rgba(140, 180, 240, 0.10)",
             pointerEvents: "none",
           }}
         />
       )}
-      {/* Outer soft glow ring */}
+      {/* Outer atmosphere ring (thin halo beyond sphere edge) */}
       {pro && (
         <div
           aria-hidden
           style={{
             position: "absolute",
-            inset: "-4%",
+            inset: "-3%",
             borderRadius: "50%",
             background:
-              "radial-gradient(circle, rgba(90,140,230,0) 48%, rgba(90,140,230,0.18) 52%, rgba(90,140,230,0) 70%)",
-            filter: "blur(6px)",
+              "radial-gradient(circle, rgba(90,140,230,0) 49%, rgba(110,160,240,0.28) 52%, rgba(60,100,190,0.12) 58%, rgba(90,140,230,0) 72%)",
+            filter: "blur(4px)",
             pointerEvents: "none",
           }}
         />
