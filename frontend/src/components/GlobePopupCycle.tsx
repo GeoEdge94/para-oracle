@@ -1,22 +1,11 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Zap, TrendingUp, Satellite } from "lucide-react";
-import { api } from "@/lib/api";
-import { ConstellationArcs } from "@/components/ConstellationArcs";
-import { GlobeHero } from "@/components/GlobeHero";
+import { api, type Bet } from "@/lib/api";
+import { GlobeView } from "@/components/GlobeView";
 import { isBoosted, formatCountdown } from "@/lib/engage";
 
-type BetLite = {
-  slug: string;
-  region_name: string;
-  category: string;
-  status: string;
-  period_end: string;
-  index_type: string;
-  threshold_value: number;
-  threshold_unit: string;
-  region_geojson: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
-};
+type BetLite = Bet;
 
 type MarketStats = { yes_pct: number; total_volume: number; total_bets: number };
 
@@ -40,16 +29,6 @@ const POSITIONS = [
   { angle: 300, label: "left-up" },
   { angle: -15, label: "top-near" },
 ];
-
-function centroidOf(geom: GeoJSON.Polygon | GeoJSON.MultiPolygon | null): [number, number] | null {
-  if (!geom) return null;
-  try {
-    const ring = geom.type === "MultiPolygon" ? geom.coordinates[0][0] : geom.coordinates[0];
-    let sx = 0, sy = 0, n = 0;
-    for (const [x, y] of ring) { sx += x; sy += y; n++; }
-    return [sy / n, sx / n]; // [lat, lng]
-  } catch { return null; }
-}
 
 type Props = {
   size: number;
@@ -99,15 +78,6 @@ export function GlobePopupCycle({ size, intervalMs = 9000 }: Props) {
       .catch(() => {});
   }, [openBets, index]);
 
-  // Build markers for cobe (all bets, small glow)
-  const markers = bets
-    .map((b) => {
-      const c = centroidOf(b.region_geojson);
-      if (!c) return null;
-      return { location: c as [number, number], size: 0.04 };
-    })
-    .filter(Boolean) as { location: [number, number]; size: number }[];
-
   const current = openBets[index];
   const pos = POSITIONS[index % POSITIONS.length];
   const R = size / 2;
@@ -134,12 +104,9 @@ export function GlobePopupCycle({ size, intervalMs = 9000 }: Props) {
         justifyContent: "center",
       }}
     >
-      {/* The globe */}
-      <GlobeHero size={size} variant="pro" markers={markers} opacity={0.95} />
-
-      {/* Constellation arcs overlay (subtle network feel) */}
-      <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-        <ConstellationArcs size={size} opacity={0.55} count={14} seed={11} />
+      {/* The globe — photo-realistic Earth (react-globe.gl w/ blue-marble texture) */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "auto" }}>
+        <GlobeView bets={bets} width={size} height={size} />
       </div>
 
       {/* Live badge top-left of globe */}
