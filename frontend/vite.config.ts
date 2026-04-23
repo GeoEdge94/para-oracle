@@ -12,6 +12,11 @@ export default defineConfig({
   build: {
     target: "es2020",
     chunkSizeWarningLimit: 1000,
+    // Disable automatic modulepreload hints. Vite otherwise preloads every
+    // chunk reachable from the entry graph (including map-gl 1.48 MB which is
+    // only needed on /map) on /login, saturating mobile wifi. Chunks are
+    // fetched on demand via dynamic import instead.
+    modulePreload: { polyfill: false, resolveDependencies: () => [] },
     rollupOptions: {
       output: {
         manualChunks(id: string) {
