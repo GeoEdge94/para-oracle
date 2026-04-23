@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, Zap } from "lucide-react";
 import type { Bet, BetMarketStats } from "@/lib/api";
 import { API } from "@/lib/api";
 import { isBoosted } from "@/lib/engage";
+import { useVisibleInterval } from "@/lib/usePageVisibility";
 
 type Props = {
   bets: Bet[];
@@ -36,9 +37,11 @@ export function TradingTicker({ bets, pollMs = 20_000 }: Props) {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const prevRef = useRef<Record<string, number>>({});
 
+  const cancelRef = useRef(false);
+  const fetchAll = useRef(async () => {});
   useEffect(() => {
-    let cancelled = false;
-    async function fetchAll() {
+    cancelRef.current = false;
+    fetchAll.current = async () => {
       const open = bets.filter((b) => b.status === "OPEN").slice(0, 18);
       const results = await Promise.all(
         open.map(async (b) => {
@@ -50,7 +53,7 @@ export function TradingTicker({ bets, pollMs = 20_000 }: Props) {
           }
         }),
       );
-      if (cancelled) return;
+      if (cancelRef.current) return;
       const next: Snapshot[] = results
         .filter((r) => r.stats && r.stats.total_bets > 0)
         .map(({ b, stats }) => {
@@ -68,14 +71,12 @@ export function TradingTicker({ bets, pollMs = 20_000 }: Props) {
           };
         });
       setSnapshots(next);
-    }
-    fetchAll();
-    const id = setInterval(fetchAll, pollMs);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
     };
-  }, [bets, pollMs]);
+    fetchAll.current();
+    return () => { cancelRef.current = true; };
+  }, [bets]);
+
+  useVisibleInterval(() => { fetchAll.current(); }, pollMs);
 
   const items = useMemo(() => {
     // Duplicate for seamless marquee loop

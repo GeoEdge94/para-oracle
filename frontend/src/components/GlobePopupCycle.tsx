@@ -5,6 +5,7 @@ import { api, type Bet } from "@/lib/api";
 import { GlobeView, type GlobeViewHandle } from "@/components/GlobeView";
 import { ConstellationArcs } from "@/components/ConstellationArcs";
 import { isBoosted, formatCountdown } from "@/lib/engage";
+import { useVisibleInterval } from "@/lib/usePageVisibility";
 
 type BetLite = Bet;
 
@@ -64,14 +65,11 @@ export function GlobePopupCycle({ size, intervalMs = 9000 }: Props) {
     }).catch(() => {});
   }, []);
 
-  // Cycle every intervalMs
-  useEffect(() => {
+  // Cycle every intervalMs (paused when tab hidden)
+  useVisibleInterval(() => {
     if (openBets.length === 0) return;
-    const id = setInterval(() => {
-      setIndex((i) => (i + 1) % openBets.length);
-    }, intervalMs);
-    return () => clearInterval(id);
-  }, [openBets.length, intervalMs]);
+    setIndex((i) => (i + 1) % openBets.length);
+  }, intervalMs, openBets.length > 0);
 
   // Fetch stats for current bet + rotate camera to face the bet so it's visible on the front
   useEffect(() => {
@@ -92,12 +90,14 @@ export function GlobePopupCycle({ size, intervalMs = 9000 }: Props) {
   const current = openBets[index];
   const catColor = current ? CAT_COLORS[current.category] ?? "#a855f7" : "#34d399";
 
-  // Track screen position of the current bet via polling so popup + thread follow rotation.
+  // Track screen position of the current bet so popup + thread follow rotation.
   // Poll at ~6 Hz (not rAF) to keep React re-renders out of framer-motion's animation budget.
+  // useVisibleInterval pauses polling entirely when the tab is hidden.
+  const pollPosRef = useRef<() => void>(() => {});
   useEffect(() => {
-    if (!current) return;
+    if (!current) { pollPosRef.current = () => {}; return; }
     const c = centroidOf(current.region_geojson);
-    if (!c) { setPointPos(null); return; }
+    if (!c) { setPointPos(null); pollPosRef.current = () => {}; return; }
     const [lat, lng] = c;
     const poll = () => {
       const p = globeRef.current?.getScreenCoords(lat, lng, 0.01);
@@ -107,10 +107,11 @@ export function GlobePopupCycle({ size, intervalMs = 9000 }: Props) {
         return { x: p.x, y: p.y };
       });
     };
+    pollPosRef.current = poll;
     poll();
-    const id = setInterval(poll, 160);
-    return () => clearInterval(id);
   }, [current, size]);
+
+  useVisibleInterval(() => { pollPosRef.current(); }, 160, !!current);
 
   // Popup anchored slightly outward from the bet point (toward sphere edge)
   const R = size / 2;

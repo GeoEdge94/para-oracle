@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import type { Bet, UserBet } from "@/lib/api";
 import { API } from "@/lib/api";
 import { NumberTicker } from "@/components/NumberTicker";
 import { useI18n } from "@/lib/i18n";
+import { useVisibleInterval } from "@/lib/usePageVisibility";
 
 type Props = {
   bets: Bet[];
@@ -32,9 +33,11 @@ export function VolumeBlock({ bets }: Props) {
     biggestSingle: 0,
   });
 
+  const cancelRef = useRef(false);
+  const aggregateRef = useRef(async () => {});
   useEffect(() => {
-    let cancelled = false;
-    async function aggregate() {
+    cancelRef.current = false;
+    aggregateRef.current = async () => {
       const open = bets.slice(0, 25); // cap to limit load
       const results = await Promise.all(
         open.map((b) =>
@@ -43,7 +46,7 @@ export function VolumeBlock({ bets }: Props) {
             .catch(() => [] as UserBet[])
         )
       );
-      if (cancelled) return;
+      if (cancelRef.current) return;
       const all = results.flat();
       const now = Date.now();
       const WINDOW_24H = 24 * 3600 * 1000;
@@ -65,14 +68,12 @@ export function VolumeBlock({ bets }: Props) {
         last24hVolume: last24h,
         biggestSingle: biggest,
       });
-    }
-    aggregate();
-    const id = setInterval(aggregate, 30_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
     };
+    aggregateRef.current();
+    return () => { cancelRef.current = true; };
   }, [bets]);
+
+  useVisibleInterval(() => { aggregateRef.current(); }, 30_000);
 
   const openMarkets = useMemo(() => bets.filter((b) => b.status === "OPEN").length, [bets]);
 

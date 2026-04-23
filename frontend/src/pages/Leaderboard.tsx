@@ -33,16 +33,14 @@ export function LeaderboardPage() {
         setLoaded(true);
       })
       .catch(() => setLoaded(true));
-    // Fetch my bets (for XP computation) — best-effort across all markets
+    // Fetch my bets (for XP computation) — best-effort across all markets, parallel
     API.listBets().then(async (r) => {
-      const all: UserBet[] = [];
-      for (const b of r.data.slice(0, 40)) {
-        try {
-          const { data } = await API.myBets(b.slug);
-          all.push(...(data.positions || []));
-        } catch {}
-      }
-      setMyBets(all);
+      const results = await Promise.all(
+        r.data.slice(0, 40).map((b) =>
+          API.myBets(b.slug).then((res) => res.data.positions || []).catch(() => [] as UserBet[])
+        )
+      );
+      setMyBets(results.flat());
     }).catch(() => {});
   }, []);
 

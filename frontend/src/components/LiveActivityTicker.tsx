@@ -4,6 +4,7 @@ import type { Bet, UserBet } from "@/lib/api";
 import { API } from "@/lib/api";
 import { Avatar } from "@/components/Avatar";
 import { useI18n } from "@/lib/i18n";
+import { useVisibleInterval } from "@/lib/usePageVisibility";
 
 type Props = {
   bets: Bet[];
@@ -47,9 +48,11 @@ export function LiveActivityTicker({ bets, maxShown = 12, pollMs = 12_000 }: Pro
     return m;
   }, [bets]);
 
+  const cancelRef = useRef(false);
+  const fetchActivityRef = useRef(async () => {});
   useEffect(() => {
-    let cancelled = false;
-    async function fetchActivity() {
+    cancelRef.current = false;
+    fetchActivityRef.current = async () => {
       // Sample a few slugs to limit load (20 is enough for rolling feel)
       const slugs = bets.slice(0, 20).map((b) => b.slug);
       const results = await Promise.all(
@@ -59,7 +62,7 @@ export function LiveActivityTicker({ bets, maxShown = 12, pollMs = 12_000 }: Pro
             .catch(() => [] as (UserBet & { betSlug: string })[])
         )
       );
-      if (cancelled) return;
+      if (cancelRef.current) return;
       const all = results.flat();
       all.sort((a, b) => new Date(b.placed_at).getTime() - new Date(a.placed_at).getTime());
       const latest = all.slice(0, maxShown * 2).map((ub) => {
@@ -81,20 +84,13 @@ export function LiveActivityTicker({ bets, maxShown = 12, pollMs = 12_000 }: Pro
         const merged = [...fresh, ...prev];
         return merged.slice(0, maxShown);
       });
-    }
-    fetchActivity();
-    const id = setInterval(fetchActivity, pollMs);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
     };
-  }, [bets, betMap, maxShown, pollMs]);
+    fetchActivityRef.current();
+    return () => { cancelRef.current = true; };
+  }, [bets, betMap, maxShown]);
 
-  // Re-render every 15s to refresh "ago" labels
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 15_000);
-    return () => clearInterval(id);
-  }, []);
+  useVisibleInterval(() => { fetchActivityRef.current(); }, pollMs);
+  useVisibleInterval(() => setTick((t) => t + 1), 15_000);
 
   if (items.length === 0) return null;
 

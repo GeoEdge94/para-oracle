@@ -18,6 +18,7 @@ import { StreakBadge } from "@/components/StreakBadge";
 import { DeckOverlay } from "@/components/DeckOverlay";
 import { useMissions, isBoosted } from "@/lib/engage";
 import { usePulseOnNewBet } from "@/lib/usePulseOnNewBet";
+import { usePageVisibility } from "@/lib/usePageVisibility";
 import { useI18n } from "@/lib/i18n";
 
 const WORLD_CENTER: [number, number] = [10, 15];
@@ -46,6 +47,9 @@ export function MapPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { bump: bumpMission } = useMissions();
+  const pageVisible = usePageVisibility();
+  const pageVisibleRef = useRef(pageVisible);
+  useEffect(() => { pageVisibleRef.current = pageVisible; }, [pageVisible]);
   const seenRef = useRef<Set<string>>(new Set());
   const [deckMap, setDeckMap] = useState<maplibregl.Map | null>(null);
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -167,7 +171,7 @@ export function MapPage() {
       let dashIdx = 0;
       let lastDashTick = performance.now();
       const animateDash = (now: number) => {
-        if (now - lastDashTick >= 180) {
+        if (pageVisibleRef.current && now - lastDashTick >= 180) {
           lastDashTick = now;
           dashIdx = (dashIdx + 1) % DASH_PATTERNS.length;
           const pattern = DASH_PATTERNS[dashIdx];
@@ -185,12 +189,14 @@ export function MapPage() {
       // Pulse animation on centroids
       let pulseT = 0;
       const animatePulse = () => {
-        pulseT += 0.05;
-        const r = 4 + Math.sin(pulseT) * 2;
-        for (const bet of visibleBets) {
-          const lid = `pulse-${bet.slug}`;
-          if (map.getLayer(lid)) {
-            map.setPaintProperty(lid, "circle-radius", r);
+        if (pageVisibleRef.current) {
+          pulseT += 0.05;
+          const r = 4 + Math.sin(pulseT) * 2;
+          for (const bet of visibleBets) {
+            const lid = `pulse-${bet.slug}`;
+            if (map.getLayer(lid)) {
+              map.setPaintProperty(lid, "circle-radius", r);
+            }
           }
         }
         pulseAnimRef.current = requestAnimationFrame(animatePulse);
@@ -356,11 +362,13 @@ export function MapPage() {
       />
 
       {/* deck.gl hex density + glow nodes overlay (over ESRI satellite) */}
-      <DeckOverlay
-        map={deckMap}
-        bets={viewMode === "map" ? bets : []}
-        onNodeClick={(slug) => navigate(`/market/${slug}`)}
-      />
+      {viewMode === "map" && (
+        <DeckOverlay
+          map={deckMap}
+          bets={bets}
+          onNodeClick={(slug) => navigate(`/market/${slug}`)}
+        />
+      )}
 
       {viewMode === "globe" && (
         <div style={{ position: "absolute", inset: 0, background: "#000", zIndex: 1 }}>
