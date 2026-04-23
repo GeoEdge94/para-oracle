@@ -4,7 +4,8 @@ challenger.py — challenge bot open-source pour ParaOracle.
 Ce process est volontairement decouple du backend :
   - Aucune dependance sur app.*, SQLAlchemy, FastAPI.
   - Dependances minimales : httpx (feed + IPFS gateway), stdlib.
-  - web3 sera ajoute en M4bis pour dispute on-chain reel.
+  - web3 + eth-account : optionnels, actives uniquement si USE_MOCK_CHAIN=false
+    ET CHALLENGER_PRIVATE_KEY renseigne (dispute_client.maybe_enable()).
 
 Flux :
   1. Poll GET {BACKEND_URL}/oracle/pending
@@ -13,15 +14,17 @@ Flux :
      b. Recompute le fingerprint canonique (via resolution_script.py subprocess)
      c. Compare au fingerprint_sha256 attendu
      d. Compare l'outcome au outcome_claimed
-     e. Si divergence, log DISPUTE (en M4bis : appel contract.dispute())
+     e. Si divergence ET dispute_client actif : submit dispute() on-chain.
+        Sinon log [DISPUTE] seulement.
 
 N'importe qui peut faire tourner ce bot. Il n'a pas besoin d'acces privilegie
-au backend ni a la DB. Le seul secret en vrai (M4bis) sera CHALLENGER_PRIVATE_KEY
-pour signer les tx dispute.
+au backend ni a la DB. Le seul secret est CHALLENGER_PRIVATE_KEY pour signer
+les tx dispute (wallet separe de l'oracle).
 """
 from __future__ import annotations
 import argparse
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -31,6 +34,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 import httpx
+
+from dispute_client import maybe_enable
 
 
 BACKEND_URL   = os.environ.get("BACKEND_URL", "http://backend:8000")
@@ -156,7 +161,15 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="ParaOracle challenge bot")
     ap.add_argument("--once", action="store_true", help="run one pass then exit")
     ap.add_argument("--limit", type=int, default=50, help="max items per poll")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="detect mismatches but never submit dispute tx even if chain enabled")
     args = ap.parse_args()
+
+    logging.basicConfig(
+        level=os.environ.get("LOG_LEVEL", "INFO"),
+        format="%(message)s",
+        stream=sys.stderr,
+    )
 
     if not SCRIPT_PATH.exists():
         print(f"[FATAL] resolution_script.py not found at {SCRIPT_PATH}", file=sys.stderr)
@@ -168,13 +181,32 @@ def main() -> int:
     print(f"[challenger] backend={BACKEND_URL} gateway={GATEWAY_BASE} script={SCRIPT_PATH}")
     print(f"[challenger] mock_ipfs_dir={MOCK_IPFS_DIR} (exists={MOCK_IPFS_DIR.exists()})")
 
+    # Enable real on-chain dispute if env configured. None = log-only mode.
+    dispute_client = None if args.dry_run else maybe_enable()
+
+    # Cache analysis_id → submit tx hash extracted from the feed so we can
+    # map a mismatch verdict to the right on-chain resolution.
+    submit_tx_by_analysis: dict[str, str] = {}
+
+    # Track which verdicts we've already disputed on-chain (idempotent across polls).
+    disputed_already: set[str] = set()
+
     dispute_count = 0
+    dispute_onchain_count = 0
     match_count = 0
     error_count = 0
 
     while True:
         try:
-            verdicts = run_once(tmp_dir, limit=args.limit)
+            feed = _fetch_pending(limit=args.limit)
+            items = feed.get("items", [])
+            verdicts = []
+            for it in items:
+                v = verify_item(it, tmp_dir)
+                verdicts.append(v)
+                # Keep the submit tx hash indexed so dispute() can find resolutionId
+                if it.get("chain_tx_hash"):
+                    submit_tx_by_analysis[v.analysis_id] = it["chain_tx_hash"]
         except Exception as e:
             print(f"[challenger] poll error: {e}", file=sys.stderr)
             verdicts = []
@@ -187,8 +219,29 @@ def main() -> int:
                 dispute_count += 1
             print(fmt_verdict(v), flush=True)
 
+            # Real on-chain dispute path (only for mismatches, only if enabled)
+            if not v.matches and dispute_client is not None and v.analysis_id not in disputed_already:
+                submit_tx = submit_tx_by_analysis.get(v.analysis_id)
+                if not submit_tx:
+                    print(f"[challenger] cannot dispute {v.analysis_id}: no submit tx hash", file=sys.stderr)
+                    continue
+                try:
+                    tx = dispute_client.dispute_for(submit_tx)
+                    if tx:
+                        dispute_onchain_count += 1
+                        disputed_already.add(v.analysis_id)
+                        print(f"[DISPUTE-ONCHAIN] {v.bet_slug} tx={tx}", flush=True)
+                    else:
+                        print(f"[DISPUTE-FAIL] {v.bet_slug}: see logs", file=sys.stderr, flush=True)
+                except Exception as e:
+                    print(f"[DISPUTE-ERROR] {v.bet_slug}: {e}", file=sys.stderr, flush=True)
+
         if verdicts:
-            print(f"[challenger] summary: {match_count} match / {dispute_count} dispute", flush=True)
+            print(
+                f"[challenger] summary: {match_count} match / {dispute_count} dispute "
+                f"({dispute_onchain_count} submitted on-chain)",
+                flush=True,
+            )
 
         if args.once:
             # Exit 2 = error (poll failed OR no items to verify -- suspicious in --once mode)

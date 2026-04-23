@@ -102,10 +102,19 @@ services:
       CHALLENGER_POLL_SECONDS: ${CHALLENGER_POLL_SECONDS:-30}
       MOCK_IPFS_DIR: /data/ipfs-mock
       RESOLUTION_SCRIPT_PATH: /scripts/resolution_script.py
+      # Real on-chain dispute path — enabled only when USE_MOCK_CHAIN=false AND
+      # CHALLENGER_PRIVATE_KEY is set. Falls back to log-only otherwise.
+      USE_MOCK_CHAIN: ${USE_MOCK_CHAIN:-true}
+      CHAIN_RPC_URL: ${CHAIN_RPC_URL:-https://rpc-amoy.polygon.technology}
+      CHAIN_ID: ${CHAIN_ID:-80002}
+      PARA_ORACLE_ADDRESS: ${PARA_ORACLE_ADDRESS:-}
+      USDC_ADDRESS: ${USDC_ADDRESS:-}
+      CHALLENGER_PRIVATE_KEY: ${CHALLENGER_PRIVATE_KEY:-}
     volumes:
       - ./data:/data:ro
       - ./scripts:/scripts:ro
       - ./bot/challenger.py:/bot/challenger.py:ro
+      - ./bot/dispute_client.py:/bot/dispute_client.py:ro
     networks:
       - para-net
     profiles:
