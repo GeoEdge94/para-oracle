@@ -263,7 +263,10 @@ export function Home() {
 
               <div className="feed-card-row">
                 <span className="feed-card-date">{monthDay(b.period_start, locale)}</span>
-                <span className="feed-card-pct" style={{ color: meta.color }}>
+                <span
+                  className="feed-card-pct"
+                  style={{ color: meta.color, ["--pct" as string]: `${yesPct ?? 0}%` }}
+                >
                   {yesLabel}
                 </span>
                 <div className="feed-card-buttons">
@@ -275,7 +278,10 @@ export function Home() {
               {noPct !== null && (
                 <div className="feed-card-row">
                   <span className="feed-card-date">{monthDay(b.period_end, locale)}</span>
-                  <span className="feed-card-pct" style={{ color: "var(--fg-muted)" }}>
+                  <span
+                    className="feed-card-pct"
+                    style={{ color: "var(--fg-muted)", ["--pct" as string]: `${noPct}%` }}
+                  >
                     {noPct}%
                   </span>
                   <div className="feed-card-buttons" aria-hidden>

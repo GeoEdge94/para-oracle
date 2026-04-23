@@ -14,3 +14,5 @@ docs/
 
 # Env
 .env
+remappings.txt
+lib/

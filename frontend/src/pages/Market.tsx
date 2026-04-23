@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronLeft, Satellite, TrendingUp, TrendingDown, Clock, Users, Activity, ChevronRight } from "lucide-react";
+import { ChevronLeft, Satellite, TrendingUp, TrendingDown, Clock, Users, Activity, ChevronRight, BarChart3, Gauge } from "lucide-react";
 import { API, type Bet, type BetMarketStats, type UserBet } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { PriceHistoryChart } from "@/components/PriceHistoryChart";
@@ -81,9 +81,9 @@ export function Market() {
 
   return (
     <div
-      className="spotlight grid-dot-bg spotlight-active has-bottom-nav"
+      className="spotlight grid-dot-bg spotlight-active has-bottom-nav market-page-roboto"
       onPointerMove={handlePointerMove}
-      style={{ height: "100dvh", overflowY: "auto", overflowX: "hidden", background: "var(--bg)", color: "var(--fg)" }}
+      style={{ height: "100dvh", overflowY: "auto", overflowX: "hidden", background: "var(--bg)", color: "var(--fg)", fontFamily: "'Roboto', system-ui, -apple-system, sans-serif" }}
     >
       {/* Editorial topbar */}
       <div style={{
@@ -140,33 +140,67 @@ export function Market() {
           )}
 
           {/* Hero metrics */}
-          <div style={{ display: "flex", gap: 0, marginTop: 24, borderTop: "1px solid var(--border-muted)", borderBottom: "1px solid var(--border-muted)" }}>
-            <HeroCell label="Implied YES">
-              <div className="display num" style={{ fontSize: 32, color: resolved ? (bet.result_bool ? "var(--success)" : "var(--danger)") : "var(--fg-strong)", letterSpacing: -0.6 }}>
-                <NumberTicker value={yesPct} suffix="%" />
+          {(() => {
+            const yesColor = resolved ? (bet.result_bool ? "var(--success)" : "var(--danger)") : color;
+            return (
+              <div className="hero-metrics">
+                <HeroCell label="Implied YES" icon={<Gauge size={14} />} accent={yesColor}>
+                  <span style={{ color: yesColor }}>
+                    <NumberTicker value={yesPct} suffix="%" />
+                  </span>
+                </HeroCell>
+                <HeroCell label="Volume total" icon={<BarChart3 size={14} />} accent="var(--accent)">
+                  <span style={{ whiteSpace: "nowrap" }}>
+                    <NumberTicker value={totalVolume} decimals={0} locale={locale === "fr" ? "fr-FR" : "en-US"} />
+                    <span className="hero-unit">&nbsp;€</span>
+                  </span>
+                </HeroCell>
+                <HeroCell label="Positions" icon={<Users size={14} />} accent="var(--accent)">
+                  <NumberTicker value={stats?.total_bets ?? 0} />
+                </HeroCell>
+                <HeroCell
+                  label={resolved ? "Résolu" : "Ferme dans"}
+                  icon={<Clock size={14} />}
+                  accent={resolved ? (bet.result_bool ? "var(--success)" : "var(--danger)") : boosted ? "#fbbf24" : "var(--accent)"}
+                >
+                  {resolved ? (
+                    <span style={{ color: bet.result_bool ? "var(--success)" : "var(--danger)", fontSize: 22 }}>{bet.result_bool ? "YES" : "NO"}</span>
+                  ) : (
+                    <span style={{ whiteSpace: "nowrap" }}>{formatCountdown(bet.period_end)}</span>
+                  )}
+                </HeroCell>
               </div>
-            </HeroCell>
-            <HeroCell label="Volume total">
-              <div className="display num" style={{ fontSize: 22, color: "var(--fg-strong)", letterSpacing: -0.3 }}>
-                <NumberTicker value={totalVolume} decimals={0} locale={locale === "fr" ? "fr-FR" : "en-US"} />
-                <span style={{ fontSize: 13, opacity: 0.6 }}> €</span>
-              </div>
-            </HeroCell>
-            <HeroCell label="Positions">
-              <div className="display num" style={{ fontSize: 22, color: "var(--fg-strong)", letterSpacing: -0.3 }}>
-                <NumberTicker value={stats?.total_bets ?? 0} />
-              </div>
-            </HeroCell>
-            <HeroCell label={resolved ? "Résolu" : "Ferme dans"}>
-              <div className="display num" style={{ fontSize: 18, color: boosted ? "#fbbf24" : "var(--fg-strong)", letterSpacing: -0.3 }}>
-                {resolved ? (
-                  <span style={{ fontSize: 14, color: bet.result_bool ? "var(--success)" : "var(--danger)" }}>{bet.result_bool ? "YES" : "NO"}</span>
-                ) : (
-                  formatCountdown(bet.period_end)
-                )}
-              </div>
-            </HeroCell>
+            );
+          })()}
+        </motion.div>
+
+        {/* CTA card — promoted under hero metrics */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.15 }}
+          style={{
+            marginTop: 16,
+            padding: 16,
+            borderRadius: "var(--radius-lg)",
+            background: `linear-gradient(145deg, ${color}12 0%, var(--surface-2) 70%)`,
+            border: `1px solid ${color}35`,
+          }}
+        >
+          <div className="bento-label">Action</div>
+          <div className="serif" style={{ fontSize: 14, fontStyle: "italic", color: "var(--fg-muted)", margin: "4px 0 12px", lineHeight: 1.45 }}>
+            {resolved ? "Marché résolu — revoir l'analyse NDVI" : "Place ta prédiction sur ce marché"}
           </div>
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            whileHover={{ y: -1 }}
+            transition={{ type: "spring", stiffness: 420, damping: 28 }}
+            onClick={() => navigate(`/analysis/${bet.slug}`)}
+            className="btn btn-primary"
+            style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+          >
+            {resolved ? "Voir l'analyse" : "Prédire ce marché"} <ChevronRight size={14} />
+          </motion.button>
         </motion.div>
 
         {/* 3D signature carousel — ECharts-GL */}
@@ -227,29 +261,6 @@ export function Market() {
             transition={{ duration: 0.3, delay: 0.2 }}
             style={{ display: "flex", flexDirection: "column", gap: 20 }}
           >
-            {/* CTA card */}
-            <div style={{
-              padding: 16,
-              borderRadius: "var(--radius-lg)",
-              background: `linear-gradient(145deg, ${color}12 0%, var(--surface-2) 70%)`,
-              border: `1px solid ${color}35`,
-            }}>
-              <div className="bento-label">Action</div>
-              <div className="serif" style={{ fontSize: 14, fontStyle: "italic", color: "var(--fg-muted)", margin: "4px 0 12px", lineHeight: 1.45 }}>
-                {resolved ? "Marché résolu — revoir l'analyse NDVI" : "Place ta prédiction sur ce marché"}
-              </div>
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                whileHover={{ y: -1 }}
-                transition={{ type: "spring", stiffness: 420, damping: 28 }}
-                onClick={() => navigate(`/analysis/${bet.slug}`)}
-                className="btn btn-primary"
-                style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-              >
-                {resolved ? "Voir l'analyse" : "Prédire ce marché"} <ChevronRight size={14} />
-              </motion.button>
-            </div>
-
             {/* YES vs NO split */}
             {stats && totalVolume > 0 && (
               <div>
@@ -365,13 +376,14 @@ export function Market() {
   );
 }
 
-function HeroCell({ label, children }: { label: string; children: React.ReactNode }) {
+function HeroCell({ label, icon, accent, children }: { label: string; icon?: React.ReactNode; accent?: string; children: React.ReactNode }) {
   return (
-    <div style={{ flex: 1, padding: "16px 18px", borderRight: "1px solid var(--border-muted)" }}>
-      <div className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", letterSpacing: 1.2, textTransform: "uppercase", fontWeight: 600, marginBottom: 4 }}>
-        {label}
+    <div className="hero-cell" style={accent ? ({ ["--hero-accent" as string]: accent } as React.CSSProperties) : undefined}>
+      <div className="hero-cell-head">
+        {icon && <span className="hero-cell-icon" aria-hidden>{icon}</span>}
+        <span className="mono hero-cell-label">{label}</span>
       </div>
-      {children}
+      <div className="display num hero-cell-value">{children}</div>
     </div>
   );
 }
