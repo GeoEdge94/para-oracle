@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/Skeleton";
 import { computeXP, daysUntilNextMonday, leagueFor, useStreak } from "@/lib/engage";
 import { NumberTicker } from "@/components/NumberTicker";
 import { Avatar } from "@/components/Avatar";
+import { BottomNav } from "@/components/BottomNav";
 
 type Entry = {
   pseudo: string;
@@ -55,7 +56,7 @@ export function LeaderboardPage() {
   ];
 
   return (
-    <div style={{ minHeight: "100dvh", background: "var(--surface-1)", color: "var(--fg)" }}>
+    <div className="has-bottom-nav" style={{ minHeight: "100dvh", background: "var(--surface-1)", color: "var(--fg)" }}>
       <div style={{
         position: "sticky", top: 0, zIndex: 30,
         padding: "10px 14px", background: "var(--bg)",
@@ -197,6 +198,7 @@ export function LeaderboardPage() {
           );
         })}
       </div>
+      <BottomNav />
     </div>
   );
 }

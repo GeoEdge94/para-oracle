@@ -13,6 +13,7 @@ import { NumberTicker } from "@/components/NumberTicker";
 import { Avatar } from "@/components/Avatar";
 import { Sparkline } from "@/components/Sparkline";
 import { LocaleToggle } from "@/components/LocaleToggle";
+import { BottomNav } from "@/components/BottomNav";
 import { StatusBadge } from "@/components/StatusBadge";
 import { isBoosted, formatCountdown } from "@/lib/engage";
 
@@ -80,7 +81,7 @@ export function Market() {
 
   return (
     <div
-      className="spotlight grid-dot-bg spotlight-active"
+      className="spotlight grid-dot-bg spotlight-active has-bottom-nav"
       onPointerMove={handlePointerMove}
       style={{ height: "100dvh", overflowY: "auto", overflowX: "hidden", background: "var(--bg)", color: "var(--fg)" }}
     >
@@ -359,6 +360,7 @@ export function Market() {
           </motion.aside>
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

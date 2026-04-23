@@ -1,506 +1,344 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Flame, Trophy, MapPin, LogOut, Map as MapIcon, Wallet as WalletIcon, Sparkles, TrendingUp, Clock, Zap } from "lucide-react";
-import { API, api, type Bet, type WalletBalance, type UserBet } from "@/lib/api";
+import {
+  Search, SlidersHorizontal, Bookmark, Share2, Flame, Droplets, Mountain, Thermometer,
+  Snowflake, Building, Fish, TrendingUp, Leaf,
+} from "lucide-react";
+import { API, api, type Bet, type BetMarketStats } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import { NumberTicker } from "@/components/NumberTicker";
-import { BentoGrid, BentoTile } from "@/components/BentoGrid";
 import { LocaleToggle } from "@/components/LocaleToggle";
-import { StreakBadge } from "@/components/StreakBadge";
-import { WalletBadge } from "@/components/WalletBadge";
-import { Marquee } from "@/components/Marquee";
-import { computeXP, computeBadges, daysUntilNextMonday, leagueFor, rankFor, RANKS, useMissions, useStreak, isBoosted, formatCountdown, hoursUntilClose } from "@/lib/engage";
-import { Avatar } from "@/components/Avatar";
-import { Sparkline } from "@/components/Sparkline";
-import { BoostedBadge } from "@/components/BoostedBadge";
-import { LiveActivityTicker } from "@/components/LiveActivityTicker";
-import { TradingTicker } from "@/components/TradingTicker";
-import { VolumeBlock } from "@/components/VolumeBlock";
-import { TopTraderTile } from "@/components/TopTraderTile";
-import { MissedTile } from "@/components/MissedTile";
 import { NotificationsBell } from "@/components/NotificationsBell";
+import { Avatar } from "@/components/Avatar";
+import { BottomNav } from "@/components/BottomNav";
+import { BoostedBadge } from "@/components/BoostedBadge";
+import { isBoosted } from "@/lib/engage";
+import type { UserBet } from "@/lib/api";
 
-const CAT_COLORS: Record<string, string> = {
-  deforestation: "#10b981", wildfire: "#f59e0b", flood: "#3b82f6",
-  mining: "#a855f7", drought: "#ef4444", glacier: "#06b6d4",
-  urbanization: "#f97316", water_quality: "#0ea5e9",
+const CAT_META: Record<string, { color: string; icon: typeof TrendingUp; i18nKey: string; emoji: string }> = {
+  deforestation: { color: "#10b981", icon: Leaf, i18nKey: "categories.deforestation", emoji: "🌳" },
+  wildfire: { color: "#f59e0b", icon: Flame, i18nKey: "categories.wildfire", emoji: "🔥" },
+  flood: { color: "#3b82f6", icon: Droplets, i18nKey: "categories.flood", emoji: "🌊" },
+  mining: { color: "#a855f7", icon: Mountain, i18nKey: "categories.mining", emoji: "⛏️" },
+  drought: { color: "#ef4444", icon: Thermometer, i18nKey: "categories.drought", emoji: "🌡️" },
+  glacier: { color: "#06b6d4", icon: Snowflake, i18nKey: "categories.deforestation", emoji: "🧊" },
+  urbanization: { color: "#f97316", icon: Building, i18nKey: "categories.urban", emoji: "🏗️" },
+  water_quality: { color: "#0ea5e9", icon: Fish, i18nKey: "categories.water_quality", emoji: "💧" },
 };
 
-type Entry = { pseudo: string; balance: number; total_won: number; total_lost: number };
+type BetStatsMap = Record<string, BetMarketStats | null>;
 
-function daysUntil(iso: string): number {
+const TRENDING_KEY = "__trending__";
+const BOOSTED_KEY = "__boosted__";
+
+function useBetStats(bets: Bet[]): BetStatsMap {
+  const [stats, setStats] = useState<BetStatsMap>({});
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all(
+      bets.slice(0, 30).map((b) =>
+        API.marketStats(b.slug).then((r) => ({ slug: b.slug, data: r.data })).catch(() => ({ slug: b.slug, data: null }))
+      )
+    ).then((rows) => {
+      if (cancelled) return;
+      const map: BetStatsMap = {};
+      for (const r of rows) map[r.slug] = r.data;
+      setStats(map);
+    });
+    return () => { cancelled = true; };
+  }, [bets]);
+  return stats;
+}
+
+function monthDay(iso: string, locale: string): string {
   const d = new Date(iso);
-  const now = new Date();
-  return Math.max(0, Math.ceil((d.getTime() - now.getTime()) / 86_400_000));
+  return d.toLocaleDateString(locale === "fr" ? "fr-FR" : "en-US", { month: "short", day: "numeric" });
+}
+
+function useMyBetSlugs(bets: Bet[]) {
+  const [mine, setMine] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all(
+      bets.slice(0, 30).map((b) =>
+        API.myBets(b.slug).then((r) => ({ slug: b.slug, positions: r.data.positions || [] as UserBet[] })).catch(() => ({ slug: b.slug, positions: [] as UserBet[] }))
+      )
+    ).then((rows) => {
+      if (cancelled) return;
+      const s = new Set<string>();
+      for (const r of rows) if (r.positions.length > 0) s.add(r.slug);
+      setMine(s);
+    });
+    return () => { cancelled = true; };
+  }, [bets]);
+  return mine;
 }
 
 export function Home() {
   const navigate = useNavigate();
   const { t, locale, formatAmount } = useI18n();
-  const { current: streak, longest } = useStreak();
-  const { progress, done, total, missions } = useMissions();
-
-  const [wallet, setWallet] = useState<WalletBalance | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
-  const [myBets, setMyBets] = useState<UserBet[]>([]);
-  const [leaderboard, setLeaderboard] = useState<Entry[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string>(TRENDING_KEY);
+  const [activeRegionChip, setActiveRegionChip] = useState<string | null>(null);
+  const [bookmarks, setBookmarks] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("para_bookmarks");
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
 
   useEffect(() => {
-    API.walletBalance().then((r) => setWallet(r.data)).catch(() => {});
-    API.listBets().then(async (r) => {
-      setBets(r.data);
-      const all: UserBet[] = [];
-      for (const b of r.data.slice(0, 40)) {
-        try {
-          const { data } = await API.myBets(b.slug);
-          all.push(...(data.positions || []));
-        } catch {}
-      }
-      all.sort((a, b) => new Date(b.placed_at).getTime() - new Date(a.placed_at).getTime());
-      setMyBets(all);
-    }).catch(() => {});
-    api.get<Entry[]>("/auth/leaderboard").then((r) => setLeaderboard(r.data)).catch(() => {});
+    API.listBets().then((r) => setBets(r.data)).catch(() => {});
   }, []);
 
-  const xp = useMemo(() => computeXP(myBets, Math.max(streak, longest)), [myBets, streak, longest]);
-  const rank = rankFor(xp);
-  const league = leagueFor(xp);
-  const badges = useMemo(() => computeBadges(myBets, streak, longest), [myBets, streak, longest]);
+  const stats = useBetStats(bets);
+  const mine = useMyBetSlugs(bets);
 
-  const trending = useMemo(() => {
-    return bets
-      .filter((b) => b.status === "OPEN")
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 3);
-  }, [bets]);
+  // Build category list from actual bets
+  const categories = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const b of bets) counts[b.category] = (counts[b.category] || 0) + 1;
+    const order = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+    return [
+      { key: TRENDING_KEY, label: t("engage.trending") },
+      { key: BOOSTED_KEY, label: t("cmd.closes_today") },
+      ...order.map((k) => ({ key: k, label: t(CAT_META[k]?.i18nKey ?? `categories.${k}`) })),
+    ];
+  }, [bets, t]);
 
-  const boostedBets = useMemo(() => {
-    return bets
-      .filter((b) => isBoosted(b.period_end, b.status))
-      .sort((a, b) => hoursUntilClose(a.period_end) - hoursUntilClose(b.period_end))
-      .slice(0, 6);
-  }, [bets]);
+  // Filter bets by selected category
+  const catFiltered = useMemo(() => {
+    if (activeCategory === TRENDING_KEY) {
+      return [...bets].sort((a, b) => {
+        const va = Number(stats[a.slug]?.total_volume ?? 0);
+        const vb = Number(stats[b.slug]?.total_volume ?? 0);
+        return vb - va;
+      });
+    }
+    if (activeCategory === BOOSTED_KEY) {
+      return bets.filter((b) => isBoosted(b.period_end, b.status));
+    }
+    return bets.filter((b) => b.category === activeCategory);
+  }, [bets, activeCategory, stats]);
 
-  const nextResolve = useMemo(() => {
-    return bets
-      .filter((b) => b.status === "OPEN")
-      .map((b) => ({ bet: b, days: daysUntil(b.period_end) }))
-      .sort((a, b) => a.days - b.days)[0];
-  }, [bets]);
+  // Sub-filter chips: unique top regions from current filter
+  const regionChips = useMemo(() => {
+    const regions = new Set<string>();
+    for (const b of catFiltered) regions.add(b.region_name);
+    return Array.from(regions).slice(0, 6);
+  }, [catFiltered]);
 
-  const liveMarketsCount = bets.filter((b) => b.status === "OPEN").length;
-  const resolvedCount = bets.filter((b) => b.status.startsWith("RESOLVED")).length;
+  const displayed = useMemo(() => {
+    if (!activeRegionChip) return catFiltered;
+    return catFiltered.filter((b) => b.region_name === activeRegionChip);
+  }, [catFiltered, activeRegionChip]);
 
-  function logout() {
-    localStorage.removeItem("para_token");
-    navigate("/login");
+  function toggleBookmark(slug: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    setBookmarks((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug); else next.add(slug);
+      localStorage.setItem("para_bookmarks", JSON.stringify([...next]));
+      return next;
+    });
+  }
+
+  function openSearch() {
+    window.dispatchEvent(new CustomEvent("open-command-palette"));
   }
 
   return (
-    <div style={{ height: "100dvh", overflowY: "auto", overflowX: "hidden", background: "var(--bg)" }}>
-      {/* Topbar */}
-      <div className="topbar">
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <div className="display" style={{ fontSize: 16, letterSpacing: -0.5 }}>
-            Para<span style={{ color: "var(--accent)" }}>Oracle</span>
-          </div>
-          <span className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", letterSpacing: 1.2 }}>/ DASHBOARD</span>
-        </div>
-        <div className="topbar-center">
-          <button onClick={() => navigate("/map")} className="topbar-icon-btn" style={{ width: "auto", padding: "6px 12px", gap: 6 }}>
-            <MapIcon size={13} /> <span style={{ fontSize: 11, fontWeight: 600 }}>{t("engage.view_map")}</span>
-          </button>
-        </div>
-        <div className="topbar-actions">
-          <StreakBadge />
-          <WalletBadge onClick={() => navigate("/wallet")} />
-          <NotificationsBell bets={bets} myBets={myBets} />
-          <button className="topbar-icon-btn" data-variant="gold" onClick={() => navigate("/leaderboard")} title={t("wallet.leaderboard")}>
-            <Trophy size={14} />
-          </button>
-          <span className="topbar-sep" />
-          <LocaleToggle />
-          <span className="topbar-sep" />
-          <button className="topbar-icon-btn" data-variant="danger" onClick={logout} title="Logout">
-            <LogOut size={14} />
-          </button>
-        </div>
-      </div>
-
-      {/* Bloomberg-style trading ticker with implied YES% and deltas */}
-      {bets.length > 0 && <TradingTicker bets={bets} />}
-
-      {/* Volume / positions / traders aggregate block */}
-      {bets.length > 0 && <VolumeBlock bets={bets} />}
-
-      {/* Hero stat row (editorial) */}
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "28px 16px 12px" }}>
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+    <div className="has-bottom-nav" style={{ height: "100dvh", overflowY: "auto", overflowX: "hidden", background: "var(--bg)" }}>
+      {/* Topbar — logo + locale + notifications + avatar */}
+      <div className="feed-topbar">
+        <button
+          onClick={() => navigate("/map")}
+          className="feed-logo"
+          style={{ background: "none", border: 0, cursor: "pointer" }}
+          aria-label={t("home.dashboard")}
         >
-          <div className="mono" style={{ fontSize: 10, color: "var(--fg-faint)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
-            {new Date().toLocaleDateString(locale === "fr" ? "fr-FR" : "en-US", { weekday: "long", day: "numeric", month: "long" })}
-          </div>
-          <h1 className="display" style={{ fontSize: 44, lineHeight: 1.04, letterSpacing: -1.4, marginBottom: 8, maxWidth: 720 }}>
-            {t("engage.home_hello")}, <span className="serif" style={{ fontStyle: "italic", color: "var(--accent)" }}>Oracle.</span>
-          </h1>
-          <p style={{ fontSize: 15, color: "var(--fg-muted)", maxWidth: 560, lineHeight: 1.55 }}>
-            <NumberTicker value={liveMarketsCount} /> marchés ouverts · <NumberTicker value={resolvedCount} /> résolus cette saison ·
-            <span className="serif" style={{ fontStyle: "italic" }}> Sentinel-2 observe la Terre en continu.</span>
-          </p>
-        </motion.div>
-      </div>
-
-      {/* Closing Today — boosted markets horizontal carousel */}
-      {boostedBets.length > 0 && (
-        <div style={{ maxWidth: 1120, margin: "0 auto", padding: "4px 16px 12px" }}>
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            style={{
-              borderRadius: "var(--radius-lg)",
-              background: "linear-gradient(145deg, rgba(251,191,36,0.10) 0%, var(--surface-2) 60%)",
-              border: "1px solid rgba(251,191,36,0.28)",
-              overflow: "hidden",
-            }}
-          >
-            <BoostedBadge periodEnd={boostedBets[0].period_end} status={boostedBets[0].status} variant="ribbon" />
-            <div style={{ padding: "12px 14px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-                <div>
-                  <div className="bento-label" style={{ marginBottom: 2, color: "#fbbf24" }}>Ferme aujourd'hui</div>
-                  <div className="serif" style={{ fontSize: 15, fontStyle: "italic", color: "var(--fg-muted)" }}>
-                    Dernière fenêtre pour prédire · bonus +25% XP sur les prédictions justes
-                  </div>
-                </div>
-                <span className="mono" style={{ fontSize: 10, color: "var(--fg-faint)" }}>
-                  {boostedBets.length} marché{boostedBets.length > 1 ? "s" : ""}
-                </span>
-              </div>
-              <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-                {boostedBets.map((b, i) => {
-                  const color = CAT_COLORS[b.category] || "#8b5cf6";
-                  return (
-                    <motion.button
-                      key={b.slug}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.05 + i * 0.04 }}
-                      whileHover={{ y: -2 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => navigate(`/analysis/${b.slug}`)}
-                      style={{
-                        flex: "0 0 220px",
-                        background: "rgba(10,15,26,0.85)",
-                        border: "1px solid rgba(251,191,36,0.25)",
-                        borderRadius: "var(--radius)",
-                        padding: 12,
-                        cursor: "pointer",
-                        textAlign: "left",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: 4, background: color }} />
-                        <BoostedBadge periodEnd={b.period_end} status={b.status} variant="pill" />
-                      </div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--fg-strong)", lineHeight: 1.25, marginBottom: 6, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-                        {b.region_name}
-                      </div>
-                      <div className="mono" style={{ fontSize: 10, color: "var(--fg-faint)", marginBottom: 6 }}>
-                        {b.index_type} · {b.threshold_value.toLocaleString()} {b.threshold_unit}
-                      </div>
-                      <Sparkline seed={b.slug} color="#fbbf24" height={18} />
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-
-      {/* Bento dashboard */}
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "12px 16px 48px" }}>
-        <BentoGrid>
-          {/* Balance tile — accent */}
-          <BentoTile variant="accent" span={2} rows={2} delay={0.05} onClick={() => navigate("/wallet")}>
-            <div className="bento-label">{t("wallet.balance")}</div>
-            {wallet ? (
-              <div className="bento-value num display" style={{ fontSize: 44, color: "var(--accent)", letterSpacing: -1 }}>
-                <NumberTicker value={Number(wallet.balance)} decimals={2} locale={locale === "fr" ? "fr-FR" : "en-US"} />
-                <span style={{ fontSize: 24, marginLeft: 8, opacity: 0.7 }}>€</span>
-              </div>
-            ) : (
-              <div className="bento-value" style={{ color: "var(--fg-faint)" }}>…</div>
-            )}
-            {wallet && (
-              <div style={{ display: "flex", gap: 18, marginTop: 18, flexWrap: "wrap" }}>
-                <div>
-                  <div style={{ fontSize: 9, color: "var(--fg-faint)", letterSpacing: 0.8, textTransform: "uppercase" }}>{t("wallet.total_won")}</div>
-                  <div className="num" style={{ fontSize: 15, fontWeight: 700, color: "var(--success)" }}>+{formatAmount(wallet.total_won)}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 9, color: "var(--fg-faint)", letterSpacing: 0.8, textTransform: "uppercase" }}>{t("wallet.pnl")}</div>
-                  <div className="num" style={{ fontSize: 15, fontWeight: 700, color: (wallet.total_won - wallet.total_lost) >= 0 ? "var(--success)" : "var(--danger)" }}>
-                    {(wallet.total_won - wallet.total_lost) >= 0 ? "+" : ""}{formatAmount(wallet.total_won - wallet.total_lost)}
-                  </div>
-                </div>
-              </div>
-            )}
-            <div style={{ position: "absolute", right: 14, top: 14, color: "var(--accent)", opacity: 0.25 }}>
-              <WalletIcon size={40} />
-            </div>
-          </BentoTile>
-
-          {/* Rank tile */}
-          <BentoTile variant="purple" span={2} delay={0.1} onClick={() => navigate("/wallet")}>
-            <div className="bento-label">{t("engage.rank")}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: `${rank.current.color}22`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
-                {rank.current.icon}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="display" style={{ fontSize: 18, color: rank.current.color }}>
-                  {t(`engage.rank_${rank.current.key}`)}
-                </div>
-                <div className="num" style={{ fontSize: 11, color: "var(--fg-muted)" }}>
-                  <NumberTicker value={xp} /> XP
-                </div>
-              </div>
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <div style={{ height: 4, background: "var(--surface-1)", borderRadius: 2, overflow: "hidden" }}>
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${rank.pct}%` }}
-                  transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                  style={{ height: "100%", background: `linear-gradient(90deg, ${rank.current.color}66, ${rank.current.color})` }}
-                />
-              </div>
-              {rank.next && (
-                <div style={{ fontSize: 10, color: "var(--fg-faint)", marginTop: 4, display: "flex", justifyContent: "space-between" }}>
-                  <span>→ {rank.next.icon} {t(`engage.rank_${rank.next.key}`)}</span>
-                  <span className="num">{rank.current.max - xp} XP</span>
-                </div>
-              )}
-            </div>
-          </BentoTile>
-
-          {/* Streak tile */}
-          <BentoTile variant="warn" delay={0.15}>
-            <div className="bento-label">{t("engage.streak")}</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 4 }}>
-              <Flame size={28} color="#fbbf24" />
-              <div className="display num" style={{ fontSize: 40, color: "#fbbf24" }}>
-                <NumberTicker value={streak} />
-              </div>
-              <div style={{ fontSize: 11, color: "var(--fg-subtle)" }}>
-                {streak <= 1 ? t("engage.streak_day") : t("engage.streak_days")}
-              </div>
-            </div>
-            <div className="bento-sub">Max <span className="num" style={{ color: "var(--fg)" }}>{longest}</span></div>
-          </BentoTile>
-
-          {/* Next resolution tile */}
-          <BentoTile variant="info" delay={0.2} onClick={nextResolve ? () => navigate(`/analysis/${nextResolve.bet.slug}`) : undefined}>
-            <div className="bento-label">{t("engage.next_resolution")}</div>
-            {nextResolve ? (
-              <>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 4 }}>
-                  <Clock size={22} color="#60a5fa" />
-                  <div className="display num" style={{ fontSize: 34, color: "#60a5fa" }}>
-                    <NumberTicker value={nextResolve.days} />
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--fg-subtle)" }}>j</div>
-                </div>
-                <div className="bento-sub" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nextResolve.bet.region_name}</div>
-              </>
-            ) : (
-              <div className="bento-sub">—</div>
-            )}
-          </BentoTile>
-
-          {/* Missions tile */}
-          <BentoTile span={2} delay={0.25}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <div className="bento-label">{t("engage.missions")}</div>
-              <div className="num" style={{ fontSize: 11, color: done === total ? "var(--success)" : "var(--fg-subtle)", fontWeight: 700 }}>
-                {done}/{total}
-              </div>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
-              {missions.map((m) => {
-                const prog = Math.min(progress[m.key] ?? 0, m.target);
-                const isDone = prog >= m.target;
-                return (
-                  <div key={m.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
-                    <div style={{
-                      width: 16, height: 16, borderRadius: "50%",
-                      background: isDone ? "var(--accent)" : "var(--surface-1)",
-                      border: `1px solid ${isDone ? "var(--accent)" : "var(--border)"}`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      color: "#fff", fontSize: 10, fontWeight: 700,
-                    }}>{isDone ? "✓" : ""}</div>
-                    <span style={{ flex: 1, color: isDone ? "var(--fg-muted)" : "var(--fg)", textDecoration: isDone ? "line-through" : "none" }}>
-                      {t(m.i18nKey)}
-                    </span>
-                    <span className="num" style={{ fontSize: 10, color: "var(--fg-faint)" }}>{prog}/{m.target}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </BentoTile>
-
-          {/* League tile */}
-          <BentoTile delay={0.3} onClick={() => navigate("/leaderboard")}>
-            <div className="bento-label">{t("engage.league")}</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 4 }}>
-              <Trophy size={22} color={league.league === "diamond" ? "#67e8f9" : league.league === "platinum" ? "#e2e8f0" : league.league === "gold" ? "#fbbf24" : league.league === "silver" ? "#cbd5e1" : "#cd7f32"} />
-              <div className="display" style={{ fontSize: 22, color: "var(--fg-strong)" }}>
-                {t(`engage.league_${league.league}`)}
-              </div>
-            </div>
-            <div className="bento-sub">
-              {t("engage.league_reset_in", { n: daysUntilNextMonday() })}
-            </div>
-          </BentoTile>
-
-          {/* Trending tile */}
-          <BentoTile variant="accent" span={2} delay={0.35}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <div className="bento-label">{t("engage.trending")}</div>
-              <TrendingUp size={14} color="var(--accent)" />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 6 }}>
-              {trending.map((b, i) => {
-                const color = CAT_COLORS[b.category] || "#8b5cf6";
-                return (
-                  <motion.button
-                    key={b.slug}
-                    initial={{ opacity: 0, x: -6 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 + i * 0.05 }}
-                    onClick={() => navigate(`/analysis/${b.slug}`)}
-                    style={{
-                      background: "var(--surface-1)", border: "1px solid var(--border-muted)",
-                      borderRadius: "var(--radius-sm)", padding: "8px 10px",
-                      display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
-                      textAlign: "left",
-                    }}
-                  >
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
-                    <span style={{ flex: 1, fontSize: 12, color: "var(--fg)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {b.region_name}
-                    </span>
-                    <div style={{ width: 64, flexShrink: 0 }}>
-                      <Sparkline seed={b.slug} color={color} height={20} />
-                    </div>
-                    <span className="mono" style={{ fontSize: 10, color: "var(--fg-faint)" }}>{b.index_type}</span>
-                  </motion.button>
-                );
-              })}
-            </div>
-          </BentoTile>
-
-          {/* Top trader spotlight (editorial social proof) */}
-          <TopTraderTile onClick={() => navigate("/leaderboard")} />
-
-          {/* Missed opportunities (subtle regret framing, ethical) */}
-          <MissedTile bets={bets} userBetSlugs={new Set(myBets.map((b) => b.bet_id))} />
-
-          {/* Badges shelf */}
-          <BentoTile span={4} delay={0.45}>
-            <div className="bento-label">{t("engage.badges")}</div>
-            <div style={{ display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
-              {badges.map((b, i) => (
-                <motion.div
-                  key={b.key}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.5 + i * 0.04, type: "spring", stiffness: 300, damping: 20 }}
-                  title={t(b.i18nKey)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    padding: "8px 12px",
-                    borderRadius: "var(--radius-full)",
-                    background: b.earned ? `${b.tint}15` : "var(--surface-1)",
-                    border: `1px solid ${b.earned ? `${b.tint}44` : "var(--border-muted)"}`,
-                    opacity: b.earned ? 1 : 0.45,
-                    filter: b.earned ? "none" : "grayscale(0.8)",
-                  }}
-                >
-                  <span style={{ fontSize: 18 }}>{b.icon}</span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: b.earned ? b.tint : "var(--fg-muted)" }}>
-                    {t(b.i18nKey)}
-                  </span>
-                </motion.div>
-              ))}
-            </div>
-          </BentoTile>
-        </BentoGrid>
-
-        {/* CTA row */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 28, flexWrap: "wrap" }}
-        >
-          <motion.button
-            whileHover={{ y: -1 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigate("/map")}
-            className="btn btn-primary"
-            style={{ paddingLeft: 24, paddingRight: 24, display: "inline-flex", alignItems: "center", gap: 8 }}
-          >
-            <MapIcon size={16} /> {t("engage.view_map")}
-          </motion.button>
-          {nextResolve && (
-            <motion.button
-              whileHover={{ y: -1 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => navigate(`/analysis/${nextResolve.bet.slug}`)}
-              className="btn btn-ghost"
-              style={{ paddingLeft: 24, paddingRight: 24, display: "inline-flex", alignItems: "center", gap: 8 }}
-            >
-              <MapPin size={16} /> {nextResolve.bet.region_name}
-            </motion.button>
-          )}
-        </motion.div>
-      </div>
-
-      {/* Keyboard hints footer */}
-      <div style={{
-        maxWidth: 1120, margin: "0 auto", padding: "0 16px 24px",
-        display: "flex", justifyContent: "center", gap: 14, flexWrap: "wrap",
-      }}>
-        {[
-          { k: "⌘ K", label: "Recherche" },
-          { k: "G H", label: "Dashboard" },
-          { k: "G M", label: "Carte" },
-          { k: "G W", label: "Portefeuille" },
-          { k: "G L", label: "Classement" },
-        ].map((x) => (
-          <span key={x.k} className="mono" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 10, color: "var(--fg-faint)", letterSpacing: 0.5 }}>
-            <kbd style={{
-              padding: "2px 6px", borderRadius: 3,
-              background: "var(--surface-2)", border: "1px solid var(--border-muted)",
-              color: "var(--fg-muted)", fontSize: 10, letterSpacing: 0.3,
-            }}>{x.k}</kbd>
-            <span>{x.label}</span>
+          <span style={{
+            width: 22, height: 22, borderRadius: 5,
+            background: "rgba(16,185,129,0.12)",
+            border: "1px solid rgba(16,185,129,0.28)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Leaf size={13} color="var(--accent)" />
           </span>
+          Para<span className="accent">Oracle</span>
+        </button>
+
+        <div className="feed-topbar-actions">
+          <LocaleToggle />
+          <NotificationsBell bets={bets} myBets={[]} />
+          <button
+            onClick={() => navigate("/wallet")}
+            aria-label={t("wallet.title")}
+            style={{ background: "none", border: 0, padding: 0, cursor: "pointer" }}
+          >
+            <Avatar seed="demo" size={28} radius={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* Category tabs (horizontal scroll) */}
+      <div className="feed-cat-tabs">
+        {categories.map((c) => (
+          <button
+            key={c.key}
+            className={`feed-cat-tab${c.key === activeCategory ? " feed-cat-tab-active" : ""}`}
+            onClick={() => { setActiveCategory(c.key); setActiveRegionChip(null); }}
+          >
+            {c.label}
+          </button>
         ))}
       </div>
 
-      {/* Live community activity (bottom fixed) */}
-      <div style={{ height: 40 }} aria-hidden />
-      <LiveActivityTicker bets={bets} />
+      {/* Search + filter + bookmark icons */}
+      <div className="feed-search-row">
+        <input
+          className="feed-search-input"
+          type="text"
+          placeholder={t("cmd.search_placeholder")}
+          onFocus={openSearch}
+          readOnly
+        />
+        <button className="feed-search-icon-btn" aria-label={t("home.search")} onClick={() => navigate("/map")}>
+          <SlidersHorizontal size={16} />
+        </button>
+        <button className="feed-search-icon-btn" aria-label="Bookmarks" onClick={() => setActiveCategory(BOOSTED_KEY)}>
+          <Bookmark size={16} />
+        </button>
+      </div>
+
+      {/* Region sub-chips */}
+      {regionChips.length > 0 && (
+        <div className="feed-chips">
+          <button
+            className={`feed-chip${activeRegionChip === null ? " feed-chip-active" : ""}`}
+            onClick={() => setActiveRegionChip(null)}
+          >
+            {t("categories.all")}
+          </button>
+          {regionChips.map((r) => (
+            <button
+              key={r}
+              className={`feed-chip${activeRegionChip === r ? " feed-chip-active" : ""}`}
+              onClick={() => setActiveRegionChip((prev) => (prev === r ? null : r))}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Market cards */}
+      <div className="feed-list">
+        {displayed.slice(0, 40).map((b, i) => {
+          const meta = CAT_META[b.category] ?? CAT_META.deforestation;
+          const s = stats[b.slug];
+          const yesPct = s ? Math.round(s.yes_pct) : null;
+          const volume = s ? Number(s.total_volume) : 0;
+          const isMine = mine.has(b.slug);
+          const isBookmarked = bookmarks.has(b.slug);
+          const boosted = isBoosted(b.period_end, b.status);
+          const yesLabel = yesPct !== null ? `${yesPct}%` : "—";
+          const noPct = yesPct !== null ? 100 - yesPct : null;
+
+          return (
+            <motion.button
+              key={b.slug}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(i * 0.02, 0.2), duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="feed-card"
+              onClick={() => navigate(`/market/${b.slug}`)}
+              style={{
+                border: boosted ? `1px solid rgba(251,191,36,0.35)` : undefined,
+              }}
+            >
+              <div className="feed-card-head">
+                <div
+                  className="feed-card-icon"
+                  style={{ background: `${meta.color}1f`, color: meta.color }}
+                >
+                  <span aria-hidden>{meta.emoji}</span>
+                </div>
+                <div className="feed-card-title">{b.question}</div>
+                {boosted && <BoostedBadge periodEnd={b.period_end} status={b.status} variant="pill" />}
+              </div>
+
+              <div className="feed-card-row">
+                <span className="feed-card-date">{monthDay(b.period_start, locale)}</span>
+                <span className="feed-card-pct" style={{ color: meta.color }}>
+                  {yesLabel}
+                </span>
+                <div className="feed-card-buttons">
+                  <span className="feed-btn-yes">{t("crisis.yes")}</span>
+                  <span className="feed-btn-no">{t("crisis.no")}</span>
+                </div>
+              </div>
+
+              {noPct !== null && (
+                <div className="feed-card-row">
+                  <span className="feed-card-date">{monthDay(b.period_end, locale)}</span>
+                  <span className="feed-card-pct" style={{ color: "var(--fg-muted)" }}>
+                    {noPct}%
+                  </span>
+                  <div className="feed-card-buttons" aria-hidden>
+                    <span className="feed-btn-yes" style={{ opacity: 0.35 }}>{t("crisis.yes")}</span>
+                    <span className="feed-btn-no" style={{ opacity: 0.35 }}>{t("crisis.no")}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="feed-card-foot">
+                <span className="feed-card-volume">
+                  {volume > 0 ? `${formatAmount(volume)} Vol.` : meta.i18nKey ? t(meta.i18nKey) : b.index_type}
+                </span>
+                <div className="feed-card-foot-actions">
+                  {isMine && (
+                    <span
+                      className="mono"
+                      style={{ fontSize: 10, color: "var(--accent)", fontWeight: 700, letterSpacing: 0.4 }}
+                      aria-label="Position ouverte"
+                    >
+                      ●
+                    </span>
+                  )}
+                  <button
+                    aria-label="Share"
+                    onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText(`${location.origin}/market/${b.slug}`); }}
+                  >
+                    <Share2 size={14} />
+                  </button>
+                  <button
+                    aria-label="Bookmark"
+                    onClick={(e) => toggleBookmark(b.slug, e)}
+                    style={{ color: isBookmarked ? "var(--accent)" : "inherit" }}
+                  >
+                    <Bookmark size={14} fill={isBookmarked ? "currentColor" : "none"} />
+                  </button>
+                </div>
+              </div>
+            </motion.button>
+          );
+        })}
+
+        {displayed.length === 0 && bets.length > 0 && (
+          <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--fg-faint)", fontSize: 13 }}>
+            {t("cmd.no_results")}
+          </div>
+        )}
+
+        {bets.length === 0 && (
+          <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--fg-faint)", fontSize: 13 }}>
+            {t("common.loading")}
+          </div>
+        )}
+      </div>
+
+      <BottomNav />
     </div>
   );
 }
-// Needed for computeXP dep resolution; kept to avoid tree-shaking surprises.
-export { RANKS };

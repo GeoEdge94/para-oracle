@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/Skeleton";
 import { RankCard } from "@/components/RankCard";
 import { NumberTicker } from "@/components/NumberTicker";
 import { useStreak, computeXP, computeWalletStats } from "@/lib/engage";
+import { BottomNav } from "@/components/BottomNav";
 
 export function WalletPage() {
   const navigate = useNavigate();
@@ -63,7 +64,7 @@ export function WalletPage() {
   const roi = wallet.total_lost > 0 ? (pnl / wallet.total_lost) * 100 : 0;
 
   return (
-    <div style={{ minHeight: "100dvh", background: "var(--surface-1)", color: "var(--fg)" }}>
+    <div className="has-bottom-nav" style={{ minHeight: "100dvh", background: "var(--surface-1)", color: "var(--fg)" }}>
       <div style={{
         position: "sticky", top: 0, zIndex: 30,
         padding: "10px 14px", background: "var(--bg)",
@@ -282,6 +283,7 @@ export function WalletPage() {
           ))}
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

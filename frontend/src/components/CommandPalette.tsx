@@ -62,8 +62,11 @@ export function CommandPalette() {
       }
     }
     window.addEventListener("keydown", onKey);
+    const onOpen = () => setOpen(true);
+    window.addEventListener("open-command-palette", onOpen);
     return () => {
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener("open-command-palette", onOpen);
       if (gTimer) clearTimeout(gTimer);
     };
   }, [navigate]);
