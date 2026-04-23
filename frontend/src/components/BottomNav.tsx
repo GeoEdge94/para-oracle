@@ -1,16 +1,19 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home as HomeIcon, Search, TrendingUp, Wallet as WalletIcon } from "lucide-react";
+import { Home as HomeIcon, Search, Map as MapIcon, TrendingUp, Wallet as WalletIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 import { API, type WalletBalance } from "@/lib/api";
 import { useEffect, useState } from "react";
 
+type NavKey = "home" | "search" | "map" | "trending" | "wallet";
+
 type NavItem = {
-  key: "home" | "search" | "trending" | "wallet";
+  key: NavKey;
   icon: React.ReactNode;
   labelKey: string;
   to: string;
   match: (pathname: string) => boolean;
+  primary?: boolean;
 };
 
 export function BottomNav() {
@@ -39,6 +42,14 @@ export function BottomNav() {
       match: (p) => p === "/search",
     },
     {
+      key: "map",
+      icon: <MapIcon size={24} />,
+      labelKey: "home.map_view",
+      to: "/map",
+      match: (p) => p.startsWith("/map"),
+      primary: true,
+    },
+    {
       key: "trending",
       icon: <TrendingUp size={20} />,
       labelKey: "engage.trending",
@@ -65,21 +76,26 @@ export function BottomNav() {
             navigate(it.to);
           }
         };
+        const className = it.primary
+          ? `bn-item bn-item-primary${active ? " bn-item-primary-active" : ""}`
+          : `bn-item${active ? " bn-item-active" : ""}`;
         return (
           <motion.button
             key={it.key}
-            className={`bn-item${active ? " bn-item-active" : ""}`}
+            className={className}
             onClick={handler}
-            whileTap={{ scale: 0.92 }}
+            whileTap={{ scale: it.primary ? 0.94 : 0.92 }}
             aria-label={t(it.labelKey)}
             aria-current={active ? "page" : undefined}
           >
             <span className="bn-icon">{it.icon}</span>
-            <span className="bn-label">
-              {it.key === "wallet" && wallet
-                ? formatAmount(Number(wallet.balance))
-                : t(it.labelKey)}
-            </span>
+            {!it.primary && (
+              <span className="bn-label">
+                {it.key === "wallet" && wallet
+                  ? formatAmount(Number(wallet.balance))
+                  : t(it.labelKey)}
+              </span>
+            )}
           </motion.button>
         );
       })}
