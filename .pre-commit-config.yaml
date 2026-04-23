@@ -1,0 +1,38 @@
+# Pre-commit hooks — install with `pip install pre-commit && pre-commit install`
+# Run manually with `pre-commit run --all-files`
+repos:
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: |
+          (?x)^(
+            package-lock\.json|
+            .*\.min\.(js|css)|
+            frontend/public/.*|
+            contracts/broadcast/.*|
+            veralith-pipeline/contracts/typechain-types/.*|
+            .*\.tsbuildinfo
+          )$
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ['--maxkb=5000']
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: end-of-file-fixer
+        exclude: \.(json|svg)$
+      - id: trailing-whitespace
+        exclude: \.md$
+
+  - repo: local
+    hooks:
+      - id: audit-secrets
+        name: audit-secrets (repo-specific patterns)
+        entry: bash scripts/security/audit-secrets.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

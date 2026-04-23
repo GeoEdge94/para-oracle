@@ -1,9 +1,30 @@
-# Env
+# ─── Env & secrets ────────────────────────────────────────────────────────
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
+*.env
+!.env.example
+!veralith-pipeline/contracts/.env.example
 
-# Python
+# Private keys, certs, secret bundles
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.keystore
+secrets/
+.secrets
+!.secrets.baseline
+
+# Cloud provider config (never commit)
+.aws/
+.gcp/
+service-account*.json
+
+# ─── Python ───────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
@@ -17,7 +38,7 @@ __pycache__/
 venv/
 .venv/
 
-# Node
+# ─── Node ─────────────────────────────────────────────────────────────────
 node_modules/
 dist/
 build/
@@ -25,16 +46,30 @@ build/
 *.log
 npm-debug.log*
 
-# Data (large files, rasters)
+# ─── Data (large files + mock outputs) ────────────────────────────────────
 data/rasters/
 data/sentinel/*.tif
 data/sentinel/*.SAFE/
 !data/para/para-border.geojson
 
-# Docker
+# IPFS mock local store — contains resolve outputs, never commit
+backend/data/ipfs-mock/
+data/ipfs-mock/
+
+# ─── Web3 / Blockchain ────────────────────────────────────────────────────
+# Foundry deployment artifacts contain tx nonces + deployer address.
+# OK to track `run-latest.json` for audit traceability, but block cache.
+contracts/cache/
+contracts/out/
+contracts/lib/
+veralith-pipeline/contracts/cache/
+veralith-pipeline/contracts/artifacts/
+veralith-pipeline/contracts/typechain-types/
+
+# ─── Docker ───────────────────────────────────────────────────────────────
 .docker/
 
-# IDE
+# ─── IDE ──────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
@@ -42,6 +77,8 @@ data/sentinel/*.SAFE/
 .DS_Store
 Thumbs.db
 
-# TypeScript
+# ─── TypeScript build cache ───────────────────────────────────────────────
 *.tsbuildinfo
+
+# Parent data/ directory catch-all (historical)
 data/
