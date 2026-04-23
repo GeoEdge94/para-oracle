@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 
 export type DatePreset = "T0" | "T1" | "today" | "custom";
@@ -80,18 +81,28 @@ export function DateSelector({ periodStart, periodEnd, selectedDate, onChange, a
         </button>
       </div>
 
-      {expanded && (
-        <div className="date-selector-custom">
-          <button className="layer-panel-icon-btn" onClick={() => shift(-1)} title={t("date.prev_day")}>
-            <ChevronLeft size={14} />
-          </button>
-          <input type="date" value={selectedDate} min={periodStart} max={todayIso}
-            onChange={(e) => onChange(e.target.value, "custom")} className="date-input" />
-          <button className="layer-panel-icon-btn" onClick={() => shift(1)} title={t("date.next_day")}>
-            <ChevronRight size={14} />
-          </button>
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            key="date-custom"
+            className="date-selector-custom"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            style={{ overflow: "hidden" }}
+          >
+            <button className="layer-panel-icon-btn" onClick={() => shift(-1)} title={t("date.prev_day")} aria-label={t("date.prev_day")}>
+              <ChevronLeft size={14} />
+            </button>
+            <input type="date" value={selectedDate} min={periodStart} max={todayIso}
+              onChange={(e) => onChange(e.target.value, "custom")} className="date-input" />
+            <button className="layer-panel-icon-btn" onClick={() => shift(1)} title={t("date.next_day")} aria-label={t("date.next_day")}>
+              <ChevronRight size={14} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {affectedLayers > 0 && (
         <div className="date-hint">

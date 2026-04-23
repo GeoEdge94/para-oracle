@@ -10,20 +10,28 @@ import { DateSelector, type DatePreset } from "@/components/DateSelector";
 import { categorise, isDateAware, type CategorisedLayer } from "@/lib/layerCategories";
 import { syncLayers, ensureBasemapRadio, geojsonBounds, installRegionMask } from "@/lib/mapLayers";
 import { ChevronLeft, ChevronDown, ChevronUp, Play, Copy } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { LocaleToggle } from "@/components/LocaleToggle";
+import { StreakBadge } from "@/components/StreakBadge";
+import { ResolutionScene } from "@/components/ResolutionScene";
+import { useMissions, isBoosted } from "@/lib/engage";
+import { BoostedBadge } from "@/components/BoostedBadge";
+import { MarketMeta } from "@/components/MarketMeta";
+import { PriceHistoryChart } from "@/components/PriceHistoryChart";
+import { DepthChart } from "@/components/DepthChart";
 import { useI18n } from "@/lib/i18n";
 import { OnboardingOverlay } from "@/components/OnboardingOverlay";
 import { MarketStats } from "@/components/MarketStats";
 import { PlaceBetForm } from "@/components/PlaceBetForm";
 import { BetTimeline } from "@/components/BetTimeline";
 import { EvidenceDetail } from "@/components/EvidenceDetail";
-import { Web3Evidence } from "@/components/Web3Evidence";
 import { VerdictPanel } from "@/components/VerdictPanel";
 import { MapPin } from "lucide-react";
 
 export function Analysis() {
   const { slug = "" } = useParams();
   const { t, betQ } = useI18n();
+  const { bump: bumpMission } = useMissions();
   const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -42,8 +50,11 @@ export function Analysis() {
   const [myBets, setMyBets] = useState<UserBetSummary | null>(null);
   const [zones, setZones] = useState<DeforestationZone[]>([]);
   const [showDetail, setShowDetail] = useState(false);
+  const [showResolution, setShowResolution] = useState(false);
+  const [userPosition, setUserPosition] = useState<"YES" | "NO" | null>(null);
 
   useEffect(() => {
+    bumpMission("analyze");
     API.getBet(slug).then((r) => {
       setBet(r.data);
       if (!selectedDate) setSelectedDate(r.data.period_end);
@@ -131,7 +142,15 @@ export function Analysis() {
 
   async function resolve() {
     setResolving(true);
+    setShowResolution(true);
     try {
+      // Determine user's position from myBets before resolving
+      if (myBets && myBets.positions.length > 0) {
+        const pending = myBets.positions.find((p) => p.status === "PENDING");
+        setUserPosition(pending ? pending.position : null);
+      } else {
+        setUserPosition(null);
+      }
       const { data } = await API.resolveBet(slug);
       setResult(data);
       const r = await API.getBet(slug);
@@ -317,20 +336,28 @@ export function Analysis() {
     <div style={{ position: "relative", height: "100dvh" }}>
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 30,
-        padding: "10px 14px", background: "rgba(15,23,42,0.9)", backdropFilter: "blur(10px)",
-        display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid #1e293b",
+        padding: "10px 14px", background: "rgba(15, 23, 42, 0.9)", backdropFilter: "blur(10px)",
+        display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid var(--border-muted)",
       }}>
-        <button onClick={() => navigate("/")} style={{ background: "none", border: "none", color: "#cbd5e1", padding: 2 }}>
-          <ChevronLeft size={20} />
+        <button
+          onClick={() => navigate("/")}
+          className="topbar-icon-btn"
+          aria-label={t("common.back")}
+          style={{ width: 32, height: 32 }}
+        >
+          <ChevronLeft size={18} />
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 11, color: "#94a3b8" }}>{t("analysis.title")}</div>
-          <div style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ fontSize: 10, color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: 0.8 }}>{t("analysis.title")}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--fg-strong)" }}>
             {bet.region_name}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <StreakBadge />
+          <span className="topbar-sep" />
           <LocaleToggle />
+          <span className="topbar-sep" />
           <StatusBadge />
         </div>
       </div>
@@ -372,14 +399,39 @@ export function Analysis() {
             {sheetCollapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
 
+          <AnimatePresence initial={false}>
           {!sheetCollapsed && (
-            <>
+            <motion.div
+              key="sheet-body"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            >
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{betQ(bet)}</div>
-                <div style={{ fontSize: 11, color: "#94a3b8" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                  <div className="serif" style={{ fontSize: 16, fontWeight: 600, lineHeight: 1.35, color: "var(--fg-strong)", flex: 1 }}>
+                    {betQ(bet)}
+                  </div>
+                  {isBoosted(bet.period_end, bet.status) && (
+                    <BoostedBadge periodEnd={bet.period_end} status={bet.status} variant="pill" />
+                  )}
+                </div>
+                <div className="mono" style={{ fontSize: 10, color: "var(--fg-faint)", marginTop: 6, letterSpacing: 0.3 }}>
                   {t("analysis.threshold_label", { value: bet.threshold_value, unit: bet.threshold_unit, drop: bet.ndvi_drop_threshold })}
                 </div>
               </div>
+
+              {/* Price history chart with multi-timeframe */}
+              <PriceHistoryChart bet={bet} height={160} />
+
+              {/* Orderbook-style depth chart */}
+              <div style={{ marginTop: 14 }}>
+                <DepthChart stats={marketStats} />
+              </div>
+
+              {/* Editorial meta block (criteria + sources) */}
+              <MarketMeta bet={bet} />
 
               {resolved ? (
                 <div style={{ padding: 14, background: bet.result_bool ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)", borderRadius: 10, marginBottom: 12 }}>
@@ -392,10 +444,17 @@ export function Analysis() {
                   </div>
                 </div>
               ) : (
-                <button className="btn btn-primary" onClick={resolve} disabled={resolving}
-                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
+                <motion.button
+                  className="btn btn-primary"
+                  onClick={resolve}
+                  disabled={resolving}
+                  whileTap={{ scale: 0.97 }}
+                  whileHover={{ y: -1 }}
+                  transition={{ type: "spring", stiffness: 420, damping: 28 }}
+                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}
+                >
                   <Play size={16} /> {resolving ? t("analysis.resolving") : t("analysis.resolve_btn")}
-                </button>
+                </motion.button>
               )}
 
               <PlaceBetForm slug={slug} betStatus={bet.status} stats={marketStats} onPlaced={() => {
@@ -444,8 +503,9 @@ export function Analysis() {
 
               {showDetail && <EvidenceDetail zones={zones} />}
               {showDetail && <VerdictPanel bet={bet} zones={zones} placements={placements} />}
-            </>
+            </motion.div>
           )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -455,6 +515,18 @@ export function Analysis() {
           localStorage.setItem("para_onboarding_done", "1");
         }} />
       )}
+
+      <AnimatePresence>
+        {showResolution && bet && (
+          <ResolutionScene
+            bet={bet}
+            result={result}
+            userPosition={userPosition}
+            loading={resolving}
+            onClose={() => setShowResolution(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -462,7 +534,7 @@ export function Analysis() {
 function EvidencePanel({ r }: { r: OracleResult }) {
   const { t } = useI18n();
   function copy(v: string) { navigator.clipboard.writeText(v); }
-  const rows: [string, string | undefined][] = [
+  const rows: [string, string][] = [
     ["IPFS CID", r.evidence.ipfs_cid],
     ["Script", r.evidence.script_hash],
     ["NDVI T0", r.evidence.ndvi_t0_hash],
@@ -470,29 +542,23 @@ function EvidencePanel({ r }: { r: OracleResult }) {
     ["Delta", r.evidence.delta_hash],
     ["Mask", r.evidence.mask_hash],
   ];
-  const sentinelCount =
-    (r.evidence.sentinel_products_t0?.length || 0) +
-    (r.evidence.sentinel_products_t1?.length || 0);
   return (
     <div>
       <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", marginBottom: 6 }}>{t("analysis.evidence_title")}</div>
-      {sentinelCount > 0 && (
-        <div style={{ fontSize: 11, color: "#cbd5e1", marginBottom: 8 }}>
-          {t("analysis.sentinel_scenes", { n: sentinelCount })}
-        </div>
-      )}
+      <div style={{ fontSize: 11, color: "#cbd5e1", marginBottom: 8 }}>
+        {t("analysis.sentinel_scenes", { n: r.evidence.sentinel_products_t0.length + r.evidence.sentinel_products_t1.length })}
+      </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        {rows.filter(([, v]) => v).map(([k, v]) => (
+        {rows.map(([k, v]) => (
           <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
             <span style={{ color: "#94a3b8", width: 60 }}>{k}</span>
             <code style={{ color: "#cbd5e1", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {v || "—"}
             </code>
-            {v && <button onClick={() => copy(v!)} style={{ background: "none", border: "none", color: "#94a3b8" }}><Copy size={12} /></button>}
+            {v && <button onClick={() => copy(v)} style={{ background: "none", border: "none", color: "#94a3b8" }}><Copy size={12} /></button>}
           </div>
         ))}
       </div>
-      <Web3Evidence evidence={r.evidence} />
     </div>
   );
 }

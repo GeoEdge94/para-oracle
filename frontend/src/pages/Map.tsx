@@ -10,9 +10,14 @@ import { CrisisStats } from "@/components/CrisisStats";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { GlobeView } from "@/components/GlobeView";
 import { geojsonBounds } from "@/lib/mapLayers";
-import { LogOut, Plus, Wallet, Trophy, Menu, X, Globe } from "lucide-react";
+import { LogOut, Plus, Trophy, Menu, X, Globe } from "lucide-react";
+import { motion } from "framer-motion";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { WalletBadge } from "@/components/WalletBadge";
+import { StreakBadge } from "@/components/StreakBadge";
+import { DeckOverlay } from "@/components/DeckOverlay";
+import { useMissions, isBoosted } from "@/lib/engage";
+import { usePulseOnNewBet } from "@/lib/usePulseOnNewBet";
 import { useI18n } from "@/lib/i18n";
 
 const WORLD_CENTER: [number, number] = [10, 15];
@@ -40,6 +45,9 @@ const CAT_COLORS: Record<string, string> = {
 export function MapPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { bump: bumpMission } = useMissions();
+  const seenRef = useRef<Set<string>>(new Set());
+  const [deckMap, setDeckMap] = useState<maplibregl.Map | null>(null);
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
@@ -85,6 +93,7 @@ export function MapPage() {
     map.addControl(new maplibregl.NavigationControl({ showCompass: false, showZoom: false }), "top-right");
 
     map.on("load", async () => {
+      setDeckMap(map);
       const res = await API.listBets();
       const allBets = res.data;
       setBets(allBets);
@@ -225,7 +234,10 @@ export function MapPage() {
     const map = mapRef.current;
     if (!map || !bets.length) return;
     for (const bet of bets) {
-      const show = filterCat === null || bet.category === filterCat;
+      const show =
+        filterCat === null ? true :
+        filterCat === "__boosted__" ? isBoosted(bet.period_end, bet.status) :
+        bet.category === filterCat;
       for (const layerId of [`fill-${bet.slug}`, `border-${bet.slug}`, `glow-${bet.slug}`, `pulse-${bet.slug}`]) {
         if (map.getLayer(layerId)) {
           map.setLayoutProperty(layerId, "visibility", show ? "visible" : "none");
@@ -234,7 +246,30 @@ export function MapPage() {
     }
   }, [filterCat, bets]);
 
+  // Poll /user-bets for new placements; pulse pin + discreet toast
+  const pulsingSlugs = usePulseOnNewBet(bets);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    for (const bet of bets) {
+      const lid = `pulse-${bet.slug}`;
+      if (!map.getLayer(lid)) continue;
+      if (pulsingSlugs.has(bet.slug)) {
+        map.setPaintProperty(lid, "circle-stroke-width", 6);
+        map.setPaintProperty(lid, "circle-radius", 10);
+        map.setPaintProperty(lid, "circle-stroke-opacity", 0.9);
+      } else {
+        map.setPaintProperty(lid, "circle-stroke-width", 2);
+        map.setPaintProperty(lid, "circle-stroke-opacity", 0.9);
+      }
+    }
+  }, [pulsingSlugs, bets]);
+
   function selectBet(bet: Bet) {
+    if (!seenRef.current.has(bet.slug)) {
+      seenRef.current.add(bet.slug);
+      bumpMission("check");
+    }
     setSelectedBet(bet);
     if (mapRef.current && bet.region_geojson) {
       const b = geojsonBounds(bet.region_geojson);
@@ -263,13 +298,16 @@ export function MapPage() {
           <CrisisStats bets={bets} />
         </div>
         <div className="topbar-actions">
+          <StreakBadge />
           <WalletBadge onClick={() => navigate("/wallet")} />
-          <button onClick={() => navigate("/leaderboard")} style={{ padding: "4px 8px", fontSize: 10, background: "transparent", border: "1px solid #1e293b", color: "#fbbf24", borderRadius: 4, cursor: "pointer" }} title="Leaderboard">
-            <Trophy size={12} style={{ verticalAlign: "middle" }} />
+          <button className="topbar-icon-btn" data-variant="gold" onClick={() => navigate("/leaderboard")} title="Leaderboard" aria-label="Leaderboard">
+            <Trophy size={14} />
           </button>
+          <span className="topbar-sep" />
           <LocaleToggle />
-          <button onClick={logout} style={{ padding: "4px 8px", fontSize: 10, background: "transparent", border: "1px solid #1e293b", color: "#94a3b8", borderRadius: 4, cursor: "pointer" }}>
-            <LogOut size={12} style={{ verticalAlign: "middle" }} />
+          <span className="topbar-sep" />
+          <button className="topbar-icon-btn" data-variant="danger" onClick={logout} title="Logout" aria-label="Logout">
+            <LogOut size={14} />
           </button>
         </div>
         <button className="topbar-hamburger" onClick={() => setMenuOpen(true)} aria-label="Open menu">
@@ -317,6 +355,13 @@ export function MapPage() {
         onClick={() => { setOverlapMenu(null); setShowCarousel(false); }}
       />
 
+      {/* deck.gl hex density + glow nodes overlay (over ESRI satellite) */}
+      <DeckOverlay
+        map={deckMap}
+        bets={viewMode === "map" ? bets : []}
+        onNodeClick={(slug) => navigate(`/market/${slug}`)}
+      />
+
       {viewMode === "globe" && (
         <div style={{ position: "absolute", inset: 0, background: "#000", zIndex: 1 }}>
           <GlobeView
@@ -329,52 +374,78 @@ export function MapPage() {
       )}
 
       {overlapMenu && (
-        <div className="overlap-menu" style={{ left: overlapMenu.x, top: overlapMenu.y }}>
-          <div style={{ fontSize: 10, color: "#64748b", padding: "6px 10px 4px", textTransform: "uppercase" }}>
+        <motion.div
+          className="overlap-menu"
+          style={{ left: overlapMenu.x, top: overlapMenu.y }}
+          initial={{ opacity: 0, y: -4, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div style={{ fontSize: 10, color: "var(--fg-faint)", padding: "6px 10px 4px", textTransform: "uppercase", letterSpacing: 0.5 }}>
             {t("map.bets_on_zone", { n: overlapMenu.bets.length })}
           </div>
-          {overlapMenu.bets.map((b) => {
+          {overlapMenu.bets.map((b, idx) => {
             const color = CAT_COLORS[b.category] || "#8b5cf6";
             return (
-              <button
+              <motion.button
                 key={b.slug}
                 className="overlap-menu-item"
                 onClick={() => { setOverlapMenu(null); selectBet(b); }}
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.04 + idx * 0.035, duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                whileHover={{ x: 2 }}
               >
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
                 <span style={{ flex: 1, textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {b.region_name}
                 </span>
-                <span style={{ fontSize: 9, color: "#64748b" }}>{b.index_type}</span>
-              </button>
+                <span style={{ fontSize: 9, color: "var(--fg-faint)" }}>{b.index_type}</span>
+              </motion.button>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       {!selectedBet && !showCarousel && (
         <>
-          <button
+          <motion.button
             className={`fab fab-secondary${viewMode === "globe" ? " fab-active" : ""}`}
             style={{ bottom: 24, right: 16, left: "auto" }}
             onClick={() => setViewMode((v) => (v === "map" ? "globe" : "map"))}
             title={viewMode === "globe" ? "Vue carte" : "Vue globe 3D"}
+            aria-label={viewMode === "globe" ? "Vue carte" : "Vue globe 3D"}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 22, delay: 0.1 }}
+            whileTap={{ scale: 0.92 }}
+            whileHover={{ scale: 1.05 }}
           >
             <Globe size={20} />
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             className="fab"
             style={{ bottom: 24, left: 16 }}
             onClick={() => setShowCarousel(true)}
+            aria-label="Discover bets"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+            whileTap={{ scale: 0.92 }}
+            whileHover={{ scale: 1.05 }}
           >
             <Plus size={22} />
-          </button>
+          </motion.button>
         </>
       )}
 
       {showCarousel && !selectedBet && (
         <BetBottomSheet
-          bets={filterCat ? bets.filter((b) => b.category === filterCat) : bets}
+          bets={
+            filterCat === null ? bets :
+            filterCat === "__boosted__" ? bets.filter((b) => isBoosted(b.period_end, b.status)) :
+            bets.filter((b) => b.category === filterCat)
+          }
           onSelect={(b) => { setShowCarousel(false); selectBet(b); }}
           onClose={() => setShowCarousel(false)}
         />
@@ -384,7 +455,7 @@ export function MapPage() {
         <BetSheet
           bet={selectedBet}
           onClose={() => setSelectedBet(null)}
-          onOpen={() => navigate(`/analysis/${selectedBet.slug}`)}
+          onOpen={() => navigate(`/market/${selectedBet.slug}`)}
         />
       )}
     </div>

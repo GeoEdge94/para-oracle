@@ -1,6 +1,11 @@
 import type { Bet } from "@/lib/api";
 import { TrendingUp, Flame, Droplets, Mountain, Thermometer, Snowflake, Building, Fish, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
+import Tilt from "react-parallax-tilt";
 import { useI18n } from "@/lib/i18n";
+import { Sparkline } from "@/components/Sparkline";
+import { BoostedBadge } from "@/components/BoostedBadge";
+import { isBoosted } from "@/lib/engage";
 
 type Props = {
   bets: Bet[];
@@ -30,19 +35,49 @@ export function BetCarousel({ bets, onSelect }: Props) {
 
   return (
     <div className="bet-carousel">
-      {bets.map((b) => {
+      {bets.map((b, idx) => {
         const cat = CAT_CONFIG[b.category] || CAT_CONFIG.deforestation;
         const Icon = cat.icon;
         const resolved = b.status.startsWith("RESOLVED");
         const pct = yesPct(b);
 
+        const boosted = isBoosted(b.period_end, b.status);
         return (
-          <button key={b.slug} className="bet-carousel-card" onClick={() => onSelect(b)}>
+          <Tilt
+            key={b.slug}
+            tiltMaxAngleX={5}
+            tiltMaxAngleY={5}
+            glareEnable
+            glareMaxOpacity={0.1}
+            glareColor={boosted ? "#fbbf24" : cat.color}
+            glarePosition="all"
+            scale={1}
+            transitionSpeed={600}
+            perspective={1200}
+            style={{ flex: "0 0 170px", scrollSnapAlign: "start" }}
+          >
+          <motion.button
+            className="bet-carousel-card"
+            onClick={() => onSelect(b)}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.04, duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              width: "100%",
+              flex: "initial",
+              ...(boosted ? { borderColor: "rgba(251,191,36,0.35)" } : {}),
+            }}
+          >
             <div className="bcc-header">
               <div className="bcc-icon" style={{ background: `${cat.color}18`, color: cat.color }}>
                 <Icon size={14} />
               </div>
-              <ChevronRight size={12} className="bcc-arrow" />
+              {boosted ? (
+                <BoostedBadge periodEnd={b.period_end} status={b.status} variant="pill" />
+              ) : (
+                <ChevronRight size={12} className="bcc-arrow" />
+              )}
             </div>
 
             <div className="bcc-region">{b.region_name}</div>
@@ -69,10 +104,23 @@ export function BetCarousel({ bets, onSelect }: Props) {
 
             {pct !== null && (
               <div className="bcc-bar">
-                <div className="bcc-bar-fill" style={{ width: `${pct}%`, background: pct > 50 ? "#10b981" : "#f87171" }} />
+                <motion.div
+                  className="bcc-bar-fill"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ delay: 0.15 + idx * 0.04, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ background: pct > 50 ? "var(--accent)" : "var(--danger)" }}
+                />
               </div>
             )}
-          </button>
+
+            {!resolved && (
+              <div style={{ marginTop: 6 }}>
+                <Sparkline seed={b.slug} color={cat.color} height={26} trend="up" />
+              </div>
+            )}
+          </motion.button>
+          </Tilt>
         );
       })}
     </div>

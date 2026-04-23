@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, Layers, Calendar, GripHorizontal, Map, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 
 const STEP_KEYS = [
@@ -18,30 +19,61 @@ export function OnboardingOverlay({ onDismiss }: Props) {
   const current = STEP_KEYS[step];
   const isLast = step === STEP_KEYS.length - 1;
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onDismiss();
+      else if (e.key === "ArrowRight") setStep((s) => Math.min(s + 1, STEP_KEYS.length - 1));
+      else if (e.key === "ArrowLeft") setStep((s) => Math.max(s - 1, 0));
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onDismiss]);
+
   return (
     <div className="onboarding-overlay" onClick={(e) => e.stopPropagation()}>
       <div className="onboarding-backdrop" onClick={onDismiss} />
 
-      <div className={`onboarding-card onboarding-${current.anchor}`}>
-        <button className="onboarding-close" onClick={onDismiss}>
-          <X size={16} />
-        </button>
-
-        <div className="onboarding-icon">{current.icon}</div>
-        <div className="onboarding-title">{t(current.titleKey)}</div>
-        <div className="onboarding-desc">{t(current.descKey)}</div>
-
-        <div className="onboarding-footer">
-          <div className="onboarding-dots">
-            {STEP_KEYS.map((_, i) => (
-              <span key={i} className={`onboarding-dot ${i === step ? "active" : ""}`} />
-            ))}
-          </div>
-          <button className="onboarding-btn" onClick={() => (isLast ? onDismiss() : setStep(step + 1))}>
-            {isLast ? t("common.letsgo") : t("common.next")}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={step}
+          className={`onboarding-card onboarding-${current.anchor}`}
+          initial={{ opacity: 0, y: 8, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -4, scale: 0.98 }}
+          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <button className="onboarding-close" onClick={onDismiss} aria-label={t("common.close")}>
+            <X size={16} />
           </button>
-        </div>
-      </div>
+
+          <div className="onboarding-icon">{current.icon}</div>
+          <div className="onboarding-title">{t(current.titleKey)}</div>
+          <div className="onboarding-desc">{t(current.descKey)}</div>
+
+          <div className="onboarding-footer">
+            <div className="onboarding-dots">
+              {STEP_KEYS.map((_, i) => (
+                <span key={i} className={`onboarding-dot ${i === step ? "active" : ""}`} />
+              ))}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {!isLast && (
+                <button className="onboarding-skip" onClick={onDismiss}>
+                  {t("common.skip")}
+                </button>
+              )}
+              <motion.button
+                className="onboarding-btn"
+                whileTap={{ scale: 0.96 }}
+                transition={{ type: "spring", stiffness: 420, damping: 28 }}
+                onClick={() => (isLast ? onDismiss() : setStep(step + 1))}
+              >
+                {isLast ? t("common.letsgo") : t("common.next")}
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

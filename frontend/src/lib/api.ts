@@ -54,58 +54,25 @@ export type Layer = {
   visible_default: boolean;
 };
 
-export type OracleEvidence = {
-  // Communs (weather + spectral)
-  pipeline_kind?: "weather" | "spectral";
-  schema_version?: string;
-  fingerprint_sha256?: string;
-  ipfs_cid?: string;
-  data_cid?: string;
-  script_cid?: string;
-  schema_cid?: string;
-  tls_proof_cid?: string;
-  gateway_base?: string;
-  observed_value?: number;
-  threshold_value?: number;
-  threshold_unit?: string;
-  direction?: "gte" | "gt" | "lte" | "lt";
-  period: { start: string; end: string };
-  analysis_id: string;
-  // On-chain (M3)
-  chain_tx_hash?: string;
-  chain_id?: number;
-  contract_address?: string;
-  resolution_id?: string;
-  bond_amount_usdc?: number;
-  dispute_window_end?: string;
-  dispute_status?: "NONE" | "PENDING" | "DISPUTED" | "FINALIZED";
-  chain_mock?: boolean;
-  // Spectral-specific
-  script_hash?: string;
-  ndvi_t0_hash?: string;
-  ndvi_t1_hash?: string;
-  delta_hash?: string;
-  mask_hash?: string;
-  sentinel_products_t0?: string[];
-  sentinel_products_t1?: string[];
-  stac_uris?: string[];
-  index_type?: string;
-  change_direction?: string;
-  bands?: string[];
-  // Weather-specific
-  variable?: string;
-  aggregation?: string;
-  n_days?: number;
-  source?: string;
-};
-
 export type OracleResult = {
   bet_id: string;
   resolved_outcome: "YES" | "NO";
   surface_deforestee_km2: number;
   threshold_km2: number;
   resolution_timestamp: string;
-  evidence: OracleEvidence;
+  evidence: {
+    script_hash: string;
+    ndvi_t0_hash: string;
+    ndvi_t1_hash: string;
+    delta_hash: string;
+    mask_hash: string;
+    sentinel_products_t0: string[];
+    sentinel_products_t1: string[];
+    stac_uris: string[];
+    ipfs_cid: string;
+    period: { start: string; end: string };
+    analysis_id: string;
+  };
 };
 
 export type UserBet = {
