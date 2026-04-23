@@ -98,12 +98,12 @@ export function Login() {
               color: "var(--fg-strong)",
               maxWidth: 440,
             }}>
-              Read the planet.<br />
-              <span style={{ color: "var(--accent)" }}>The market answers.</span>
+              {t("auth.hero_left")}<br />
+              <span style={{ color: "var(--accent)" }}>{t("auth.hero_right")}</span>
             </h1>
 
             <p className="mono" style={{ fontSize: 11, color: "var(--fg-subtle)", letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 600, marginBottom: 24 }}>
-              Climate prediction market · Sentinel-2 oracle
+              {t("auth.tagline")}
             </p>
 
             <form
@@ -168,7 +168,7 @@ export function Login() {
                     {bets.length}
                   </div>
                   <div className="mono" style={{ fontSize: 8, color: "var(--fg-faint)", letterSpacing: 1.3, textTransform: "uppercase", marginTop: 2 }}>
-                    Markets
+                    {t("auth.stat_markets")}
                   </div>
                 </div>
                 <div>
@@ -176,7 +176,7 @@ export function Login() {
                     {bets.filter((b) => b.status === "OPEN").length}
                   </div>
                   <div className="mono" style={{ fontSize: 8, color: "var(--fg-faint)", letterSpacing: 1.3, textTransform: "uppercase", marginTop: 2 }}>
-                    Open live
+                    {t("auth.stat_open")}
                   </div>
                 </div>
                 <div>
@@ -184,7 +184,7 @@ export function Login() {
                     24/7
                   </div>
                   <div className="mono" style={{ fontSize: 8, color: "var(--fg-faint)", letterSpacing: 1.3, textTransform: "uppercase", marginTop: 2 }}>
-                    Sentinel-2
+                    {t("auth.stat_uptime")}
                   </div>
                 </div>
               </motion.div>
@@ -202,9 +202,9 @@ export function Login() {
                 flexWrap: "wrap",
               }}
             >
-              <TrustPill icon={<Satellite size={10} />} label="ESA Copernicus" />
-              <TrustPill icon={<FileCode2 size={10} />} label="Open data" />
-              <TrustPill icon={<ShieldCheck size={10} />} label="Deterministic oracle" />
+              <TrustPill icon={<Satellite size={10} />} label={t("auth.trust_copernicus")} />
+              <TrustPill icon={<FileCode2 size={10} />} label={t("auth.trust_opendata")} />
+              <TrustPill icon={<ShieldCheck size={10} />} label={t("auth.trust_oracle")} />
             </motion.div>
           </div>
 
@@ -239,7 +239,7 @@ export function Login() {
             backdropFilter: "blur(8px)",
           }}
         >
-          <span>Live dashboard below</span>
+          <span>{t("auth.scroll_hint")}</span>
           <ArrowDownRight size={11} />
         </motion.a>
       </div>

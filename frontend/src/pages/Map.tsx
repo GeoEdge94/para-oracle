@@ -298,7 +298,7 @@ export function MapPage() {
           <div style={{ fontWeight: 800, fontSize: 14, letterSpacing: "-0.5px" }}>
             Para<span style={{ color: "#10b981" }}>Oracle</span>
           </div>
-          <span style={{ fontSize: 8, color: "#64748b", letterSpacing: "1px", fontFamily: "monospace" }}>/ GLOBAL</span>
+          <span style={{ fontSize: 8, color: "#64748b", letterSpacing: "1px", fontFamily: "monospace" }}>{t("map.nav_global")}</span>
         </div>
         <div className="topbar-center">
           <CrisisStats bets={bets} />
@@ -306,17 +306,17 @@ export function MapPage() {
         <div className="topbar-actions">
           <StreakBadge />
           <WalletBadge onClick={() => navigate("/wallet")} />
-          <button className="topbar-icon-btn" data-variant="gold" onClick={() => navigate("/leaderboard")} title="Leaderboard" aria-label="Leaderboard">
+          <button className="topbar-icon-btn" data-variant="gold" onClick={() => navigate("/leaderboard")} title={t("map.leaderboard")} aria-label={t("map.leaderboard")}>
             <Trophy size={14} />
           </button>
           <span className="topbar-sep" />
           <LocaleToggle />
           <span className="topbar-sep" />
-          <button className="topbar-icon-btn" data-variant="danger" onClick={logout} title="Logout" aria-label="Logout">
+          <button className="topbar-icon-btn" data-variant="danger" onClick={logout} title={t("map.logout")} aria-label={t("map.logout")}>
             <LogOut size={14} />
           </button>
         </div>
-        <button className="topbar-hamburger" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+        <button className="topbar-hamburger" onClick={() => setMenuOpen(true)} aria-label={t("map.menu")}>
           <Menu size={18} />
         </button>
       </div>
@@ -324,28 +324,28 @@ export function MapPage() {
       {menuOpen && (
         <>
           <div className="sidebar-backdrop" onClick={() => setMenuOpen(false)} />
-          <aside className="sidebar-drawer" role="dialog" aria-label="Menu">
+          <aside className="sidebar-drawer" role="dialog" aria-label={t("map.menu")}>
             <div className="sidebar-head">
-              <span style={{ fontWeight: 700, fontSize: 13 }}>Menu</span>
-              <button onClick={() => setMenuOpen(false)} className="sidebar-close" aria-label="Close menu">
+              <span style={{ fontWeight: 700, fontSize: 13 }}>{t("map.menu")}</span>
+              <button onClick={() => setMenuOpen(false)} className="sidebar-close" aria-label={t("common.close")}>
                 <X size={16} />
               </button>
             </div>
             <div className="sidebar-section">
-              <div className="sidebar-label">Crisis</div>
+              <div className="sidebar-label">{t("map.crisis")}</div>
               <CrisisStats bets={bets} />
             </div>
             <div className="sidebar-section sidebar-actions">
               <WalletBadge onClick={() => { setMenuOpen(false); navigate("/wallet"); }} />
               <button onClick={() => { setMenuOpen(false); navigate("/leaderboard"); }} className="sidebar-btn" style={{ color: "#fbbf24" }}>
-                <Trophy size={14} /> <span>Leaderboard</span>
+                <Trophy size={14} /> <span>{t("map.leaderboard")}</span>
               </button>
               <div className="sidebar-btn" style={{ justifyContent: "space-between" }}>
-                <span style={{ color: "#94a3b8", fontSize: 11 }}>Langue</span>
+                <span style={{ color: "#94a3b8", fontSize: 11 }}>{t("map.language")}</span>
                 <LocaleToggle />
               </div>
               <button onClick={() => { setMenuOpen(false); logout(); }} className="sidebar-btn" style={{ color: "#94a3b8" }}>
-                <LogOut size={14} /> <span>Logout</span>
+                <LogOut size={14} /> <span>{t("map.logout")}</span>
               </button>
             </div>
           </aside>
