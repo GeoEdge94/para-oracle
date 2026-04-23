@@ -36,6 +36,25 @@ services:
       COPERNICUS_CLIENT_ID: ${COPERNICUS_CLIENT_ID:-}
       COPERNICUS_CLIENT_SECRET: ${COPERNICUS_CLIENT_SECRET:-}
       USE_MOCK_SENTINEL: ${USE_MOCK_SENTINEL:-true}
+      CDS_API_URL: ${CDS_API_URL:-https://cds.climate.copernicus.eu/api}
+      CDS_API_KEY: ${CDS_API_KEY:-}
+      USE_MOCK_CDS: ${USE_MOCK_CDS:-true}
+      # Web3 — IPFS / TLSNotary / smart contract
+      USE_WEB3_PUBLISHING: ${USE_WEB3_PUBLISHING:-true}
+      USE_MOCK_IPFS: ${USE_MOCK_IPFS:-true}
+      PINATA_JWT: ${PINATA_JWT:-}
+      IPFS_GATEWAY_URL: ${IPFS_GATEWAY_URL:-https://gateway.pinata.cloud/ipfs/}
+      SCHEMA_V1_CID: ${SCHEMA_V1_CID:-}
+      USE_MOCK_TLSNOTARY: ${USE_MOCK_TLSNOTARY:-true}
+      TLSNOTARY_NOTARY_URL: ${TLSNOTARY_NOTARY_URL:-}
+      USE_MOCK_CHAIN: ${USE_MOCK_CHAIN:-true}
+      CHAIN_RPC_URL: ${CHAIN_RPC_URL:-https://rpc-amoy.polygon.technology}
+      CHAIN_ID: ${CHAIN_ID:-80002}
+      ORACLE_PRIVATE_KEY: ${ORACLE_PRIVATE_KEY:-}
+      PARA_ORACLE_ADDRESS: ${PARA_ORACLE_ADDRESS:-}
+      USDC_ADDRESS: ${USDC_ADDRESS:-}
+      BOND_AMOUNT_USDC: ${BOND_AMOUNT_USDC:-500.0}
+      DISPUTE_WINDOW_SECONDS: ${DISPUTE_WINDOW_SECONDS:-172800}
       JWT_SECRET: ${JWT_SECRET:-para_oracle_dev_secret_change_me}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://192.168.1.93:3000}
       DATA_DIR: /data

@@ -54,7 +54,7 @@ echo "  expected_fp = $EXPECTED_FP"
 # ── 4. Bot match case ──────────────────────────────────────────────────────
 step "4. Run challenger bot (expect MATCH, exit 0)"
 set +e
-docker compose --profile bot run --rm -T bot python challenger.py --once --limit 10
+docker compose --profile bot run --rm --no-deps -T bot python challenger.py --once --limit 10
 BOT_RC=$?
 set -e
 echo "  bot exit = $BOT_RC"
@@ -67,7 +67,7 @@ be_py tamper "$DATA_CID"
 # ── 6. Bot dispute case ────────────────────────────────────────────────────
 step "6. Run challenger bot (expect DISPUTE, exit 1)"
 set +e
-docker compose --profile bot run --rm -T bot python challenger.py --once --limit 10
+docker compose --profile bot run --rm --no-deps -T bot python challenger.py --once --limit 10
 BOT_RC=$?
 set -e
 echo "  bot exit = $BOT_RC"

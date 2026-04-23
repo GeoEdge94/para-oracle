@@ -25,6 +25,7 @@ import { MarketStats } from "@/components/MarketStats";
 import { PlaceBetForm } from "@/components/PlaceBetForm";
 import { BetTimeline } from "@/components/BetTimeline";
 import { EvidenceDetail } from "@/components/EvidenceDetail";
+import { Web3Evidence } from "@/components/Web3Evidence";
 import { VerdictPanel } from "@/components/VerdictPanel";
 import { MapPin } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
@@ -78,6 +79,46 @@ export function Analysis() {
     API.marketStats(slug).then((r) => setMarketStats(r.data)).catch(() => {});
     API.myBets(slug).then((r) => setMyBets(r.data)).catch(() => {});
     API.listZones(slug).then((r) => setZones(r.data)).catch(() => {});
+    // Hydrate the evidence panel from the most recent analysis so bets that are
+    // already resolved show their Web3 trace without re-clicking "Resoudre".
+    API.listAnalyses(slug).then((r) => {
+      const list = (r.data as unknown as Array<Record<string, unknown>>) || [];
+      const a = list.find((x) => x.status === "SUCCESS") || list[0];
+      if (!a) return;
+      const params = (a.params as Record<string, unknown>) || {};
+      const evidence = {
+        pipeline_kind: (params.pipeline_kind as "weather" | "spectral") || "spectral",
+        schema_version: "v1",
+        fingerprint_sha256: (a.fingerprint_sha256 as string) || "",
+        ipfs_cid: (a.ipfs_cid as string) || "",
+        data_cid: (a.data_cid as string) || "",
+        script_cid: (a.script_cid as string) || "",
+        schema_cid: (a.schema_cid as string) || "",
+        tls_proof_cid: (a.tls_proof_cid as string) || "",
+        gateway_base: "https://gateway.pinata.cloud/ipfs/",
+        period: { start: "", end: "" },
+        analysis_id: String(a.id || ""),
+        chain_tx_hash: (a.chain_tx_hash as string) || "",
+        bond_amount_usdc: a.bond_amount_usdc != null ? Number(a.bond_amount_usdc) : undefined,
+        dispute_window_end: (a.dispute_window_end as string) || "",
+        dispute_status: (a.dispute_status as string) || "",
+        script_hash: (a.script_hash as string) || undefined,
+        ndvi_t0_hash: (a.ndvi_t0_hash as string) || undefined,
+        ndvi_t1_hash: (a.ndvi_t1_hash as string) || undefined,
+        delta_hash: (a.delta_hash as string) || undefined,
+        mask_hash: (a.mask_hash as string) || undefined,
+        sentinel_products_t0: (a.sentinel_products_t0 as string[]) || [],
+        sentinel_products_t1: (a.sentinel_products_t1 as string[]) || [],
+      };
+      setResult({
+        bet_id: slug,
+        resolved_outcome: "YES",
+        surface_deforestee_km2: Number(a.surface_deforestee_km2 || 0),
+        threshold_km2: 0,
+        resolution_timestamp: (a.executed_at as string) || new Date().toISOString(),
+        evidence: evidence as OracleResult["evidence"],
+      });
+    }).catch(() => {});
   }, [slug]);
 
   useEffect(() => {
@@ -536,7 +577,7 @@ export function Analysis() {
 function EvidencePanel({ r }: { r: OracleResult }) {
   const { t } = useI18n();
   function copy(v: string) { navigator.clipboard.writeText(v); }
-  const rows: [string, string][] = [
+  const rows: [string, string | undefined][] = [
     ["IPFS CID", r.evidence.ipfs_cid],
     ["Script", r.evidence.script_hash],
     ["NDVI T0", r.evidence.ndvi_t0_hash],
@@ -544,23 +585,29 @@ function EvidencePanel({ r }: { r: OracleResult }) {
     ["Delta", r.evidence.delta_hash],
     ["Mask", r.evidence.mask_hash],
   ];
+  const sentinelCount =
+    (r.evidence.sentinel_products_t0?.length || 0) +
+    (r.evidence.sentinel_products_t1?.length || 0);
   return (
     <div>
       <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", marginBottom: 6 }}>{t("analysis.evidence_title")}</div>
-      <div style={{ fontSize: 11, color: "#cbd5e1", marginBottom: 8 }}>
-        {t("analysis.sentinel_scenes", { n: r.evidence.sentinel_products_t0.length + r.evidence.sentinel_products_t1.length })}
-      </div>
+      {sentinelCount > 0 && (
+        <div style={{ fontSize: 11, color: "#cbd5e1", marginBottom: 8 }}>
+          {t("analysis.sentinel_scenes", { n: sentinelCount })}
+        </div>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        {rows.map(([k, v]) => (
+        {rows.filter(([, v]) => v).map(([k, v]) => (
           <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
             <span style={{ color: "#94a3b8", width: 60 }}>{k}</span>
             <code style={{ color: "#cbd5e1", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {v || "—"}
             </code>
-            {v && <button onClick={() => copy(v)} style={{ background: "none", border: "none", color: "#94a3b8" }}><Copy size={12} /></button>}
+            {v && <button onClick={() => copy(v!)} style={{ background: "none", border: "none", color: "#94a3b8" }}><Copy size={12} /></button>}
           </div>
         ))}
       </div>
+      <Web3Evidence evidence={r.evidence} />
     </div>
   );
 }

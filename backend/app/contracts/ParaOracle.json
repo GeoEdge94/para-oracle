@@ -1,0 +1,509 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "_bondToken",
+        "type": "address",
+        "internalType": "contract IERC20"
+      },
+      {
+        "name": "_bondAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "_disputeWindowSeconds",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "_owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "bondAmount",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "bondToken",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IERC20"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "computeResolutionId",
+    "inputs": [
+      {
+        "name": "betSlugHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "periodEnd",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "dispute",
+    "inputs": [
+      {
+        "name": "resolutionId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "disputeWindowSeconds",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "finalize",
+    "inputs": [
+      {
+        "name": "resolutionId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "getResolution",
+    "inputs": [
+      {
+        "name": "resolutionId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IParaOracle.Resolution",
+        "components": [
+          {
+            "name": "fingerprint",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "dataCID",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "scriptCID",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "betSlugHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "threshold",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "observed",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "outcome",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "periodEnd",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "submittedAt",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "disputeWindowEnd",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "oracle",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "bond",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "status",
+            "type": "uint8",
+            "internalType": "enum IParaOracle.Status"
+          },
+          {
+            "name": "challenger",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "challengerBond",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "resolveDispute",
+    "inputs": [
+      {
+        "name": "resolutionId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "oracleWins",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "submitResolution",
+    "inputs": [
+      {
+        "name": "fingerprint",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "dataCID",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "scriptCID",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "betSlugHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "threshold",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "observed",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "outcome",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "periodEnd",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "resolutionId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "DisputeResolved",
+    "inputs": [
+      {
+        "name": "resolutionId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "oracleWins",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ResolutionDisputed",
+    "inputs": [
+      {
+        "name": "resolutionId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "challenger",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "bond",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ResolutionFinalized",
+    "inputs": [
+      {
+        "name": "resolutionId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "outcome",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      },
+      {
+        "name": "finalStatus",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum IParaOracle.Status"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ResolutionSubmitted",
+    "inputs": [
+      {
+        "name": "resolutionId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "betSlugHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "fingerprint",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "dataCID",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "scriptCID",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "oracle",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "outcome",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      },
+      {
+        "name": "observed",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "threshold",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "periodEnd",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
+        "name": "disputeWindowEnd",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
+        "name": "bond",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "BondTransferFailed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "DisputeWindowActive",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "DisputeWindowOver",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "EmptyCID",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotOwner",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ResolutionExists",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ResolutionNotFound",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "WrongStatus",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroAddress",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroFingerprint",
+    "inputs": []
+  }
+]
