@@ -1,11 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Zap, TrendingUp, Satellite } from "lucide-react";
 import { api, type Bet } from "@/lib/api";
-import { GlobeView } from "@/components/GlobeView";
+import { GlobeView, type GlobeViewHandle } from "@/components/GlobeView";
+import { ConstellationArcs } from "@/components/ConstellationArcs";
 import { isBoosted, formatCountdown } from "@/lib/engage";
 
 type BetLite = Bet;
+
+function centroidOf(geom: GeoJSON.Polygon | GeoJSON.MultiPolygon | null): [number, number] | null {
+  if (!geom) return null;
+  try {
+    const ring = geom.type === "MultiPolygon" ? geom.coordinates[0][0] : geom.coordinates[0];
+    let sx = 0, sy = 0, n = 0;
+    for (const [x, y] of ring) { sx += x; sy += y; n++; }
+    return [sy / n, sx / n]; // [lat, lng]
+  } catch { return null; }
+}
 
 type MarketStats = { yes_pct: number; total_volume: number; total_bets: number };
 
@@ -19,16 +30,6 @@ const CAT_COLORS: Record<string, string> = {
   urbanization: "#fb923c",
   water_quality: "#38bdf8",
 };
-
-/** Six compass positions around the globe (angles in degrees from top, clockwise). */
-const POSITIONS = [
-  { angle: -45, label: "top-right" },
-  { angle: 35,  label: "right-down" },
-  { angle: 120, label: "bottom-right" },
-  { angle: 210, label: "bottom-left" },
-  { angle: 300, label: "left-up" },
-  { angle: -15, label: "top-near" },
-];
 
 type Props = {
   size: number;
@@ -51,6 +52,10 @@ export function GlobePopupCycle({ size, intervalMs = 9000 }: Props) {
   const [openBets, setOpenBets] = useState<BetLite[]>([]);
   const [index, setIndex] = useState(0);
   const [stats, setStats] = useState<MarketStats | null>(null);
+  const globeRef = useRef<GlobeViewHandle | null>(null);
+
+  // Live-tracked screen position of the current bet point on the globe (null = behind globe)
+  const [pointPos, setPointPos] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     api.get<BetLite[]>("/bets").then((r) => {
@@ -68,7 +73,7 @@ export function GlobePopupCycle({ size, intervalMs = 9000 }: Props) {
     return () => clearInterval(id);
   }, [openBets.length, intervalMs]);
 
-  // Fetch stats for current bet
+  // Fetch stats for current bet + rotate camera to face the bet so it's visible on the front
   useEffect(() => {
     const current = openBets[index];
     if (!current) return;
@@ -76,22 +81,57 @@ export function GlobePopupCycle({ size, intervalMs = 9000 }: Props) {
     api.get<MarketStats>(`/user-bets/by-bet/${current.slug}/stats`)
       .then((r) => setStats(r.data))
       .catch(() => {});
+    const c = centroidOf(current.region_geojson);
+    if (c) {
+      const [lat, lng] = c;
+      // Gentle camera move to place the bet near-center, kept slightly off so it doesn't hide behind the popup
+      globeRef.current?.pointOfView(lat + 5, lng - 20, 2.2, 1600);
+    }
   }, [openBets, index]);
 
   const current = openBets[index];
-  const pos = POSITIONS[index % POSITIONS.length];
-  const R = size / 2;
-  const popupDistance = R * 0.92; // a hair inside so the thread touches edge
-  const angleRad = ((pos.angle - 90) * Math.PI) / 180;
-  const cx = Math.cos(angleRad) * popupDistance;
-  const cy = Math.sin(angleRad) * popupDistance;
-
-  // Popup offset further from globe so it reads well
-  const popupOffset = 70;
-  const px = Math.cos(angleRad) * (popupDistance + popupOffset);
-  const py = Math.sin(angleRad) * (popupDistance + popupOffset);
-
   const catColor = current ? CAT_COLORS[current.category] ?? "#a855f7" : "#34d399";
+
+  // Track screen position of the current bet via polling so popup + thread follow rotation.
+  // Poll at ~6 Hz (not rAF) to keep React re-renders out of framer-motion's animation budget.
+  useEffect(() => {
+    if (!current) return;
+    const c = centroidOf(current.region_geojson);
+    if (!c) { setPointPos(null); return; }
+    const [lat, lng] = c;
+    const poll = () => {
+      const p = globeRef.current?.getScreenCoords(lat, lng, 0.01);
+      if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return;
+      setPointPos((prev) => {
+        if (prev && Math.abs(p.x - prev.x) < 0.5 && Math.abs(p.y - prev.y) < 0.5) return prev;
+        return { x: p.x, y: p.y };
+      });
+    };
+    poll();
+    const id = setInterval(poll, 160);
+    return () => clearInterval(id);
+  }, [current, size]);
+
+  // Popup anchored slightly outward from the bet point (toward sphere edge)
+  const R = size / 2;
+  const popupDelta = pointPos
+    ? (() => {
+        const dx = pointPos.x - R;
+        const dy = pointPos.y - R;
+        const d = Math.max(8, Math.sqrt(dx * dx + dy * dy));
+        const ux = dx / d;
+        const uy = dy / d;
+        const pushOut = Math.max(R * 0.35, 110); // how far the popup sits past the point
+        return {
+          // Thread origin (on globe surface point, relative to container center)
+          cx: pointPos.x - R,
+          cy: pointPos.y - R,
+          // Popup center, pushed outward along the same radial direction
+          px: pointPos.x - R + ux * pushOut,
+          py: pointPos.y - R + uy * pushOut,
+        };
+      })()
+    : null;
 
   return (
     <div
@@ -106,7 +146,12 @@ export function GlobePopupCycle({ size, intervalMs = 9000 }: Props) {
     >
       {/* The globe — photo-realistic Earth (react-globe.gl w/ blue-marble texture) */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "auto" }}>
-        <GlobeView bets={bets} width={size} height={size} />
+        <GlobeView ref={globeRef} bets={bets} width={size} height={size} transparent />
+      </div>
+
+      {/* Constellation arcs overlay — subtle network feel between points */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        <ConstellationArcs size={size} opacity={0.45} count={14} seed={11} />
       </div>
 
       {/* Live badge top-left of globe */}
@@ -134,15 +179,10 @@ export function GlobePopupCycle({ size, intervalMs = 9000 }: Props) {
         </span>
       </div>
 
-      {/* Thread line + popup card (cycles with AnimatePresence) */}
-      <AnimatePresence mode="wait">
-        {current && (
-          <motion.div
+      {/* Thread line + popup card — anchored to the current bet's live screen position */}
+      {current && popupDelta && (
+          <div
             key={current.slug}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             style={{
               position: "absolute",
               pointerEvents: "none",
@@ -153,46 +193,46 @@ export function GlobePopupCycle({ size, intervalMs = 9000 }: Props) {
               height: 0,
             }}
           >
-            {/* Thread: thin dashed line from globe edge to popup */}
+            {popupDelta && (<>
+            {/* Thread: thin dashed line from the bet's globe point out to the popup */}
             <svg
               style={{
                 position: "absolute",
-                left: Math.min(cx, px) - 4,
-                top: Math.min(cy, py) - 4,
-                width: Math.abs(px - cx) + 8,
-                height: Math.abs(py - cy) + 8,
+                left: Math.min(popupDelta.cx, popupDelta.px) - 6,
+                top: Math.min(popupDelta.cy, popupDelta.py) - 6,
+                width: Math.abs(popupDelta.px - popupDelta.cx) + 12,
+                height: Math.abs(popupDelta.py - popupDelta.cy) + 12,
                 pointerEvents: "none",
                 overflow: "visible",
               }}
             >
-              <motion.line
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ delay: 0.1, duration: 0.35 }}
-                x1={cx - Math.min(cx, px) + 4}
-                y1={cy - Math.min(cy, py) + 4}
-                x2={px - Math.min(cx, px) + 4}
-                y2={py - Math.min(cy, py) + 4}
+              <line
+                x1={popupDelta.cx - Math.min(popupDelta.cx, popupDelta.px) + 6}
+                y1={popupDelta.cy - Math.min(popupDelta.cy, popupDelta.py) + 6}
+                x2={popupDelta.px - Math.min(popupDelta.cx, popupDelta.px) + 6}
+                y2={popupDelta.py - Math.min(popupDelta.cy, popupDelta.py) + 6}
                 stroke={catColor}
                 strokeWidth={1}
                 strokeDasharray="3 3"
-                opacity={0.7}
+                opacity={0.8}
               />
               <circle
-                cx={cx - Math.min(cx, px) + 4}
-                cy={cy - Math.min(cy, py) + 4}
+                cx={popupDelta.cx - Math.min(popupDelta.cx, popupDelta.px) + 6}
+                cy={popupDelta.cy - Math.min(popupDelta.cy, popupDelta.py) + 6}
                 r={4}
                 fill={catColor}
                 opacity={0.9}
               >
-                <animate attributeName="r" from="2" to="7" dur="1.4s" repeatCount="indefinite" />
+                <animate attributeName="r" from="2" to="9" dur="1.4s" repeatCount="indefinite" />
                 <animate attributeName="opacity" from="0.9" to="0" dur="1.4s" repeatCount="indefinite" />
               </circle>
               <circle
-                cx={cx - Math.min(cx, px) + 4}
-                cy={cy - Math.min(cy, py) + 4}
-                r={2}
-                fill={catColor}
+                cx={popupDelta.cx - Math.min(popupDelta.cx, popupDelta.px) + 6}
+                cy={popupDelta.cy - Math.min(popupDelta.cy, popupDelta.py) + 6}
+                r={2.4}
+                fill="#fff"
+                stroke={catColor}
+                strokeWidth={1}
               />
             </svg>
 
@@ -200,25 +240,20 @@ export function GlobePopupCycle({ size, intervalMs = 9000 }: Props) {
             <div
               style={{
                 position: "absolute",
-                left: px,
-                top: py,
+                left: popupDelta.px,
+                top: popupDelta.py,
                 transform: "translate(-50%, -50%)",
                 pointerEvents: "auto",
               }}
             >
-              <motion.div
-                initial={{ y: 6, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: -4, opacity: 0 }}
-                transition={{ delay: 0.25, duration: 0.35 }}
+              <div
                 style={{
                   width: 260,
                   padding: "14px 16px",
                   borderRadius: "var(--radius-md)",
-                  background: "rgba(10, 15, 26, 0.96)",
-                  backdropFilter: "blur(12px) saturate(140%)",
-                  border: `1px solid ${catColor}55`,
-                  boxShadow: `0 14px 50px rgba(0,0,0,0.6), 0 0 28px ${catColor}33, inset 0 1px 0 rgba(255,255,255,0.04)`,
+                  background: "rgb(6, 10, 20)",
+                  border: `1px solid ${catColor}66`,
+                  boxShadow: `0 16px 56px rgba(0,0,0,0.75), 0 0 34px ${catColor}40, inset 0 1px 0 rgba(255,255,255,0.05)`,
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
@@ -309,11 +344,11 @@ export function GlobePopupCycle({ size, intervalMs = 9000 }: Props) {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             </div>
-          </motion.div>
+            </>)}
+          </div>
         )}
-      </AnimatePresence>
 
       {/* Counter bottom */}
       <div style={{

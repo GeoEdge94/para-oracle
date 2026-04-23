@@ -1,7 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import Globe, { type GlobeMethods } from "react-globe.gl";
 import * as THREE from "three";
 import type { Bet } from "@/lib/api";
+
+export type GlobeViewHandle = {
+  getScreenCoords: (lat: number, lng: number, altitude?: number) => { x: number; y: number } | null;
+  pointOfView: (lat: number, lng: number, altitude?: number, durationMs?: number) => void;
+};
 
 const CAT_COLORS: Record<string, string> = {
   deforestation: "#10b981",
@@ -19,9 +24,14 @@ type Props = {
   onSelect?: (bet: Bet) => void;
   width: number;
   height: number;
+  /** If true, no starfield background is drawn — the parent's bg shows through. */
+  transparent?: boolean;
 };
 
-export function GlobeView({ bets, onSelect, width, height }: Props) {
+export const GlobeView = forwardRef<GlobeViewHandle, Props>(function GlobeView(
+  { bets, onSelect, width, height, transparent = false },
+  ref,
+) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const [material] = useState(() => {
     const m = new THREE.MeshPhongMaterial({ color: 0xffffff });
@@ -92,13 +102,33 @@ export function GlobeView({ bets, onSelect, width, height }: Props) {
     scene.add(dir);
   }, [material]);
 
+  useImperativeHandle(ref, () => ({
+    getScreenCoords: (lat: number, lng: number, altitude = 0.01) => {
+      const g = globeRef.current as unknown as
+        | { getScreenCoords?: (lat: number, lng: number, alt?: number) => { x: number; y: number } }
+        | undefined;
+      if (!g || typeof g.getScreenCoords !== "function") return null;
+      try {
+        return g.getScreenCoords(lat, lng, altitude);
+      } catch {
+        return null;
+      }
+    },
+    pointOfView: (lat: number, lng: number, altitude = 2.2, durationMs = 1400) => {
+      const g = globeRef.current;
+      if (!g) return;
+      try { g.pointOfView({ lat, lng, altitude }, durationMs); } catch {}
+    },
+  }), []);
+
   return (
     <Globe
       ref={globeRef}
       width={width}
       height={height}
       globeMaterial={material}
-      backgroundImageUrl="/globe/night-sky.png"
+      backgroundColor={transparent ? "rgba(0,0,0,0)" : "#000000"}
+      backgroundImageUrl={transparent ? undefined : "/globe/night-sky.png"}
       showAtmosphere={true}
       atmosphereColor="#3b82f6"
       atmosphereAltitude={0.15}
@@ -136,7 +166,7 @@ export function GlobeView({ bets, onSelect, width, height }: Props) {
       }}
     />
   );
-}
+});
 
 function centroid(geom: GeoJSON.Polygon | GeoJSON.MultiPolygon): [number, number] {
   const ring = geom.type === "MultiPolygon" ? geom.coordinates[0][0] : geom.coordinates[0];
