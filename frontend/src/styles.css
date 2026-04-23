@@ -3850,3 +3850,143 @@ button { cursor: pointer; font-family: inherit; }
   animation: wl-spin 0.7s linear infinite;
 }
 @keyframes wl-spin { to { transform: rotate(360deg); } }
+
+/* ══════════════ Connect Wallet Button ══════════════ */
+.cwb-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-full);
+  color: var(--fg-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+.cwb-pill:active { background: var(--surface-1); }
+.cwb-pill-connected {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: var(--accent);
+}
+.cwb-pill-balance { font-family: var(--font-mono); font-weight: 700; }
+.cwb-pill-currency { font-size: 9px; opacity: 0.75; }
+.cwb-pill-label { letter-spacing: 0.3px; }
+
+.cwb-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 200;
+  animation: cwb-fade 0.15s ease;
+}
+.cwb-dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 210;
+  width: calc(100vw - 32px);
+  max-width: 380px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  animation: cwb-pop 0.18s ease;
+}
+@keyframes cwb-fade { from { opacity: 0; } }
+@keyframes cwb-pop {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); }
+}
+.cwb-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.cwb-dialog-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cwb-dialog-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg-strong);
+  margin: 0;
+}
+.cwb-dialog-close {
+  background: transparent;
+  border: 0;
+  color: var(--fg-faint);
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.cwb-dialog-close:hover { color: var(--fg-muted); background: var(--surface-1); }
+
+.cwb-dialog-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 20px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.cwb-info-grid { display: flex; flex-direction: column; gap: 1px; background: var(--border-muted); border-radius: 8px; overflow: hidden; }
+.cwb-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--surface-1);
+  font-size: 12px;
+}
+.cwb-info-label { color: var(--fg-subtle); }
+.cwb-info-val {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-strong);
+}
+.cwb-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: 0;
+  color: var(--fg-faint);
+  cursor: pointer;
+  border-radius: 4px;
+  text-decoration: none;
+}
+.cwb-info-btn:hover { color: var(--accent); background: var(--surface-2); }
+
+.cwb-dialog-hint {
+  font-size: 11px;
+  color: var(--fg-subtle);
+  line-height: 1.5;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--surface-1);
+  border: 1px solid var(--border-muted);
+  border-radius: 8px;
+}

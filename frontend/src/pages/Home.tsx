@@ -12,6 +12,7 @@ import { LocaleToggle } from "@/components/LocaleToggle";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { Avatar } from "@/components/Avatar";
 import { BottomNav } from "@/components/BottomNav";
+import { ConnectWalletButton } from "@/components/ConnectWalletButton";
 import { BoostedBadge } from "@/components/BoostedBadge";
 import { isBoosted } from "@/lib/engage";
 import type { UserBet } from "@/lib/api";
@@ -164,6 +165,7 @@ export function Home() {
         <div className="feed-topbar-actions">
           <LocaleToggle />
           <NotificationsBell bets={bets} myBets={[]} />
+          <ConnectWalletButton />
           <button
             onClick={() => navigate("/wallet")}
             aria-label={t("wallet.title")}
