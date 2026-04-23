@@ -296,7 +296,7 @@ export function MapPage() {
       <div className="topbar">
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <div style={{ fontWeight: 800, fontSize: 14, letterSpacing: "-0.5px" }}>
-            Para<span style={{ color: "#10b981" }}>Oracle</span>
+            Geo<span style={{ color: "#10b981" }}>Edge</span>
           </div>
           <span style={{ fontSize: 8, color: "#64748b", letterSpacing: "1px", fontFamily: "monospace" }}>{t("map.nav_global")}</span>
         </div>

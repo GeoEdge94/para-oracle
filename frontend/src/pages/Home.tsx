@@ -165,7 +165,7 @@ export function Home() {
           }}>
             <Leaf size={13} color="var(--accent)" />
           </span>
-          Para<span className="accent">Oracle</span>
+          Geo<span className="accent">Edge</span>
         </button>
 
         <div className="feed-topbar-actions">

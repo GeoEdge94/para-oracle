@@ -86,7 +86,7 @@ export function Login() {
                 <Satellite size={18} strokeWidth={1.6} color="var(--accent)" />
               </div>
               <div className="display" style={{ fontSize: 30, letterSpacing: -0.7, lineHeight: 1 }}>
-                Para<span style={{ color: "var(--accent)" }}>Oracle</span>
+                Geo<span style={{ color: "var(--accent)" }}>Edge</span>
               </div>
             </div>
 
