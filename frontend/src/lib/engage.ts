@@ -5,6 +5,8 @@
 // ─────────────────────────────────────────────────────────────────
 import { useEffect, useState, useCallback } from "react";
 import type { UserBet } from "@/lib/api";
+import { Eye, Microscope, Radio, Wand2, Globe, Target, Flame, Star, Medal, Compass } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 export type { UserBet } from "@/lib/api";
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
@@ -101,14 +103,14 @@ export type Rank = {
   min: number;
   max: number;
   color: string;
-  icon: string;
+  icon: LucideIcon;
 };
 export const RANKS: Rank[] = [
-  { key: "obs",   min: 0,     max: 200,    color: "#94a3b8", icon: "👁" },
-  { key: "ana",   min: 200,   max: 800,    color: "#60a5fa", icon: "🔬" },
-  { key: "for",   min: 800,   max: 2400,   color: "#10b981", icon: "📡" },
-  { key: "ora",   min: 2400,  max: 6000,   color: "#fbbf24", icon: "🔮" },
-  { key: "grand", min: 6000,  max: Infinity, color: "#a855f7", icon: "🌍" },
+  { key: "obs",   min: 0,     max: 200,    color: "#94a3b8", icon: Eye },
+  { key: "ana",   min: 200,   max: 800,    color: "#60a5fa", icon: Microscope },
+  { key: "for",   min: 800,   max: 2400,   color: "#10b981", icon: Radio },
+  { key: "ora",   min: 2400,  max: 6000,   color: "#fbbf24", icon: Wand2 },
+  { key: "grand", min: 6000,  max: Infinity, color: "#a855f7", icon: Globe },
 ];
 
 export function rankFor(xp: number): { current: Rank; next: Rank | null; pct: number } {
@@ -181,7 +183,7 @@ export type Badge = {
   key: string;
   earned: boolean;
   i18nKey: string;
-  icon: string;
+  icon: LucideIcon;
   tint: string;
 };
 export function computeBadges(bets: UserBet[], streak: number, longest: number): Badge[] {
@@ -190,12 +192,12 @@ export function computeBadges(bets: UserBet[], streak: number, longest: number):
   const accuracy = decided ? won / decided : 0;
   const uniqueMarkets = new Set(bets.map((b) => b.bet_id)).size;
   return [
-    { key: "first_bet",   earned: bets.length >= 1,       i18nKey: "engage.badge_first_bet",    icon: "🎯", tint: "#60a5fa" },
-    { key: "week_streak", earned: Math.max(streak, longest) >= 7,  i18nKey: "engage.badge_week_streak",  icon: "🔥", tint: "#f59e0b" },
-    { key: "month_streak",earned: Math.max(streak, longest) >= 30, i18nKey: "engage.badge_month_streak", icon: "🌟", tint: "#fbbf24" },
-    { key: "accurate",    earned: decided >= 5 && accuracy >= 0.7,  i18nKey: "engage.badge_accurate",  icon: "🎖", tint: "#a855f7" },
-    { key: "diversified", earned: uniqueMarkets >= 5,     i18nKey: "engage.badge_diversified",  icon: "🧭", tint: "#10b981" },
-    { key: "earth",       earned: decided >= 20,          i18nKey: "engage.badge_earth",        icon: "🌍", tint: "#34d399" },
+    { key: "first_bet",   earned: bets.length >= 1,       i18nKey: "engage.badge_first_bet",    icon: Target,  tint: "#60a5fa" },
+    { key: "week_streak", earned: Math.max(streak, longest) >= 7,  i18nKey: "engage.badge_week_streak",  icon: Flame, tint: "#f59e0b" },
+    { key: "month_streak",earned: Math.max(streak, longest) >= 30, i18nKey: "engage.badge_month_streak", icon: Star,  tint: "#fbbf24" },
+    { key: "accurate",    earned: decided >= 5 && accuracy >= 0.7,  i18nKey: "engage.badge_accurate",  icon: Medal, tint: "#a855f7" },
+    { key: "diversified", earned: uniqueMarkets >= 5,     i18nKey: "engage.badge_diversified",  icon: Compass, tint: "#10b981" },
+    { key: "earth",       earned: decided >= 20,          i18nKey: "engage.badge_earth",        icon: Globe,   tint: "#34d399" },
   ];
 }
 

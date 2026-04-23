@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Search, SlidersHorizontal, Bookmark, Share2, Flame, Droplets, Mountain, Thermometer,
-  Snowflake, Building, Fish, TrendingUp, Leaf,
+  Search, SlidersHorizontal, Bookmark, Share2, Flame, Droplets, Pickaxe, Thermometer,
+  Snowflake, Building2, Fish, TrendingUp, Trees,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { API, api, type Bet, type BetMarketStats } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { LocaleToggle } from "@/components/LocaleToggle";
@@ -15,15 +16,15 @@ import { BoostedBadge } from "@/components/BoostedBadge";
 import { isBoosted } from "@/lib/engage";
 import type { UserBet } from "@/lib/api";
 
-const CAT_META: Record<string, { color: string; icon: typeof TrendingUp; i18nKey: string; emoji: string }> = {
-  deforestation: { color: "#10b981", icon: Leaf, i18nKey: "categories.deforestation", emoji: "🌳" },
-  wildfire: { color: "#f59e0b", icon: Flame, i18nKey: "categories.wildfire", emoji: "🔥" },
-  flood: { color: "#3b82f6", icon: Droplets, i18nKey: "categories.flood", emoji: "🌊" },
-  mining: { color: "#a855f7", icon: Mountain, i18nKey: "categories.mining", emoji: "⛏️" },
-  drought: { color: "#ef4444", icon: Thermometer, i18nKey: "categories.drought", emoji: "🌡️" },
-  glacier: { color: "#06b6d4", icon: Snowflake, i18nKey: "categories.deforestation", emoji: "🧊" },
-  urbanization: { color: "#f97316", icon: Building, i18nKey: "categories.urban", emoji: "🏗️" },
-  water_quality: { color: "#0ea5e9", icon: Fish, i18nKey: "categories.water_quality", emoji: "💧" },
+const CAT_META: Record<string, { color: string; icon: LucideIcon; i18nKey: string }> = {
+  deforestation: { color: "#10b981", icon: Trees, i18nKey: "categories.deforestation" },
+  wildfire: { color: "#f59e0b", icon: Flame, i18nKey: "categories.wildfire" },
+  flood: { color: "#3b82f6", icon: Droplets, i18nKey: "categories.flood" },
+  mining: { color: "#a855f7", icon: Pickaxe, i18nKey: "categories.mining" },
+  drought: { color: "#ef4444", icon: Thermometer, i18nKey: "categories.drought" },
+  glacier: { color: "#06b6d4", icon: Snowflake, i18nKey: "categories.deforestation" },
+  urbanization: { color: "#f97316", icon: Building2, i18nKey: "categories.urban" },
+  water_quality: { color: "#0ea5e9", icon: Fish, i18nKey: "categories.water_quality" },
 };
 
 type BetStatsMap = Record<string, BetMarketStats | null>;
@@ -154,18 +155,10 @@ export function Home() {
         <button
           onClick={() => navigate("/map")}
           className="feed-logo"
-          style={{ background: "none", border: 0, cursor: "pointer" }}
+          style={{ background: "none", border: 0, cursor: "pointer", padding: 0 }}
           aria-label={t("home.dashboard")}
         >
-          <span style={{
-            width: 22, height: 22, borderRadius: 5,
-            background: "rgba(16,185,129,0.12)",
-            border: "1px solid rgba(16,185,129,0.28)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <Leaf size={13} color="var(--accent)" />
-          </span>
-          Geo<span className="accent">Edge</span>
+          <span>Geo<span className="accent">Edge</span></span>
         </button>
 
         <div className="feed-topbar-actions">
@@ -262,7 +255,7 @@ export function Home() {
                   className="feed-card-icon"
                   style={{ background: `${meta.color}1f`, color: meta.color }}
                 >
-                  <span aria-hidden>{meta.emoji}</span>
+                  <meta.icon size={18} />
                 </div>
                 <div className="feed-card-title">{b.question}</div>
                 {boosted && <BoostedBadge periodEnd={b.period_end} status={b.status} variant="pill" />}

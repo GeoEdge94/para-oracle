@@ -23,13 +23,16 @@ function inferCategory(slug: string): LayerCategory {
   return "vector";
 }
 
-export const CATEGORY_ICONS: Record<LayerCategory, { icon: string; order: number }> = {
-  basemap:   { icon: "🗺️", order: 0 },
-  satellite: { icon: "🛰️", order: 1 },
-  verified:  { icon: "📜", order: 2 },
-  ndvi:      { icon: "🌿", order: 3 },
-  fire:      { icon: "🔥", order: 4 },
-  vector:    { icon: "📐", order: 5 },
+import { Map as MapIcon, Satellite, Scroll, Leaf, Flame, Square } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+export const CATEGORY_ICONS: Record<LayerCategory, { icon: LucideIcon; order: number }> = {
+  basemap:   { icon: MapIcon,   order: 0 },
+  satellite: { icon: Satellite, order: 1 },
+  verified:  { icon: Scroll,    order: 2 },
+  ndvi:      { icon: Leaf,      order: 3 },
+  fire:      { icon: Flame,     order: 4 },
+  vector:    { icon: Square,    order: 5 },
 };
 
 export const CATEGORY_I18N_KEYS: Record<LayerCategory, string> = {

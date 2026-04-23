@@ -82,7 +82,7 @@ export function LayerPanel({ layers, onToggle, onOpacity, onReorder, onClose, de
           <div key={cat} className="layer-group">
             <button onClick={() => toggleCat(cat)} className="layer-group-header">
               {openCats.has(cat) ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-              <span style={{ marginLeft: 2 }}>{CATEGORY_ICONS[cat].icon}</span>
+              {(() => { const Icon = CATEGORY_ICONS[cat].icon; return <Icon size={13} style={{ marginLeft: 2 }} />; })()}
               <span style={{ flex: 1, textAlign: "left" }}>{t(CATEGORY_I18N_KEYS[cat])}</span>
               <span style={{ fontSize: 10, color: "var(--fg-faint)" }}>
                 {group.filter((l) => l.visible).length}/{group.length}

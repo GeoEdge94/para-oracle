@@ -24,7 +24,7 @@ export function RankCard({ xp, compact = false }: Props) {
   if (compact) {
     return (
       <div className="rank-chip" style={{ borderColor: `${tint}44`, background: `${tint}12`, color: tint }} title={t(rankLabelKey[current.key])}>
-        <span style={{ fontSize: 11 }}>{current.icon}</span>
+        <current.icon size={12} />
         <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }}>{t(rankLabelKey[current.key])}</span>
       </div>
     );
@@ -43,7 +43,7 @@ export function RankCard({ xp, compact = false }: Props) {
     >
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <div className="rank-icon" style={{ background: `${tint}22`, color: tint }}>
-          <span style={{ fontSize: 22 }}>{current.icon}</span>
+          <current.icon size={22} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 10, color: "var(--fg-faint)", letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>
@@ -74,8 +74,8 @@ export function RankCard({ xp, compact = false }: Props) {
               <span>
                 {t("engage.rank_progress", { current: xp - current.min, next: current.max - current.min })}
               </span>
-              <span style={{ color: tint }}>
-                → {next.icon} {t(rankLabelKey[next.key])}
+              <span style={{ color: tint, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                → <next.icon size={11} /> {t(rankLabelKey[next.key])}
               </span>
             </>
           ) : (
