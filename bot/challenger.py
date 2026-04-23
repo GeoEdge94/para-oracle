@@ -170,6 +170,7 @@ def main() -> int:
 
     dispute_count = 0
     match_count = 0
+    error_count = 0
 
     while True:
         try:
@@ -177,6 +178,7 @@ def main() -> int:
         except Exception as e:
             print(f"[challenger] poll error: {e}", file=sys.stderr)
             verdicts = []
+            error_count += 1
 
         for v in verdicts:
             if v.matches:
@@ -189,6 +191,13 @@ def main() -> int:
             print(f"[challenger] summary: {match_count} match / {dispute_count} dispute", flush=True)
 
         if args.once:
+            # Exit 2 = error (poll failed OR no items to verify -- suspicious in --once mode)
+            # Exit 1 = at least one dispute detected
+            # Exit 0 = all items matched
+            if error_count > 0 or not verdicts:
+                print(f"[challenger] --once: error_count={error_count} verdicts={len(verdicts)}",
+                      file=sys.stderr, flush=True)
+                return 2
             return 1 if dispute_count > 0 else 0
 
         time.sleep(POLL_SECONDS)
