@@ -3,13 +3,15 @@ import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft, ArrowDownToLine, ArrowUpFromLine, Eye, EyeOff, ScanLine,
   Search as SearchIcon, ArrowUpRight, Filter as FilterIcon, Calendar, Link as LinkIcon,
-  SlidersHorizontal, Bookmark,
+  SlidersHorizontal, Bookmark, LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { API, type WalletBalance, type UserBet, type Bet } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { LocaleToggle } from "@/components/LocaleToggle";
+import { NotificationsBell } from "@/components/NotificationsBell";
+import { ConnectWalletButton } from "@/components/ConnectWalletButton";
 import { NumberTicker } from "@/components/NumberTicker";
 import { Avatar } from "@/components/Avatar";
 import { Sparkline } from "@/components/Sparkline";
@@ -20,7 +22,7 @@ type Range = "1D" | "1W" | "1M" | "1Y" | "YTD" | "ALL";
 type Tab = "positions" | "open" | "history";
 
 function formatUsd(amount: number, currency: string | undefined): string {
-  if (currency === "tUSDC") return `${amount.toFixed(2)} tUSDC`;
+  if (currency === "tUSDC") return `$${amount.toFixed(2)}`;
   return `$${amount.toFixed(2)}`;
 }
 
@@ -42,6 +44,31 @@ export function WalletPage() {
   const [tab, setTab] = useState<Tab>("history");
   const [search, setSearch] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>("__trending__");
+  const [activeRegionChip, setActiveRegionChip] = useState<string | null>(null);
+
+  const categoriesList = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const b of allMarkets) counts[b.category] = (counts[b.category] || 0) + 1;
+    const order = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+    return [
+      { key: "__trending__", label: t("engage.trending") },
+      { key: "__boosted__", label: t("cmd.closes_today") },
+      ...order.map((k) => ({ key: k, label: t(`categories.${k}`) })),
+    ];
+  }, [allMarkets, t]);
+
+  const regionChipsList = useMemo(() => {
+    const regions = new Set<string>();
+    for (const b of allMarkets) regions.add(b.region_name);
+    return Array.from(regions).slice(0, 6);
+  }, [allMarkets]);
+
+  function goHomeWithFilter(cat: string) {
+    setActiveCategory(cat);
+    setActiveRegionChip(null);
+    navigate("/");
+  }
 
   function load() {
     setLoadError(null);
@@ -167,15 +194,76 @@ export function WalletPage() {
 
   return (
     <div className="has-bottom-nav wallet-pm">
-      {/* Compact header: just back + locale */}
-      <div className="wallet-pm-header">
-        <button onClick={() => navigate(-1)} className="wallet-pm-back" aria-label={t("common.back")}>
-          <ChevronLeft size={20} />
+      {/* Home-style topbar */}
+      <div className="feed-topbar">
+        <button
+          onClick={() => navigate("/map")}
+          className="feed-logo"
+          style={{ background: "none", border: 0, cursor: "pointer", padding: 0 }}
+          aria-label={t("home.dashboard")}
+        >
+          <span>Geo<span className="accent">Edge</span></span>
         </button>
-        <div style={{ flex: 1 }} />
-        <LocaleToggle />
-        <button onClick={() => navigate("/")} aria-label={t("wallet.title")}>
-          <Avatar seed={wallet.pseudo || "demo"} size={28} radius={14} />
+
+        <div className="feed-topbar-actions">
+          <LocaleToggle />
+          <NotificationsBell bets={allMarkets} myBets={[]} />
+          <ConnectWalletButton />
+          <button
+            onClick={() => navigate("/wallet")}
+            aria-label={t("wallet.title")}
+            style={{ background: "none", border: 0, padding: 0, cursor: "pointer" }}
+          >
+            <Avatar seed={wallet.pseudo || "demo"} size={28} radius={14} />
+          </button>
+          <button
+            onClick={() => {
+              localStorage.removeItem("para_token");
+              toast.success(locale === "fr" ? "Déconnecté" : "Signed out", { position: "top-right", duration: 2000 });
+              navigate("/login");
+            }}
+            aria-label={locale === "fr" ? "Se déconnecter" : "Sign out"}
+            title={locale === "fr" ? "Se déconnecter" : "Sign out"}
+            className="topbar-icon-btn"
+            style={{ width: 32, height: 32, color: "var(--danger)" }}
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* Category tabs */}
+      <div className="feed-cat-tabs">
+        {categoriesList.map((c) => (
+          <button
+            key={c.key}
+            className={`feed-cat-tab${c.key === activeCategory ? " feed-cat-tab-active" : ""}`}
+            onClick={() => goHomeWithFilter(c.key)}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Search row — filters wallet positions/history */}
+      <div className="feed-search-row">
+        <input
+          className="feed-search-input"
+          type="text"
+          placeholder={t("wallet.search_placeholder") || t("cmd.search_placeholder")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              document.querySelector(".wallet-pm-tabs")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }}
+        />
+        <button className="feed-search-icon-btn" aria-label={t("home.search")} onClick={() => setTab("history")}>
+          <SlidersHorizontal size={16} />
+        </button>
+        <button className="feed-search-icon-btn" aria-label="Positions ouvertes" onClick={() => setTab("open")}>
+          <Bookmark size={16} />
         </button>
       </div>
 

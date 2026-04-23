@@ -9,8 +9,9 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { DateSelector, type DatePreset } from "@/components/DateSelector";
 import { categorise, isDateAware, type CategorisedLayer } from "@/lib/layerCategories";
 import { syncLayers, ensureBasemapRadio, geojsonBounds, installRegionMask } from "@/lib/mapLayers";
-import { ChevronLeft, ChevronDown, ChevronUp, Play, Copy } from "lucide-react";
+import { ChevronLeft, ChevronDown, ChevronUp, Play, Copy, Database, X as XIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { StreakBadge } from "@/components/StreakBadge";
 import { ResolutionScene } from "@/components/ResolutionScene";
@@ -52,6 +53,7 @@ export function Analysis() {
   const [zones, setZones] = useState<DeforestationZone[]>([]);
   const [showDetail, setShowDetail] = useState(false);
   const [showResolution, setShowResolution] = useState(false);
+  const [showSources, setShowSources] = useState(false);
   const [userPosition, setUserPosition] = useState<"YES" | "NO" | null>(null);
 
   useEffect(() => {
@@ -429,6 +431,119 @@ export function Analysis() {
           onReorder={onReorder}
         />
       )}
+
+      {layers.length > 0 && (
+        <button
+          onClick={() => setShowSources(true)}
+          className="layer-panel-handle layer-sources-handle"
+          title="Sources & URLs (QGIS compatible)"
+          aria-label="Sources & URLs (QGIS compatible)"
+        >
+          <Database size={18} />
+        </button>
+      )}
+
+      <AnimatePresence>
+        {showSources && (
+          <motion.div
+            key="sources-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="sources-modal-backdrop"
+            onClick={() => setShowSources(false)}
+          >
+            <motion.div
+              key="sources-modal"
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className="sources-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sources-modal-head">
+                <div>
+                  <div className="mono bloomberg-label" style={{ marginBottom: 4 }}>
+                    <span className="bloomberg-label-tick" aria-hidden />
+                    <span className="bloomberg-label-text">DATA SOURCES</span>
+                  </div>
+                  <div className="mono" style={{ fontSize: 10, color: "var(--fg-faint)", letterSpacing: 0.4 }}>
+                    {layers.length} couches — compatibles QGIS / ArcGIS / MapLibre
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSources(false)}
+                  aria-label="Close"
+                  className="topbar-icon-btn"
+                  style={{ width: 30, height: 30 }}
+                >
+                  <XIcon size={16} />
+                </button>
+              </div>
+
+              <div className="sources-modal-body">
+                {layers.map((l) => {
+                  const base = (import.meta.env.VITE_API_BASE_URL as string | undefined) || window.location.origin;
+                  const proxied = `${base}/tiles/${l.slug}/{z}/{x}/{y}.png`;
+                  const upstream = l.url || "—";
+                  const doCopy = (v: string, label: string) => {
+                    navigator.clipboard?.writeText(v).then(() => {
+                      toast.success(`${label} copié`, { position: "top-right", duration: 1800, description: v });
+                    });
+                  };
+                  return (
+                    <div key={l.slug} className="sources-row">
+                      <div className="sources-row-head">
+                        <span className="sources-dot" style={{ background: l.category === "verified" ? "#fbbf24" : l.category === "ndvi" ? "#10b981" : l.category === "satellite" ? "#38bdf8" : l.category === "fire" ? "#f97316" : "#a855f7" }} />
+                        <span className="sources-name">{l.name || l.slug}</span>
+                        <span className="mono sources-tag">{l.category}</span>
+                        <span className="mono sources-tag sources-tag-type">{l.type}</span>
+                      </div>
+                      <div className="sources-row-lines">
+                        <div className="sources-kv">
+                          <span className="sources-kv-k">XYZ (backend proxy)</span>
+                          <code className="sources-kv-v">{proxied}</code>
+                          <button className="sources-copy-btn" onClick={() => doCopy(proxied, "XYZ")} aria-label="Copy XYZ"><Copy size={12} /></button>
+                        </div>
+                        {l.url && (
+                          <div className="sources-kv">
+                            <span className="sources-kv-k">Upstream</span>
+                            <code className="sources-kv-v">{upstream}</code>
+                            <button className="sources-copy-btn" onClick={() => doCopy(upstream, "URL")} aria-label="Copy URL"><Copy size={12} /></button>
+                          </div>
+                        )}
+                        <div className="sources-kv">
+                          <span className="sources-kv-k">Slug</span>
+                          <code className="sources-kv-v">{l.slug}</code>
+                          <button className="sources-copy-btn" onClick={() => doCopy(l.slug, "Slug")} aria-label="Copy slug"><Copy size={12} /></button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="sources-modal-foot">
+                <button
+                  className="btn"
+                  onClick={() => {
+                    const base = (import.meta.env.VITE_API_BASE_URL as string | undefined) || window.location.origin;
+                    const payload = layers.map((l) => ({ slug: l.slug, name: l.name, type: l.type, category: l.category, xyz: `${base}/tiles/${l.slug}/{z}/{x}/{y}.png`, upstream: l.url || null }));
+                    navigator.clipboard?.writeText(JSON.stringify(payload, null, 2)).then(() => {
+                      toast.success("JSON copié", { position: "top-right", duration: 2000, description: `${layers.length} sources` });
+                    });
+                  }}
+                  style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+                >
+                  <Copy size={14} /> Copier tout (JSON)
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="bottom-dock">
         <div className={`bottom-sheet ${sheetCollapsed ? "bottom-sheet--collapsed" : ""}`}>

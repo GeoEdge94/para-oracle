@@ -77,7 +77,7 @@ export function usePulseOnNewBet(
         toast(`${e.pseudo} · ${verb} · ${e.amount.toFixed(0)} €`, {
           description: e.regionName,
           duration: 3200,
-          position: "bottom-right",
+          position: "top-right",
           style: {
             fontFamily: "var(--font-mono)",
             fontSize: "12px",

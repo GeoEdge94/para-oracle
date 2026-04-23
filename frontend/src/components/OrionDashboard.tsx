@@ -96,21 +96,12 @@ function Donut({ pct, color, label }: { pct: number; color: string; label: strin
 }
 
 function IconStatRow({
-  icon, label, value, color,
-}: { icon: React.ReactNode; label: string; value: string; color: string }) {
+  label, value, color,
+}: { icon?: React.ReactNode; label: string; value: string; color: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
-      <div style={{
-        width: 38, height: 38,
-        borderRadius: 10,
-        background: `${color}14`,
-        border: `1px solid ${color}33`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        flexShrink: 0,
-      }}>
-        {icon}
-      </div>
-      <div>
+    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid var(--hairline)" }}>
+      <span style={{ width: 3, height: 22, borderRadius: 2, background: color, flexShrink: 0 }} />
+      <div style={{ flex: 1 }}>
         <div className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", letterSpacing: 1.2, textTransform: "uppercase", fontWeight: 600 }}>
           {label}
         </div>

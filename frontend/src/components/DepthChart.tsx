@@ -73,10 +73,11 @@ export function DepthChart({ stats }: Props) {
           {data.yes.map((lvl, i) => (
             <motion.div
               key={`y-${i}`}
-              initial={{ opacity: 0, width: 0 }}
-              animate={{ opacity: 1, width: `${lvl.width}%` }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.06 * i, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               className="depth-row depth-row-yes"
+              style={{ ["--bar" as string]: `${lvl.width}%` } as React.CSSProperties}
             >
               <span className="mono data depth-px" style={{ color: "var(--success)" }}>{lvl.px}%</span>
               <span className="mono data depth-size">{formatAmount(lvl.size)}</span>
@@ -95,10 +96,11 @@ export function DepthChart({ stats }: Props) {
           {data.no.map((lvl, i) => (
             <motion.div
               key={`n-${i}`}
-              initial={{ opacity: 0, width: 0 }}
-              animate={{ opacity: 1, width: `${lvl.width}%` }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.06 * i, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               className="depth-row depth-row-no"
+              style={{ ["--bar" as string]: `${lvl.width}%` } as React.CSSProperties}
             >
               <span className="mono data depth-size">{formatAmount(lvl.size)}</span>
               <span className="mono data depth-px" style={{ color: "var(--danger)" }}>{lvl.px}%</span>

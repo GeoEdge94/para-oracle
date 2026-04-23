@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronLeft, Satellite, TrendingUp, TrendingDown, Clock, Users, Activity, ChevronRight } from "lucide-react";
-import { API, type Bet, type BetMarketStats, type UserBet } from "@/lib/api";
+import { ChevronLeft, Satellite, TrendingUp, TrendingDown, Clock, Users, Activity, ChevronRight, MapPin } from "lucide-react";
+import { API, type Bet, type BetMarketStats, type UserBet, type DeforestationZone } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { PriceHistoryChart } from "@/components/PriceHistoryChart";
 import { DepthChart } from "@/components/DepthChart";
@@ -39,12 +39,14 @@ export function Market() {
   const [allBets, setAllBets] = useState<Bet[]>([]);
   const [stats, setStats] = useState<BetMarketStats | null>(null);
   const [positions, setPositions] = useState<UserBet[]>([]);
+  const [zones, setZones] = useState<DeforestationZone[]>([]);
 
   useEffect(() => {
     API.getBet(slug).then((r) => setBet(r.data)).catch(() => {});
     API.marketStats(slug).then((r) => setStats(r.data)).catch(() => {});
     API.listUserBets(slug).then((r) => setPositions(r.data)).catch(() => {});
     API.listBets().then((r) => setAllBets(r.data)).catch(() => {});
+    API.listZones(slug).then((r) => setZones(r.data)).catch(() => setZones([]));
   }, [slug]);
 
   const relatedMarkets = useMemo(() => {
@@ -52,6 +54,13 @@ export function Market() {
     return allBets
       .filter((b) => b.slug !== bet.slug && b.category === bet.category && b.status === "OPEN")
       .slice(0, 4);
+  }, [allBets, bet]);
+
+  const discoverMarkets = useMemo(() => {
+    if (!bet) return [];
+    return allBets
+      .filter((b) => b.slug !== bet.slug && b.category !== bet.category && b.status === "OPEN")
+      .slice(0, 6);
   }, [allBets, bet]);
 
   const topPositions = useMemo(() => {
@@ -82,7 +91,7 @@ export function Market() {
 
   return (
     <div
-      className="spotlight grid-dot-bg spotlight-active has-bottom-nav market-page-roboto"
+      className="spotlight grid-dot-bg spotlight-active has-bottom-nav market-page-roboto market-topo-bg"
       onPointerMove={handlePointerMove}
       style={{ height: "100dvh", overflowY: "auto", overflowX: "hidden", background: "var(--bg)", color: "var(--fg)", fontFamily: "'Roboto', system-ui, -apple-system, sans-serif" }}
     >
@@ -228,6 +237,19 @@ export function Market() {
               <div style={{ background: "var(--surface-1)", border: "1px solid var(--border-muted)", borderRadius: "var(--radius)", padding: 14 }}>
                 <PriceHistoryChart bet={bet} height={220} />
               </div>
+              <button
+                onClick={() => navigate(`/analysis/${bet.slug}`)}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  marginTop: 10, padding: "10px 0",
+                  background: "#0f172a",
+                  border: "1px solid #334155", borderRadius: 10,
+                  color: "#94a3b8", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                <MapPin size={14} />
+                {zones.length > 0 ? t("analysis.show_zones", { n: zones.length }) : t("analysis.detected") || "Voir les zones detectees"}
+              </button>
             </section>
 
             {/* Depth chart */}
@@ -331,6 +353,62 @@ export function Market() {
                       </span>
                     </motion.div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Discover — other categories */}
+            {discoverMarkets.length > 0 && (
+              <div>
+                <SectionLabel>
+                  <TrendingUp size={11} style={{ verticalAlign: "middle", marginRight: 4 }} />
+                  Explorer d'autres marchés
+                </SectionLabel>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 8 }}>
+                  {discoverMarkets.map((r) => {
+                    const rc = CAT_COLORS[r.category] || "#8b5cf6";
+                    return (
+                      <button
+                        key={r.slug}
+                        onClick={() => { navigate(`/market/${r.slug}`); window.scrollTo(0, 0); }}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                          padding: 12,
+                          background: `linear-gradient(145deg, ${rc}0f 0%, var(--surface-1) 70%)`,
+                          border: `1px solid ${rc}33`,
+                          borderRadius: "var(--radius)",
+                          cursor: "pointer",
+                          textAlign: "left",
+                          minHeight: 92,
+                          transition: "transform 0.15s ease, border-color 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.borderColor = `${rc}66`; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.borderColor = `${rc}33`; }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ width: 7, height: 7, borderRadius: 4, background: rc }} />
+                          <span className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", letterSpacing: 1.2, textTransform: "uppercase", fontWeight: 600 }}>
+                            {r.category.replace(/_/g, " ")}
+                          </span>
+                          <span style={{ flex: 1 }} />
+                          <ChevronRight size={12} color="var(--fg-faint)" />
+                        </div>
+                        <div className="serif" style={{ fontSize: 13, fontWeight: 600, color: "var(--fg-strong)", lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                          {betQ(r)}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: "auto" }}>
+                          <span className="mono" style={{ fontSize: 10, color: "var(--fg-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {r.region_name}
+                          </span>
+                          <div style={{ width: 60, flexShrink: 0 }}>
+                            <Sparkline seed={r.slug} color={rc} height={16} />
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -448,8 +526,10 @@ function HeroCell({ label, icon, accent, children }: { label: string; icon?: Rea
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", letterSpacing: 1.3, textTransform: "uppercase", fontWeight: 600, marginBottom: 8 }}>
-      {children}
+    <div className="mono bloomberg-label">
+      <span className="bloomberg-label-tick" aria-hidden />
+      <span className="bloomberg-label-text">{children}</span>
+      <span className="bloomberg-label-rule" aria-hidden />
     </div>
   );
 }
