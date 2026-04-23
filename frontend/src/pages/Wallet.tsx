@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft, ArrowDownToLine, ArrowUpFromLine, Eye, EyeOff, ScanLine,
   Search as SearchIcon, ArrowUpRight, Filter as FilterIcon, Calendar, Link as LinkIcon,
+  SlidersHorizontal, Bookmark,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -40,9 +41,24 @@ export function WalletPage() {
   const [range, setRange] = useState<Range>("ALL");
   const [tab, setTab] = useState<Tab>("history");
   const [search, setSearch] = useState("");
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   function load() {
-    API.walletBalance().then((r) => setWallet(r.data)).catch(() => {});
+    setLoadError(null);
+    API.walletBalance()
+      .then((r) => setWallet(r.data))
+      .catch((err) => {
+        const status = err?.response?.status;
+        console.error("[wallet] balance fetch failed", status, err?.message);
+        if (status === 401) {
+          // Token invalid/stale → kick to login so user can re-auth.
+          localStorage.removeItem("para_token");
+          navigate("/login");
+          return;
+        }
+        setLoadError(err?.message || "network");
+      });
+
     setBetsLoaded(false);
     API.listBets().then(async (r) => {
       setAllMarkets(r.data);
@@ -115,7 +131,32 @@ export function WalletPage() {
   if (!wallet) {
     return (
       <div className="wl-loading">
-        <div className="wl-loading-spinner" />
+        {loadError ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: 24 }}>
+            <div style={{ color: "var(--fg-muted)", fontSize: 13, textAlign: "center" }}>
+              {t("auth.error")}
+              <div style={{ fontSize: 10, color: "var(--fg-faint)", marginTop: 4, fontFamily: "var(--font-mono)" }}>
+                {loadError}
+              </div>
+            </div>
+            <button
+              onClick={load}
+              style={{
+                padding: "8px 16px",
+                background: "var(--accent)",
+                border: 0,
+                borderRadius: 8,
+                color: "#0a0f1a",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              {t("common.back")}…  Retry
+            </button>
+          </div>
+        ) : (
+          <div className="wl-loading-spinner" />
+        )}
       </div>
     );
   }
