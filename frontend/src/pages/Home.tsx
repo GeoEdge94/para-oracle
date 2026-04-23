@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import {
   Search, SlidersHorizontal, Bookmark, Share2, Flame, Droplets, Pickaxe, Thermometer,
   Snowflake, Building2, Fish, TrendingUp, Trees,
@@ -17,15 +18,17 @@ import { BoostedBadge } from "@/components/BoostedBadge";
 import { isBoosted } from "@/lib/engage";
 import type { UserBet } from "@/lib/api";
 
-const CAT_META: Record<string, { color: string; icon: LucideIcon; i18nKey: string }> = {
-  deforestation: { color: "#10b981", icon: Trees, i18nKey: "categories.deforestation" },
-  wildfire: { color: "#f59e0b", icon: Flame, i18nKey: "categories.wildfire" },
-  flood: { color: "#3b82f6", icon: Droplets, i18nKey: "categories.flood" },
-  mining: { color: "#a855f7", icon: Pickaxe, i18nKey: "categories.mining" },
-  drought: { color: "#ef4444", icon: Thermometer, i18nKey: "categories.drought" },
-  glacier: { color: "#06b6d4", icon: Snowflake, i18nKey: "categories.deforestation" },
-  urbanization: { color: "#f97316", icon: Building2, i18nKey: "categories.urban" },
-  water_quality: { color: "#0ea5e9", icon: Fish, i18nKey: "categories.water_quality" },
+const UNSPLASH = (id: string) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=96&h=96&q=70`;
+
+const CAT_META: Record<string, { color: string; icon: LucideIcon; image: string; i18nKey: string }> = {
+  deforestation: { color: "#10b981", icon: Trees, image: UNSPLASH("1542601906990-b4d3fb778b09"), i18nKey: "categories.deforestation" },
+  wildfire:      { color: "#f59e0b", icon: Flame, image: UNSPLASH("1600166898405-da9535204843"), i18nKey: "categories.wildfire" },
+  flood:         { color: "#3b82f6", icon: Droplets, image: UNSPLASH("1547683905-f686c993aae5"), i18nKey: "categories.flood" },
+  mining:        { color: "#a855f7", icon: Pickaxe, image: UNSPLASH("1581094288338-2314dddb7ece"), i18nKey: "categories.mining" },
+  drought:       { color: "#ef4444", icon: Thermometer, image: UNSPLASH("1583212292454-1fe6229603b7"), i18nKey: "categories.drought" },
+  glacier:       { color: "#06b6d4", icon: Snowflake, image: UNSPLASH("1531176175280-33e81d8ea784"), i18nKey: "categories.deforestation" },
+  urbanization:  { color: "#f97316", icon: Building2, image: UNSPLASH("1486325212027-8081e485255e"), i18nKey: "categories.urban" },
+  water_quality: { color: "#0ea5e9", icon: Fish, image: UNSPLASH("1502691876148-a84978e59af8"), i18nKey: "categories.water_quality" },
 };
 
 type BetStatsMap = Record<string, BetMarketStats | null>;
@@ -254,10 +257,23 @@ export function Home() {
             >
               <div className="feed-card-head">
                 <div
-                  className="feed-card-icon"
-                  style={{ background: `${meta.color}1f`, color: meta.color }}
+                  className="feed-card-icon feed-card-icon-image"
+                  style={{ background: `${meta.color}1f`, color: meta.color, borderColor: `${meta.color}4d` }}
                 >
-                  <meta.icon size={18} />
+                  <img
+                    src={meta.image}
+                    alt=""
+                    loading="lazy"
+                    onError={(e) => {
+                      const img = e.currentTarget as HTMLImageElement;
+                      img.style.display = "none";
+                      const fallback = img.nextElementSibling as HTMLElement | null;
+                      if (fallback) fallback.style.display = "inline-flex";
+                    }}
+                  />
+                  <span className="feed-card-icon-fallback" aria-hidden style={{ display: "none" }}>
+                    <meta.icon size={18} />
+                  </span>
                 </div>
                 <div className="feed-card-title">{b.question}</div>
                 {boosted && <BoostedBadge periodEnd={b.period_end} status={b.status} variant="pill" />}
@@ -309,7 +325,16 @@ export function Home() {
                   )}
                   <button
                     aria-label="Share"
-                    onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText(`${location.origin}/market/${b.slug}`); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const url = `${location.origin}/market/${b.slug}`;
+                      const shown = () => toast.success(t("common.copied"), { description: url, duration: 2500, position: "top-right" });
+                      if (navigator.clipboard?.writeText) {
+                        navigator.clipboard.writeText(url).then(shown, shown);
+                      } else {
+                        shown();
+                      }
+                    }}
                   >
                     <Share2 size={14} />
                   </button>

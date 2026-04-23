@@ -13,7 +13,7 @@ button { cursor: pointer; font-family: inherit; }
 
 /* ══════════════ Orion-style dashboard section ══════════════ */
 .orion-section {
-  padding: 96px 24px 80px;
+  padding: 0;
   background:
     radial-gradient(ellipse at 50% 0%, rgba(168, 85, 247, 0.08), transparent 55%),
     radial-gradient(ellipse at 50% 100%, rgba(96, 165, 250, 0.06), transparent 50%),
@@ -21,12 +21,15 @@ button { cursor: pointer; font-family: inherit; }
   border-top: 1px solid var(--hairline);
 }
 .orion-frame {
-  max-width: 1200px;
-  margin: 0 auto;
-  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  border-radius: 0;
   background: linear-gradient(180deg, rgba(15, 20, 35, 0.75) 0%, rgba(5, 8, 15, 0.9) 100%);
-  border: 1px solid var(--hairline-strong);
-  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border: 0;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   overflow: hidden;
 }
 .orion-head {
@@ -136,6 +139,18 @@ button { cursor: pointer; font-family: inherit; }
     min-height: calc(100dvh - 100px);
   }
   .login-col-globe { order: -1; }
+  .login-col-form {
+    align-items: center;
+    text-align: center;
+  }
+  .login-col-form > * {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .login-col-form h1 {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
 }
 @media (max-width: 600px) {
   .login-split { padding: 0 16px; gap: 40px; }
@@ -422,7 +437,7 @@ button { cursor: pointer; font-family: inherit; }
 
 .layer-panel-handle {
   position: fixed;
-  top: 145px;
+  top: 230px;
   right: 10px;
   width: 38px;
   height: 38px;
@@ -435,6 +450,160 @@ button { cursor: pointer; font-family: inherit; }
   justify-content: center;
   cursor: pointer;
   z-index: 101;
+}
+.layer-sources-handle {
+  top: 278px;
+  color: #38bdf8;
+}
+.layer-sources-handle:hover {
+  border-color: #38bdf866;
+  color: #7dd3fc;
+}
+
+/* ══════════════ Sources modal (QGIS-ready layer URLs) ══════════════ */
+.sources-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(2, 5, 12, 0.72);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.sources-modal {
+  width: min(720px, 100%);
+  max-height: 88dvh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #0a1120 0%, #05080f 100%);
+  border: 1px solid var(--border-muted);
+  border-radius: 14px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+  overflow: hidden;
+}
+.sources-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-muted);
+  background: rgba(255,255,255,0.02);
+}
+.sources-modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sources-modal-foot {
+  padding: 12px 18px 14px;
+  border-top: 1px solid var(--border-muted);
+  background: rgba(255,255,255,0.02);
+}
+.sources-row {
+  padding: 10px 12px;
+  border: 1px solid var(--border-muted);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.015);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sources-row-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sources-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sources-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-strong);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sources-tag {
+  font-family: "JetBrains Mono", var(--font-mono), monospace;
+  font-size: 9px;
+  padding: 2px 6px;
+  border: 1px solid var(--border-muted);
+  border-radius: 3px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  background: rgba(255,255,255,0.02);
+}
+.sources-tag-type { color: #38bdf8; border-color: #38bdf833; }
+.sources-row-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.sources-kv {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  padding: 6px 8px;
+  min-width: 0;
+}
+.sources-kv-k {
+  font-family: "JetBrains Mono", var(--font-mono), monospace;
+  font-size: 9px;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  flex-shrink: 0;
+  min-width: 140px;
+}
+.sources-kv-v {
+  flex: 1;
+  min-width: 0;
+  font-family: "JetBrains Mono", var(--font-mono), monospace;
+  font-size: 11px;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sources-copy-btn {
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-muted);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.sources-copy-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+@media (max-width: 600px) {
+  .sources-modal-backdrop { padding: 0; align-items: stretch; }
+  .sources-modal { max-height: 100dvh; border-radius: 0; }
+  .sources-kv { flex-wrap: wrap; }
+  .sources-kv-k { min-width: 0; width: 100%; }
 }
 
 .layer-panel-header {
@@ -721,7 +890,8 @@ button { cursor: pointer; font-family: inherit; }
   .date-input { min-height: 36px; font-size: var(--text-md); }
 
   .layer-panel { top: 106px; width: calc(100vw - 20px); max-width: 280px; max-height: calc(100dvh - 120px); }
-  .layer-panel-handle { top: 120px; right: 10px; }
+  .layer-panel-handle { top: 210px; right: 10px; }
+  .layer-sources-handle { top: 258px; }
 }
 
 /* ══════════════ Onboarding overlay ══════════════ */
@@ -1700,14 +1870,21 @@ button { cursor: pointer; font-family: inherit; }
   padding: 3px 6px;
   font-size: 10px;
   border-radius: 3px;
+  width: 100% !important;
+  white-space: nowrap;
+  overflow: hidden;
 }
 .depth-row-yes {
-  background: linear-gradient(to left, rgba(16,185,129,0.18) 0%, rgba(16,185,129,0.04) 100%);
-  justify-content: flex-end;
+  background:
+    linear-gradient(to left, rgba(16,185,129,0.32) 0%, rgba(16,185,129,0.32) var(--bar, 100%), transparent var(--bar, 100%)),
+    linear-gradient(to left, rgba(16,185,129,0.06) 0%, rgba(16,185,129,0.01) 100%);
+  justify-content: space-between;
 }
 .depth-row-no {
-  background: linear-gradient(to right, rgba(248,113,113,0.18) 0%, rgba(248,113,113,0.04) 100%);
-  justify-content: flex-start;
+  background:
+    linear-gradient(to right, rgba(248,113,113,0.32) 0%, rgba(248,113,113,0.32) var(--bar, 100%), transparent var(--bar, 100%)),
+    linear-gradient(to right, rgba(248,113,113,0.06) 0%, rgba(248,113,113,0.01) 100%);
+  justify-content: space-between;
 }
 .depth-px { font-weight: 700; min-width: 42px; }
 .depth-size { color: var(--fg-muted); font-weight: 600; }
@@ -2177,12 +2354,42 @@ button { cursor: pointer; font-family: inherit; }
   margin-bottom: 4px;
 }
 .m3d-title {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
+  position: relative;
+  font-family: "JetBrains Mono", "Fira Code", var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--fg-strong);
-  letter-spacing: -0.2px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding-left: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
+.m3d-title::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.6;
+}
+.m3d-title::after {
+  content: attr(data-meta);
+  font-family: "JetBrains Mono", var(--font-mono), monospace;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 1.4px;
+  color: var(--fg-faint);
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border: 1px solid var(--border-muted);
+  border-radius: 3px;
+  background: rgba(255,255,255,0.02);
+}
+.m3d-title:not([data-meta])::after { display: none; }
 .m3d-dot {
   width: 8px;
   height: 8px;
@@ -2563,12 +2770,28 @@ button { cursor: pointer; font-family: inherit; }
 .bento-tile.span-4 { grid-column: span 4; }
 .bento-tile.rows-2 { grid-row: span 2; }
 .bento-label {
-  font-size: var(--text-2xs);
-  color: var(--fg-subtle);
-  letter-spacing: 1.2px;
+  font-family: "JetBrains Mono", "Fira Code", var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  color: var(--fg);
+  letter-spacing: 1.6px;
   text-transform: uppercase;
-  font-weight: 600;
-  margin-bottom: 8px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  padding-left: 14px;
+}
+.bento-label::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--accent);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent) 50%, transparent 50%, transparent 100%);
 }
 .bento-value {
   font-family: var(--font-display);
@@ -3186,6 +3409,33 @@ button { cursor: pointer; font-family: inherit; }
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; font-size: 18px;
 }
+.feed-card-icon-image {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  max-width: 36px;
+  max-height: 36px;
+  flex: 0 0 36px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid transparent;
+  position: relative;
+  padding: 0;
+}
+.feed-card-icon-image img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  display: block;
+  flex: 0 0 auto;
+}
+.feed-card-icon-fallback {
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+}
 .feed-card-title {
   flex: 1;
   font-size: 14px; font-weight: 700;
@@ -3212,6 +3462,57 @@ button { cursor: pointer; font-family: inherit; }
 .market-page-roboto .display,
 .market-page-roboto .num {
   font-family: 'Roboto', system-ui, -apple-system, sans-serif !important;
+}
+
+/* ══════════════ Market topographic background ══════════════ */
+.market-topo-bg {
+  position: relative;
+}
+.market-topo-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("/topography.svg");
+  background-size: 800px 800px;
+  background-repeat: repeat;
+  opacity: 0.8;
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: screen;
+}
+.market-topo-bg::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5,8,15,0.72) 0%, rgba(5,8,15,0.82) 60%, rgba(5,8,15,0.92) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+.market-topo-bg > * {
+  position: relative;
+  z-index: 1;
+}
+/* Bottom nav stays pinned and opaque above the topo pattern */
+.market-topo-bg .bottom-nav {
+  position: fixed;
+  z-index: 90;
+  background: #05080f;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* ══════════════ Sonner toast — top-right below topbar ══════════════ */
+[data-sonner-toaster][data-y-position="top"][data-x-position="right"] {
+  top: 68px !important;
+  right: 14px !important;
+}
+@media (max-width: 600px) {
+  [data-sonner-toaster][data-y-position="top"][data-x-position="right"] {
+    top: 60px !important;
+    right: 10px !important;
+    left: 10px !important;
+    width: auto !important;
+  }
 }
 
 /* ══════════════ Market hero — geo background ══════════════ */
@@ -3265,6 +3566,44 @@ button { cursor: pointer; font-family: inherit; }
     linear-gradient(180deg, rgba(5,8,15,0.2) 0%, rgba(5,8,15,0.5) 70%, var(--bg) 100%);
 }
 
+/* ══════════════ Bloomberg-style section labels ══════════════ */
+.bloomberg-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-family: "JetBrains Mono", "Fira Code", var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+.bloomberg-label-tick {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--accent);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent) 50%, transparent 50%, transparent 100%);
+  transform: rotate(0deg);
+}
+.bloomberg-label-text {
+  flex-shrink: 0;
+  padding-right: 10px;
+  border-right: 1px solid var(--border-muted);
+  color: var(--fg);
+  font-weight: 700;
+}
+.bloomberg-label-text svg {
+  vertical-align: -2px;
+  margin-right: 4px;
+}
+.bloomberg-label-rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--border-muted) 0%, transparent 100%);
+}
+
 /* ══════════════ Market hero metrics — Smart Wallet style ══════════════ */
 .hero-metrics {
   display: grid;
@@ -3315,17 +3654,30 @@ button { cursor: pointer; font-family: inherit; }
   width: 18px; height: 18px;
 }
 .hero-cell-label {
-  font-size: 13px;
+  font-size: 10px;
   color: var(--fg);
-  letter-spacing: 0.2px;
-  text-transform: none;
-  font-weight: 600;
-  font-family: inherit !important;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  font-weight: 700;
+  font-family: "JetBrains Mono", "Fira Code", var(--font-mono), ui-monospace, monospace !important;
   line-height: 1.2;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  position: relative;
+  padding-left: 10px;
+}
+.hero-cell-label::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
+  background: var(--hero-accent);
+  box-shadow: 0 0 6px var(--hero-accent);
 }
 .hero-cell-value {
   font-size: 26px;
@@ -3461,9 +3813,13 @@ button { cursor: pointer; font-family: inherit; }
 
 /* ══════════════ Wallet Polymarket-style ══════════════ */
 .wallet-pm {
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: var(--bg);
   color: var(--fg);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 .wallet-pm-header {
   position: sticky;
