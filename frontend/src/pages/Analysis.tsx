@@ -28,7 +28,6 @@ import { EvidenceDetail } from "@/components/EvidenceDetail";
 import { Web3Evidence } from "@/components/Web3Evidence";
 import { VerdictPanel } from "@/components/VerdictPanel";
 import { MapPin } from "lucide-react";
-import { BottomNav } from "@/components/BottomNav";
 
 export function Analysis() {
   const { slug = "" } = useParams();
@@ -375,7 +374,7 @@ export function Analysis() {
   const resolved = bet.status.startsWith("RESOLVED");
 
   return (
-    <div className="has-bottom-nav" style={{ position: "relative", height: "100dvh" }}>
+    <div className="market-page-roboto" style={{ position: "relative", height: "100dvh", fontFamily: "'Roboto', system-ui, -apple-system, sans-serif" }}>
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 30,
         padding: "10px 14px", background: "rgba(15, 23, 42, 0.9)", backdropFilter: "blur(10px)",
@@ -569,7 +568,6 @@ export function Analysis() {
           />
         )}
       </AnimatePresence>
-      <BottomNav />
     </div>
   );
 }

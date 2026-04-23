@@ -12,6 +12,7 @@ import { RankCard } from "@/components/RankCard";
 import { NumberTicker } from "@/components/NumberTicker";
 import { useStreak, computeXP, computeWalletStats } from "@/lib/engage";
 import { BottomNav } from "@/components/BottomNav";
+import { DemoModeBanner } from "@/components/DemoModeBanner";
 
 export function WalletPage() {
   const navigate = useNavigate();
@@ -92,6 +93,8 @@ export function WalletPage() {
           <MoreHorizontal size={16} />
         </button>
       </div>
+
+      <DemoModeBanner variant="wallet" />
 
       {/* Reset confirmation dialog */}
       <Dialog.Root open={confirmReset} onOpenChange={setConfirmReset}>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronLeft, Satellite, TrendingUp, TrendingDown, Clock, Users, Activity, ChevronRight, BarChart3, Gauge } from "lucide-react";
+import { ChevronLeft, Satellite, TrendingUp, TrendingDown, Clock, Users, Activity, ChevronRight } from "lucide-react";
 import { API, type Bet, type BetMarketStats, type UserBet } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { PriceHistoryChart } from "@/components/PriceHistoryChart";
@@ -14,6 +14,7 @@ import { Avatar } from "@/components/Avatar";
 import { Sparkline } from "@/components/Sparkline";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { BottomNav } from "@/components/BottomNav";
+import { DemoModeBanner } from "@/components/DemoModeBanner";
 import { StatusBadge } from "@/components/StatusBadge";
 import { isBoosted, formatCountdown } from "@/lib/engage";
 
@@ -104,13 +105,18 @@ export function Market() {
         <StatusBadge />
       </div>
 
+      <DemoModeBanner variant="market" />
+
       <div style={{ maxWidth: 1120, margin: "0 auto", padding: "40px 16px 80px" }}>
         {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="market-hero"
+          style={{ position: "relative" }}
         >
+          <BetMapBackground geojson={bet.region_geojson} accent={color} />
           <div className="mono" style={{ fontSize: 10, color: "var(--fg-faint)", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 8, height: 8, borderRadius: 4, background: color }} />
@@ -144,23 +150,22 @@ export function Market() {
             const yesColor = resolved ? (bet.result_bool ? "var(--success)" : "var(--danger)") : color;
             return (
               <div className="hero-metrics">
-                <HeroCell label="Implied YES" icon={<Gauge size={14} />} accent={yesColor}>
+                <HeroCell label="Implied YES" accent={yesColor}>
                   <span style={{ color: yesColor }}>
                     <NumberTicker value={yesPct} suffix="%" />
                   </span>
                 </HeroCell>
-                <HeroCell label="Volume total" icon={<BarChart3 size={14} />} accent="var(--accent)">
+                <HeroCell label="Volume total" accent="var(--accent)">
                   <span style={{ whiteSpace: "nowrap" }}>
                     <NumberTicker value={totalVolume} decimals={0} locale={locale === "fr" ? "fr-FR" : "en-US"} />
                     <span className="hero-unit">&nbsp;€</span>
                   </span>
                 </HeroCell>
-                <HeroCell label="Positions" icon={<Users size={14} />} accent="var(--accent)">
+                <HeroCell label="Positions" accent="var(--accent)">
                   <NumberTicker value={stats?.total_bets ?? 0} />
                 </HeroCell>
                 <HeroCell
                   label={resolved ? "Résolu" : "Ferme dans"}
-                  icon={<Clock size={14} />}
                   accent={resolved ? (bet.result_bool ? "var(--success)" : "var(--danger)") : boosted ? "#fbbf24" : "var(--accent)"}
                 >
                   {resolved ? (
@@ -372,6 +377,59 @@ export function Market() {
         </div>
       </div>
       <BottomNav />
+    </div>
+  );
+}
+
+type GeoGeom = GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
+
+function computeCentroid(geom: GeoGeom): { lat: number; lng: number } | null {
+  if (!geom) return null;
+  const ring = geom.type === "Polygon" ? geom.coordinates[0] : geom.coordinates[0]?.[0];
+  if (!ring || ring.length === 0) return null;
+  let sumLat = 0, sumLng = 0;
+  for (const [lng, lat] of ring as [number, number][]) { sumLng += lng; sumLat += lat; }
+  return { lat: sumLat / ring.length, lng: sumLng / ring.length };
+}
+
+function lngToTileX(lng: number, z: number): number {
+  return ((lng + 180) / 360) * Math.pow(2, z);
+}
+function latToTileY(lat: number, z: number): number {
+  return ((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2) * Math.pow(2, z);
+}
+
+function BetMapBackground({ geojson, accent }: { geojson: GeoGeom; accent: string }) {
+  const center = computeCentroid(geojson);
+  if (!center) return null;
+  const z = 5;
+  const xf = lngToTileX(center.lng, z);
+  const yf = latToTileY(center.lat, z);
+  const cx = Math.floor(xf);
+  const cy = Math.floor(yf);
+  const tiles: { x: number; y: number; dx: number; dy: number }[] = [];
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      tiles.push({ x: cx + dx, y: cy + dy, dx, dy });
+    }
+  }
+  const offsetX = (xf - cx) * 100;
+  const offsetY = (yf - cy) * 100;
+  return (
+    <div className="bet-map-bg" aria-hidden>
+      <div className="bet-map-bg-tiles" style={{ transform: `translate(calc(-50% - ${offsetX}%), calc(-50% - ${offsetY}%))` }}>
+        {tiles.map((t) => (
+          <img
+            key={`${t.dx}_${t.dy}`}
+            src={`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${t.y}/${t.x}`}
+            alt=""
+            loading="lazy"
+            style={{ gridColumn: t.dx + 2, gridRow: t.dy + 2 }}
+          />
+        ))}
+      </div>
+      <div className="bet-map-bg-pin" style={{ background: accent, boxShadow: `0 0 0 6px ${accent}33, 0 0 16px 2px ${accent}88` }} />
+      <div className="bet-map-bg-mask" />
     </div>
   );
 }
