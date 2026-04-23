@@ -69,7 +69,7 @@ export function DeckOverlay({ map, bets, visible = true, onNodeClick }: Props) {
         getLineWidth: 1,
         lineWidthMinPixels: 0.5,
         opacity: 0.9,
-        parameters: { depthTest: false },
+        parameters: { depthCompare: "always" },
       }),
 
       // Glow ring 1 (wide soft) — additive cyan-emerald halo
@@ -87,7 +87,7 @@ export function DeckOverlay({ map, bets, visible = true, onNodeClick }: Props) {
           const [r, g, b] = CATEGORY_RGB[d.category] ?? [16, 185, 129];
           return [r, g, b, 40];
         },
-        parameters: { depthTest: false },
+        parameters: { depthCompare: "always" },
       }),
 
       // Glow ring 2 (narrow brighter)
@@ -105,7 +105,7 @@ export function DeckOverlay({ map, bets, visible = true, onNodeClick }: Props) {
           const [r, g, b] = CATEGORY_RGB[d.category] ?? [16, 185, 129];
           return [r, g, b, 255];
         },
-        parameters: { depthTest: false },
+        parameters: { depthCompare: "always" },
         onClick: (info) => {
           const d = info.object as NodeDatum | undefined;
           if (d && onNodeClick) onNodeClick(d.slug);
@@ -125,7 +125,7 @@ export function DeckOverlay({ map, bets, visible = true, onNodeClick }: Props) {
         radiusMinPixels: 2,
         radiusMaxPixels: 4,
         getFillColor: () => [255, 255, 255, 230],
-        parameters: { depthTest: false },
+        parameters: { depthCompare: "always" },
       }),
     ];
 

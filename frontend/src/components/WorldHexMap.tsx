@@ -62,7 +62,7 @@ export function WorldHexMap({ bets, width = 900, height = 500 }: Props) {
     let cancelled = false;
     async function load() {
       try {
-        const topo = (await import("world-atlas/countries-110m.json")).default as Topology;
+        const topo = (await import("world-atlas/countries-110m.json")).default as unknown as Topology;
         const fc = feature(topo, topo.objects.countries) as unknown as FeatureCollection<Geometry>;
         if (!cancelled) setLandFC(fc);
       } catch {}

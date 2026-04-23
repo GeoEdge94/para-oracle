@@ -136,7 +136,7 @@ export const GlobeView = forwardRef<GlobeViewHandle, Props>(function GlobeView(
       pathPoints="coords"
       pathPointLat={(p) => (p as [number, number])[0]}
       pathPointLng={(p) => (p as [number, number])[1]}
-      pathColor={(d) => [
+      pathColor={(d: object) => [
         hexToRgba((d as { color: string }).color, 0.95),
         hexToRgba((d as { color: string }).color, 0.4),
       ]}

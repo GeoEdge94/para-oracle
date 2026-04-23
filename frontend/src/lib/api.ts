@@ -39,6 +39,8 @@ export type Bet = BetSummary & {
   change_threshold: number;
   ground_truth_source: string;
   proof_layers: string[];
+  metric?: string;
+  pipeline_kind?: "weather" | "spectral";
 };
 
 export type Layer = {

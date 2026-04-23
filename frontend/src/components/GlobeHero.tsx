@@ -1,7 +1,15 @@
 import { useEffect, useRef } from "react";
-import createGlobe from "cobe";
+import createGlobe, { type COBEOptions } from "cobe";
 
 type Marker = { location: [number, number]; size: number };
+// cobe's onRender callback receives a mutable state object we can tweak each
+// frame. The official COBEOptions type omits it, so we extend locally.
+type CobeState = {
+  phi: number;
+  width: number;
+  height: number;
+};
+type ExtendedCobeOptions = COBEOptions & { onRender?: (state: CobeState) => void };
 
 type Props = {
   markers?: Marker[];
@@ -60,14 +68,14 @@ export function GlobeHero({
       scale: 1,
       offset: [0, 0],
       markers,
-      onRender: (state) => {
+      onRender: (state: CobeState) => {
         if (pointerRef.current === null) phiRef.current += rotationSpeed;
         state.phi = phiRef.current;
         state.width = width * dpr;
         state.height = height * dpr;
         onPhi?.(phiRef.current);
       },
-    });
+    } as ExtendedCobeOptions);
 
     return () => globe.destroy();
   }, [markers, size, variant, markerColor, rotationSpeed, onPhi]);

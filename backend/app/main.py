@@ -59,8 +59,58 @@ app.include_router(wallet.router, prefix="/wallet", tags=["wallet"])
 
 
 @app.get("/health")
-def health():
-    return {"status": "ok", "service": "para-oracle-api"}
+def health(deep: bool = False):
+    """
+    Fast liveness check by default (just returns ok).
+    Pass ?deep=1 for dependency status: DB reachability, chain RPC, IPFS gateway.
+    Used by `docker healthcheck`, Fly.io, and the onboarding smoke test.
+    """
+    if not deep:
+        return {"status": "ok", "service": "para-oracle-api"}
+
+    from app.core.config import settings
+    from app.core.database import SessionLocal
+    from sqlalchemy import text
+    import httpx
+
+    checks = {}
+
+    try:
+        with SessionLocal() as s:
+            s.execute(text("SELECT 1"))
+        checks["db"] = "ok"
+    except Exception as e:
+        checks["db"] = f"fail: {e.__class__.__name__}"
+
+    if not settings.USE_MOCK_CHAIN and settings.CHAIN_RPC_URL:
+        try:
+            r = httpx.post(
+                settings.CHAIN_RPC_URL,
+                json={"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 1},
+                timeout=5,
+            )
+            r.raise_for_status()
+            checks["chain_rpc"] = "ok"
+        except Exception as e:
+            checks["chain_rpc"] = f"fail: {e.__class__.__name__}"
+    else:
+        checks["chain_rpc"] = "skipped (mock)"
+
+    if not settings.USE_MOCK_IPFS and settings.PINATA_JWT:
+        try:
+            r = httpx.get(
+                "https://api.pinata.cloud/data/testAuthentication",
+                headers={"Authorization": f"Bearer {settings.PINATA_JWT}"},
+                timeout=5,
+            )
+            checks["pinata"] = "ok" if r.status_code == 200 else f"http_{r.status_code}"
+        except Exception as e:
+            checks["pinata"] = f"fail: {e.__class__.__name__}"
+    else:
+        checks["pinata"] = "skipped (mock)"
+
+    overall = "ok" if all(v == "ok" or v.startswith("skipped") for v in checks.values()) else "degraded"
+    return {"status": overall, "service": "para-oracle-api", "checks": checks}
 
 
 @app.get("/")

@@ -150,7 +150,7 @@ export function PriceHistoryChart({ bet, height = 180 }: Props) {
               boxShadow: "0 6px 18px rgba(0,0,0,0.4)",
             }}
             labelStyle={{ color: "#94a3b8", fontSize: 10, letterSpacing: 0.3 }}
-            formatter={(value: number) => [`${value}% YES`, ""]}
+            formatter={(value) => [`${Number(value ?? 0)}% YES`, ""]}
             separator=""
           />
           <ReferenceLine
