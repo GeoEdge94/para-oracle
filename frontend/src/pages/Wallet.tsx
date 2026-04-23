@@ -1,57 +1,81 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, RefreshCw, TrendingUp, TrendingDown, Wallet as WalletIcon, MoreHorizontal, AlertTriangle, Trophy, Zap, Target } from "lucide-react";
+import {
+  ChevronLeft, ArrowDownToLine, ArrowUpFromLine, Eye, EyeOff, ScanLine,
+  Search as SearchIcon, ArrowUpRight, Filter as FilterIcon, Calendar, Link as LinkIcon,
+} from "lucide-react";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
-import * as Dialog from "@radix-ui/react-dialog";
-import { API, type WalletBalance, type UserBet } from "@/lib/api";
+import { motion } from "framer-motion";
+import { API, type WalletBalance, type UserBet, type Bet } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { LocaleToggle } from "@/components/LocaleToggle";
-import { Skeleton } from "@/components/Skeleton";
-import { RankCard } from "@/components/RankCard";
 import { NumberTicker } from "@/components/NumberTicker";
-import { useStreak, computeXP, computeWalletStats } from "@/lib/engage";
+import { Avatar } from "@/components/Avatar";
+import { Sparkline } from "@/components/Sparkline";
 import { BottomNav } from "@/components/BottomNav";
 import { DemoModeBanner } from "@/components/DemoModeBanner";
 
+type Range = "1D" | "1W" | "1M" | "1Y" | "YTD" | "ALL";
+type Tab = "positions" | "open" | "history";
+
+function formatUsd(amount: number, currency: string | undefined): string {
+  if (currency === "tUSDC") return `${amount.toFixed(2)} tUSDC`;
+  return `$${amount.toFixed(2)}`;
+}
+
+function shortAddr(addr: string, head = 6, tail = 4): string {
+  if (!addr) return "";
+  return `${addr.slice(0, head)}…${addr.slice(-tail)}`;
+}
+
 export function WalletPage() {
   const navigate = useNavigate();
-  const { t, formatAmount, locale } = useI18n();
-  const { current: streakCurrent, longest: streakLongest } = useStreak();
+  const { t, locale } = useI18n();
   const [wallet, setWallet] = useState<WalletBalance | null>(null);
   const [bets, setBets] = useState<UserBet[]>([]);
+  const [allMarkets, setAllMarkets] = useState<Bet[]>([]);
   const [betsLoaded, setBetsLoaded] = useState(false);
   const [resetting, setResetting] = useState(false);
-
-  const xp = useMemo(() => computeXP(bets, Math.max(streakCurrent, streakLongest)), [bets, streakCurrent, streakLongest]);
-  const stats = useMemo(() => computeWalletStats(bets), [bets]);
-  const [confirmReset, setConfirmReset] = useState(false);
+  const [balanceHidden, setBalanceHidden] = useState(false);
+  const [range, setRange] = useState<Range>("ALL");
+  const [tab, setTab] = useState<Tab>("history");
+  const [search, setSearch] = useState("");
 
   function load() {
     API.walletBalance().then((r) => setWallet(r.data)).catch(() => {});
     setBetsLoaded(false);
     API.listBets().then(async (r) => {
-      const allBets: UserBet[] = [];
-      for (const b of r.data) {
-        try {
-          const { data } = await API.myBets(b.slug);
-          allBets.push(...(data.positions || []));
-        } catch {}
-      }
-      allBets.sort((a, b) => new Date(b.placed_at).getTime() - new Date(a.placed_at).getTime());
-      setBets(allBets);
+      setAllMarkets(r.data);
+      const collected: UserBet[] = [];
+      await Promise.all(
+        r.data.slice(0, 40).map((b) =>
+          API.myBets(b.slug)
+            .then((res) => collected.push(...(res.data.positions || [])))
+            .catch(() => {})
+        )
+      );
+      collected.sort((a, b) => new Date(b.placed_at).getTime() - new Date(a.placed_at).getTime());
+      setBets(collected);
       setBetsLoaded(true);
     }).catch(() => setBetsLoaded(true));
   }
-
   useEffect(load, []);
 
-  async function reset() {
+  async function deposit() {
     setResetting(true);
     try {
-      await API.resetWallet();
+      const res = await API.resetWallet();
+      if (res.data?.explorer_url) {
+        toast.success(t("wallet.deposit_ok"), {
+          action: {
+            label: "Polygonscan",
+            onClick: () => window.open(res.data.explorer_url, "_blank"),
+          },
+        });
+      } else {
+        toast.success(t("wallet.deposit_ok"));
+      }
       load();
-      toast.success(t("wallet.reset_confirm"));
     } catch {
       toast.error(t("auth.error"));
     } finally {
@@ -59,233 +83,260 @@ export function WalletPage() {
     }
   }
 
-  if (!wallet) return <div style={{ padding: 20 }}>{t("common.loading")}</div>;
+  function withdraw() {
+    toast.info(t("wallet.withdraw_soon"));
+  }
 
-  const pnl = wallet.total_won - wallet.total_lost;
-  const roi = wallet.total_lost > 0 ? (pnl / wallet.total_lost) * 100 : 0;
+  const pnl = wallet ? wallet.total_won - wallet.total_lost : 0;
+  const pnlPositive = pnl >= 0;
+  const pastDayPct = 0; // placeholder — no historical snapshotting yet
+
+  const marketBySlug = useMemo(() => {
+    const m = new Map<string, Bet>();
+    for (const b of allMarkets) m.set(b.slug, b);
+    return m;
+  }, [allMarkets]);
+
+  const visible = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    const filtered = bets.filter((ub) => {
+      if (tab === "open") return ub.status === "PENDING";
+      if (tab === "positions") return ub.status === "PENDING";
+      return true; // history: all
+    });
+    if (!q) return filtered;
+    return filtered.filter((ub) => {
+      const bet = marketBySlug.get(ub.bet_id || "");
+      const label = bet?.region_name || bet?.question || ub.bet_id || "";
+      return label.toLowerCase().includes(q);
+    });
+  }, [bets, tab, search, marketBySlug]);
+
+  if (!wallet) {
+    return (
+      <div className="wl-loading">
+        <div className="wl-loading-spinner" />
+      </div>
+    );
+  }
+
+  const currency = wallet.currency || "EUR";
+  const balance = wallet.balance;
+  const onchain = wallet.mode === "onchain";
 
   return (
-    <div className="has-bottom-nav" style={{ minHeight: "100dvh", background: "var(--surface-1)", color: "var(--fg)" }}>
-      <div style={{
-        position: "sticky", top: 0, zIndex: 30,
-        padding: "10px 14px", background: "var(--bg)",
-        display: "flex", alignItems: "center", gap: 10,
-        borderBottom: "1px solid var(--border-muted)",
-      }}>
-        <button
-          onClick={() => navigate("/")}
-          className="topbar-icon-btn"
-          aria-label={t("common.back")}
-          style={{ width: 32, height: 32 }}
-        >
-          <ChevronLeft size={18} />
+    <div className="has-bottom-nav wallet-pm">
+      {/* Compact header: just back + locale */}
+      <div className="wallet-pm-header">
+        <button onClick={() => navigate(-1)} className="wallet-pm-back" aria-label={t("common.back")}>
+          <ChevronLeft size={20} />
         </button>
-        <WalletIcon size={16} color="var(--accent)" />
-        <span style={{ fontWeight: 700, fontSize: 14, flex: 1, color: "var(--fg-strong)" }}>{t("wallet.title")}</span>
+        <div style={{ flex: 1 }} />
         <LocaleToggle />
-        <button
-          className="topbar-icon-btn"
-          aria-label={t("wallet.reset")}
-          title={t("wallet.reset")}
-          style={{ width: 32, height: 32 }}
-          onClick={() => setConfirmReset(true)}
-        >
-          <MoreHorizontal size={16} />
+        <button onClick={() => navigate("/")} aria-label={t("wallet.title")}>
+          <Avatar seed={wallet.pseudo || "demo"} size={28} radius={14} />
         </button>
       </div>
 
       <DemoModeBanner variant="wallet" />
 
-      {/* Reset confirmation dialog */}
-      <Dialog.Root open={confirmReset} onOpenChange={setConfirmReset}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="cmd-overlay" />
-          <Dialog.Content className="confirm-dialog" aria-describedby={undefined}>
-            <Dialog.Title style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "var(--fg-strong)", marginBottom: 6 }}>
-              <AlertTriangle size={16} color="var(--warning)" />
-              Réinitialiser le portefeuille ?
-            </Dialog.Title>
-            <p className="serif" style={{ fontSize: 14, color: "var(--fg-muted)", fontStyle: "italic", marginBottom: 16, lineHeight: 1.5 }}>
-              Ton historique sera effacé et ton solde remis à 10 000 €. Les rangs et badges obtenus depuis ton historique peuvent être affectés.
-            </p>
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <button className="btn btn-ghost" onClick={() => setConfirmReset(false)} style={{ padding: "8px 14px", fontSize: 12 }}>
-                Annuler
+      <div className="wallet-pm-body">
+        {/* HERO : portfolio balance + available to trade */}
+        <div className="wallet-pm-hero">
+          <div className="wallet-pm-hero-main">
+            <div className="wallet-pm-label-row">
+              <span className="wallet-pm-label">{t("wallet.portfolio")}</span>
+              <button className="wallet-pm-scan" aria-label="Scan">
+                <ScanLine size={14} />
               </button>
+            </div>
+            <div className="wallet-pm-balance">
+              <span className="wallet-pm-balance-amount">
+                {balanceHidden ? "••••" : formatUsd(balance, currency)}
+              </span>
               <button
-                className="btn btn-primary"
-                onClick={() => { setConfirmReset(false); reset(); }}
-                disabled={resetting}
-                style={{ padding: "8px 14px", fontSize: 12, background: "var(--danger)" }}
+                onClick={() => setBalanceHidden((v) => !v)}
+                className="wallet-pm-eye"
+                aria-label={balanceHidden ? "Show" : "Hide"}
               >
-                {resetting ? "Réinitialisation…" : "Confirmer la réinitialisation"}
+                {balanceHidden ? <Eye size={16} /> : <EyeOff size={16} />}
               </button>
             </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-
-      <div style={{ padding: "16px 14px", maxWidth: 480, margin: "0 auto" }}>
-        {/* Rank card */}
-        <div style={{ marginBottom: 14 }}>
-          <RankCard xp={xp} />
-        </div>
-
-        {/* Balance card */}
-        <div className="card" style={{ marginBottom: 16, textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: "var(--fg-subtle)", textTransform: "uppercase", letterSpacing: 1 }}>{t("wallet.balance")}</div>
-          <div className="display num" style={{ fontSize: 36, color: "var(--accent)", margin: "8px 0", letterSpacing: -0.5 }}>
-            <NumberTicker value={Number(wallet.balance)} decimals={2} locale={locale === "fr" ? "fr-FR" : "en-US"} suffix=" €" />
+            <div className="wallet-pm-hero-sub">
+              {formatUsd(0, currency)} ({pastDayPct}%) {t("wallet.past_day")}
+            </div>
           </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 24, fontSize: 12 }}>
-            <div>
-              <div style={{ color: "var(--fg-subtle)", fontSize: 10 }}>{t("wallet.total_won")}</div>
-              <div className="num" style={{ color: "var(--success)", fontWeight: 600 }}>+{formatAmount(wallet.total_won)}</div>
-            </div>
-            <div>
-              <div style={{ color: "var(--fg-subtle)", fontSize: 10 }}>{t("wallet.total_lost")}</div>
-              <div className="num" style={{ color: "var(--danger)", fontWeight: 600 }}>-{formatAmount(wallet.total_lost)}</div>
-            </div>
-            <div>
-              <div style={{ color: "var(--fg-subtle)", fontSize: 10 }}>{t("wallet.pnl")}</div>
-              <div className="num" style={{ color: pnl >= 0 ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>
-                {pnl >= 0 ? "+" : ""}{formatAmount(pnl)}
-              </div>
+
+          <div className="wallet-pm-hero-aside">
+            <div className="wallet-pm-label" style={{ textAlign: "right" }}>{t("wallet.available_trade")}</div>
+            <div className="wallet-pm-avail">
+              {balanceHidden ? "••••" : formatUsd(balance, currency)}
             </div>
           </div>
         </div>
 
-        {/* Performance block \u2014 what a pro trader wants to see */}
-        {betsLoaded && stats.totalDecided > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            style={{ marginBottom: 16 }}
-          >
-            <div className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", letterSpacing: 1.3, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>
-              Performance
-            </div>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: 8,
-              padding: 14,
-              borderRadius: "var(--radius)",
-              background: "var(--surface-1)",
-              border: "1px solid var(--border-muted)",
-            }}>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--fg-faint)", letterSpacing: 0.5, textTransform: "uppercase" }}>
-                  <Trophy size={10} /> Meilleur mois
-                </div>
-                <div className="display num" style={{ fontSize: 18, color: stats.bestMonth && stats.bestMonth.pnl > 0 ? "var(--success)" : "var(--fg-muted)", marginTop: 2, letterSpacing: -0.3 }}>
-                  {stats.bestMonth ? (
-                    <>
-                      {stats.bestMonth.pnl > 0 ? "+" : ""}{formatAmount(stats.bestMonth.pnl)}
-                    </>
-                  ) : (
-                    "\u2014"
-                  )}
-                </div>
-                <div className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", marginTop: 2 }}>
-                  {stats.bestMonth?.month ?? "\u2014"}
-                </div>
-              </div>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--fg-faint)", letterSpacing: 0.5, textTransform: "uppercase" }}>
-                  <Zap size={10} /> Record de victoires
-                </div>
-                <div className="display num" style={{ fontSize: 18, color: "var(--fg-strong)", marginTop: 2, letterSpacing: -0.3 }}>
-                  {stats.bestWinStreak} <span style={{ fontSize: 11, color: "var(--fg-subtle)" }}>d'aff.</span>
-                </div>
-                <div className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", marginTop: 2 }}>
-                  Actuel&nbsp;: {stats.currentWinStreak}
-                </div>
-              </div>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--fg-faint)", letterSpacing: 0.5, textTransform: "uppercase" }}>
-                  <Target size={10} /> Taux de r\u00e9ussite
-                </div>
-                <div className="display num" style={{ fontSize: 18, color: "var(--fg-strong)", marginTop: 2, letterSpacing: -0.3 }}>
-                  {Math.round(stats.winRate * 100)}<span style={{ fontSize: 11, color: "var(--fg-subtle)" }}>%</span>
-                </div>
-                <div className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", marginTop: 2 }}>
-                  sur {stats.totalDecided} pr\u00e9dictions
-                </div>
-              </div>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--fg-faint)", letterSpacing: 0.5, textTransform: "uppercase" }}>
-                  <TrendingUp size={10} /> PnL annualis\u00e9
-                </div>
-                <div className="display num" style={{ fontSize: 18, color: stats.annualizedPnL >= 0 ? "var(--success)" : "var(--danger)", marginTop: 2, letterSpacing: -0.3 }}>
-                  {stats.annualizedPnL >= 0 ? "+" : ""}{stats.annualizedPnL.toFixed(1)}<span style={{ fontSize: 11, opacity: 0.7 }}>%</span>
-                </div>
-                <div className="mono" style={{ fontSize: 9, color: "var(--fg-faint)", marginTop: 2 }}>
-                  Mise&nbsp;: {formatAmount(stats.totalInvested)}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* History */}
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 8, letterSpacing: 0.5 }}>
-          {t("wallet.history")} ({bets.length})
+        {/* CTA buttons */}
+        <div className="wallet-pm-cta">
+          <button className="wallet-pm-btn wallet-pm-btn-primary" onClick={deposit} disabled={resetting}>
+            <ArrowDownToLine size={16} />
+            <span>{resetting ? t("wallet.depositing") : t("wallet.deposit")}</span>
+          </button>
+          <button className="wallet-pm-btn wallet-pm-btn-ghost" onClick={withdraw}>
+            <ArrowUpFromLine size={16} />
+            <span>{t("wallet.withdraw")}</span>
+          </button>
         </div>
 
-        {!betsLoaded && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="card" style={{ padding: 10, display: "flex", alignItems: "center", gap: 10 }}>
-                <Skeleton width={28} height={28} radius={6} />
-                <div style={{ flex: 1 }}>
-                  <Skeleton width="60%" height={11} style={{ marginBottom: 6 }} />
-                  <Skeleton width="35%" height={9} />
-                </div>
-                <div style={{ textAlign: "right", width: 70 }}>
-                  <Skeleton width="100%" height={11} style={{ marginBottom: 6 }} />
-                  <Skeleton width="80%" height={9} style={{ marginLeft: "auto" }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {betsLoaded && bets.length === 0 && (
-          <div style={{ textAlign: "center", padding: 20, color: "var(--fg-faint)", fontSize: 12 }}>
-            {t("wallet.no_bets")}
-          </div>
-        )}
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {betsLoaded && bets.map((ub) => (
-            <div key={ub.id} className="card" style={{ padding: 10, display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center",
-                background: ub.position === "YES" ? "rgba(52,211,153,0.12)" : "rgba(248,113,113,0.12)" }}>
-                {ub.position === "YES" ? <TrendingUp size={14} color="#34d399" /> : <TrendingDown size={14} color="#f87171" />}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {ub.position} · {formatAmount(ub.amount)} @ {Number(ub.odds).toFixed(3)}x
-                </div>
-                <div style={{ fontSize: 10, color: "#64748b" }}>
-                  {new Date(ub.placed_at).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-US")}
-                </div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, fontWeight: 700,
-                  color: ub.status === "WON" ? "#34d399" : ub.status === "LOST" ? "#f87171" : "#fbbf24" }}>
-                  {ub.status}
-                </div>
-                <div style={{ fontSize: 10, color: "#94a3b8" }}>
-                  {formatAmount(ub.potential_payout)}
-                </div>
-              </div>
+        {/* PROFIT / LOSS card */}
+        <div className="wallet-pm-card">
+          <div className="wallet-pm-card-head">
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span className="wallet-pm-pnl-dot" style={{ background: pnlPositive ? "var(--success)" : "var(--danger)" }} />
+              <span className="wallet-pm-card-title">{t("wallet.pnl")}</span>
             </div>
+            <div className="wallet-pm-ranges">
+              {(["1D", "1W", "1M", "1Y", "YTD", "ALL"] as Range[]).map((r) => (
+                <button
+                  key={r}
+                  className={`wallet-pm-range${range === r ? " wallet-pm-range-active" : ""}`}
+                  onClick={() => setRange(r)}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="wallet-pm-card-body">
+            <div>
+              <div className="wallet-pm-pnl-row">
+                <span className="wallet-pm-pnl-amount" style={{ color: pnlPositive ? "var(--success)" : "var(--danger)" }}>
+                  {pnlPositive ? "+" : ""}{formatUsd(pnl, currency)}
+                </span>
+                <ArrowUpRight size={18} color={pnlPositive ? "var(--success)" : "var(--danger)"} style={{ transform: pnlPositive ? "none" : "rotate(90deg)" }} />
+              </div>
+              <div className="wallet-pm-pnl-sub">{range === "ALL" ? t("wallet.all_time") : range}</div>
+            </div>
+            <div className="wallet-pm-brand">
+              {onchain ? (
+                <span className="wallet-pm-brand-chip wallet-pm-brand-onchain">
+                  <LinkIcon size={11} /> On-chain · Amoy
+                </span>
+              ) : (
+                <span className="wallet-pm-brand-chip">Simulateur</span>
+              )}
+            </div>
+          </div>
+
+          <div className="wallet-pm-spark">
+            <Sparkline seed={wallet.email || "demo"} color={pnlPositive ? "#10b981" : "#f87171"} height={56} />
+          </div>
+        </div>
+
+        {/* Address + on-chain info block */}
+        {onchain && wallet.wallet_address && (
+          <div className="wallet-pm-onchain-meta">
+            <div className="wallet-pm-onchain-row">
+              <span className="wallet-pm-onchain-label">{t("wallet.address")}</span>
+              <button
+                className="wallet-pm-onchain-value mono"
+                onClick={() => {
+                  navigator.clipboard?.writeText(wallet.wallet_address || "");
+                  toast.success(t("common.copied"));
+                }}
+              >
+                {shortAddr(wallet.wallet_address)}
+              </button>
+            </div>
+            <div className="wallet-pm-onchain-row">
+              <span className="wallet-pm-onchain-label">{t("wallet.token")}</span>
+              <a
+                className="wallet-pm-onchain-value mono"
+                href={`https://amoy.polygonscan.com/token/${wallet.token_contract}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                tUSDC · {shortAddr(wallet.token_contract || "")}
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div className="wallet-pm-tabs">
+          {(["positions", "open", "history"] as Tab[]).map((tk) => (
+            <button
+              key={tk}
+              className={`wallet-pm-tab${tab === tk ? " wallet-pm-tab-active" : ""}`}
+              onClick={() => setTab(tk)}
+            >
+              {t(`wallet.tab_${tk}`)}
+            </button>
           ))}
         </div>
+
+        {/* Filters */}
+        <div className="wallet-pm-filters">
+          <div className="wallet-pm-search">
+            <SearchIcon size={13} />
+            <input
+              placeholder={t("wallet.search_placeholder")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <button className="wallet-pm-filter-chip">
+            <FilterIcon size={12} /> <span>{t("wallet.filter_all")}</span>
+          </button>
+          <button className="wallet-pm-filter-chip">
+            <span>{t("wallet.filter_newest")}</span>
+          </button>
+          <button className="wallet-pm-filter-chip">
+            <Calendar size={12} />
+          </button>
+        </div>
+
+        {/* History list */}
+        <div className="wallet-pm-history">
+          {!betsLoaded && (
+            <div className="wallet-pm-empty">{t("common.loading")}</div>
+          )}
+          {betsLoaded && visible.length === 0 && (
+            <div className="wallet-pm-empty">{t("wallet.empty_history")}</div>
+          )}
+          {betsLoaded && visible.map((ub, i) => {
+            const bet = marketBySlug.get(ub.bet_id || "");
+            const label = bet?.region_name || bet?.question || ub.bet_id || "Market";
+            const posColor = ub.position === "YES" ? "var(--success)" : "var(--danger)";
+            const statusColor = ub.status === "WON" ? "var(--success)" : ub.status === "LOST" ? "var(--danger)" : "var(--fg-subtle)";
+            return (
+              <motion.button
+                key={ub.id}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(i * 0.02, 0.2) }}
+                className="wallet-pm-row"
+                onClick={() => bet?.slug && navigate(`/market/${bet.slug}`)}
+              >
+                <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, textAlign: "left" }}>
+                  <span className="wallet-pm-row-title">{label}</span>
+                  <span className="wallet-pm-row-sub">
+                    <span style={{ color: posColor, fontWeight: 700 }}>{ub.position}</span>
+                    <span style={{ opacity: 0.5, margin: "0 6px" }}>·</span>
+                    <span>{formatUsd(Number(ub.amount), currency)}</span>
+                    <span style={{ opacity: 0.5, margin: "0 6px" }}>·</span>
+                    <span>{new Date(ub.placed_at).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-US", { month: "short", day: "numeric" })}</span>
+                  </span>
+                </div>
+                <span className="wallet-pm-row-status" style={{ color: statusColor }}>
+                  {ub.status}
+                </span>
+              </motion.button>
+            );
+          })}
+        </div>
       </div>
+
       <BottomNav />
     </div>
   );

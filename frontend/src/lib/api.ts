@@ -160,6 +160,12 @@ export type WalletBalance = {
   total_lost: number;
   pseudo: string;
   email: string;
+  currency?: "EUR" | "tUSDC";
+  mode?: "onchain" | "simulator" | "simulator_fallback";
+  wallet_address?: string;
+  chain_id?: number;
+  token_contract?: string;
+  treasury_address?: string;
 };
 
 export type PlaceBetResponse = {
