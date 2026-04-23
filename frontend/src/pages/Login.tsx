@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { API, api } from "@/lib/api";
@@ -6,10 +6,16 @@ import { useI18n } from "@/lib/i18n";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { GlobePopupCycle } from "@/components/GlobePopupCycle";
 import { TradingTicker } from "@/components/TradingTicker";
-import { WhyParaOracle } from "@/components/WhyParaOracle";
-import { OrionDashboard } from "@/components/OrionDashboard";
+import { LazyInView } from "@/components/LazyInView";
 import { Satellite, ShieldCheck, FileCode2, ArrowDownRight } from "lucide-react";
 import type { Bet } from "@/lib/api";
+
+const OrionDashboard = lazy(() =>
+  import("@/components/OrionDashboard").then((m) => ({ default: m.OrionDashboard })),
+);
+const WhyParaOracle = lazy(() =>
+  import("@/components/WhyParaOracle").then((m) => ({ default: m.WhyParaOracle })),
+);
 
 type BetLite = { slug: string; region_geojson: GeoJSON.Polygon | GeoJSON.MultiPolygon | null; status: string };
 
@@ -238,14 +244,22 @@ export function Login() {
         </motion.a>
       </div>
 
-      {/* Orion-style dashboard on scroll */}
+      {/* Orion-style dashboard on scroll — deferred until near viewport */}
       <div id="dashboard">
-        <OrionDashboard />
+        <LazyInView minHeight={600}>
+          <Suspense fallback={null}>
+            <OrionDashboard />
+          </Suspense>
+        </LazyInView>
       </div>
 
-      {/* Keep Why section below (editorial features) */}
+      {/* Why section below (editorial features) — deferred */}
       <div id="why">
-        <WhyParaOracle />
+        <LazyInView minHeight={400}>
+          <Suspense fallback={null}>
+            <WhyParaOracle />
+          </Suspense>
+        </LazyInView>
       </div>
     </div>
   );
